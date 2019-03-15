@@ -9,7 +9,7 @@ int main(int argc, char **argv)
 	cout << "Hello, world" << endl;
 
 	MaxFlow *mf = new MaxFlow();
-	mf->flow();	
+	mf->flow();
 
 	exit(0);
 }
