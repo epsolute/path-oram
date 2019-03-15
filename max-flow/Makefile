@@ -6,9 +6,9 @@ IDIR=include
 ODIR=obj
 LDIR=lib
 
-LDFLAGS=-L $(LDIR)
-LDLIBS=-l gtest
-CPPFLAGS= --std=c++17 -I $(IDIR) -Wall
+LDFLAGS=-L /usr/local/Cellar/boost/1.68.0_1/lib -L $(LDIR)
+LDLIBS=-l gtest -l boost_system
+CPPFLAGS= --std=c++17 -I /usr/local/Cellar/boost/1.68.0_1/include -I $(IDIR) -Wall
 CC=g++
 RM=rm -rf
 
