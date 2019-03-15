@@ -1,0 +1,10 @@
+*.out
+*.o
+main
+test-max-flow
+*.dSYM
+*.gcov
+*.gcda
+*.gcno
+coverage-html/
+docs/

@@ -1,0 +1,102 @@
+stages:
+- build
+- test
+- release
+- deploy
+
+# TODO
+
+# include: 'https://git.dbogatov.org/templates/ci-snippets/raw/master/trigger-websites-deploy.yml'
+
+# build-binaries:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: build
+#   script:
+#   - cd ./scheme
+#   - make binaries
+#   artifacts:
+#     expire_in: 30 min
+#     paths:
+#     - ./scheme/main
+#     - ./scheme/test-pph
+#     - ./scheme/test-ore
+#     - ./scheme/benchmark
+#   tags:
+#   - docker
+
+# build-docs:
+#   image: dbogatov/docker-images:doxygen-latest
+#   stage: build
+#   script:
+#   - cd ./scheme
+#   - doxygen ../Doxyfile
+#   artifacts:
+#     expire_in: 30 min
+#     paths:
+#     - ./docs
+#     - Dockerfile
+#     - nginx.conf
+#   tags:
+#   - docker
+
+# test:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   script:
+#   - cd ./scheme/
+#   - make main
+#   - ./main
+#   - make coverage
+#   dependencies:
+#     - build-binaries
+#   artifacts:
+#     expire_in: 1 day
+#     paths:
+#       - ./scheme/coverage-html/
+#   tags:
+#   - docker
+
+# benchmark:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   dependencies:
+#     - build-binaries
+#   script:
+#     - cd ./scheme
+#     - ./benchmark
+#   tags:
+#   - docker
+
+# docs-website:
+#   variables:
+#     GIT_STRATEGY: none
+#   stage: release
+#   script:
+#   - docker build -t registry.dbogatov.org/bu/ore-scheme/cloz-software-implementation:$CI_BUILD_REF_NAME .
+#   - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.dbogatov.org
+#   - docker push registry.dbogatov.org/bu/ore-scheme/cloz-software-implementation:$CI_BUILD_REF_NAME
+#   dependencies:
+#   - build-docs
+#   tags:
+#   - shell
+#   only:
+#   - master
+
+# pages:
+#   image: dbogatov/docker-images:alpine-extras-latest
+#   variables:
+#     GIT_STRATEGY: none
+#   stage: release
+#   script:
+#   - mv docs/html public/
+#   - echo "Uploading files to pages"
+#   artifacts:
+#     expire_in: 30 min
+#     paths:
+#     - public
+#   dependencies:
+#   - build-docs
+#   tags:
+#   - docker
+#   only:
+#   - master

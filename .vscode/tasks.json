@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [{
+		"label": "build",
+		"type": "shell",
+		"command": "make cleandebug",
+		"args": [],
+		"options": {
+			"cwd": "${workspaceFolder}/max-flow"
+		},
+		"group": {
+			"kind": "build",
+			"isDefault": true
+		}
+	}]
+}
