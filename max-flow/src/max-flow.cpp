@@ -33,11 +33,7 @@ MaxFlow::MaxFlow(Edge edges[], long nVertices, long nEdges, long s, long t)
 	read_dimacs_max_flow(G, capacity, rev, source, sink, inputStream);
 }
 
-MaxFlow::~MaxFlow()
-{
-}
-
-std::vector<Flow> MaxFlow::flow(bool print)
+std::vector<Flow> MaxFlow::flow(bool print, std::ostream& out)
 {
 	std::vector<Flow> flows = {};
 
@@ -48,8 +44,8 @@ std::vector<Flow> MaxFlow::flow(bool print)
 
 	if (print)
 	{
-		std::cout << "The total flow: " << result << std::endl;
-		std::cout << "The flow values:" << std::endl;
+		out << "The total flow: " << result << std::endl;
+		out << "The flow values:" << std::endl;
 	}
 
 	graph_traits<Graph>::vertex_iterator u_iter, u_end;
@@ -65,7 +61,7 @@ std::vector<Flow> MaxFlow::flow(bool print)
 
 				if (print)
 				{
-					std::cout << instance.from << " -> " << instance.to << " : " << instance.saturation << std::endl;
+					out << instance.from << " -> " << instance.to << " : " << instance.saturation << std::endl;
 				}
 			}
 		}

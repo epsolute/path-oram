@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
 
@@ -34,10 +36,9 @@ class MaxFlow
 
 	public:
 	MaxFlow(Edge edges[], long nVertices, long nEdges, long s, long t);
-	~MaxFlow();
 
 	long flowValue();
-	std::vector<Flow> flow(bool print = false);
+	std::vector<Flow> flow(bool print = false, std::ostream& out = std::cout);
 };
 
 /**
