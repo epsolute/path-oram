@@ -5,8 +5,8 @@ using namespace boost;
 
 typedef struct
 {
-	long source;
-	long destination;
+	long from;
+	long to;
 	long weight;
 } Edge;
 
@@ -21,8 +21,23 @@ class MaxFlow
 	Traits::vertex_descriptor sink;
 
 	public:
-	MaxFlow(Edge edges[], long source, long sink);
+	MaxFlow(Edge edges[], long nVertices, long nEdges, long s, long t);
 	~MaxFlow();
 
 	long flow();
+
+	property_map<Graph, edge_capacity_t>::type capacity;
+	property_map<Graph, edge_residual_capacity_t>::type residual_capacity;
 };
+
+/**
+ * DIMACS file format:
+ * 
+ * c COMMENTS
+ * p max VERTICES EDGES
+ * n SOURCE s
+ * n SINK t // sink
+ * a FROM TO WEIGHT
+ * ...
+ * a FROM TO WEIGHT
+ */
