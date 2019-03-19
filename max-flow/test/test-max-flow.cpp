@@ -65,10 +65,10 @@ TEST_F(TestMaxFlow, CorrectFlow)
 
 	ASSERT_EQ(expected.size(), flow.size());
 
-	for (int i = 0; i < expected.size(); i++)
+	for (unsigned int i = 0; i < expected.size(); i++)
 	{
 		bool flag = false;
-		for (int j = 0; j < flow.size(); j++)
+		for (unsigned int j = 0; j < flow.size(); j++)
 		{
 			if (expected[i].from == flow[i].from ||
 				expected[i].to == flow[i].to ||
