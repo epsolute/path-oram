@@ -9,6 +9,11 @@ using namespace boost;
 
 MaxFlow::MaxFlow(Edge edges[], long nVertices, long nEdges, long s, long t)
 {
+	if (nVertices <= 0 || nEdges <= 0 || s == t)
+	{
+		throw "Malformed parameters";
+	}
+
 	capacity									  = get(edge_capacity, G);
 	property_map<Graph, edge_reverse_t>::type rev = get(edge_reverse, G);
 	residual_capacity							  = get(edge_residual_capacity, G);
@@ -53,7 +58,7 @@ std::vector<Flow> MaxFlow::flow(bool print)
 	{
 		for (boost::tie(ei, e_end) = out_edges(*u_iter, G); ei != e_end; ++ei)
 		{
-			if (capacity[*ei] > 0)
+			if (capacity[*ei] > 0 && capacity[*ei] - residual_capacity[*ei] > 0)
 			{
 				Flow instance = Flow{(long)((*u_iter) + 1), (long)(target(*ei, G) + 1), capacity[*ei] - residual_capacity[*ei]};
 				flows.push_back(instance);
@@ -65,7 +70,7 @@ std::vector<Flow> MaxFlow::flow(bool print)
 			}
 		}
 	}
-	
+
 	return flows;
 }
 

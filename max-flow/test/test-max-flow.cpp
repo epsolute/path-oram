@@ -5,23 +5,82 @@
 
 using namespace std;
 
-class Test : public ::testing::Test
+class TestMaxFlow : public ::testing::Test
 {
 	private:
 	protected:
-	Test()
+	Edge input[5] = {
+		Edge{1, 2, 10},
+		Edge{1, 3, 20},
+		Edge{2, 3, 5},
+		Edge{2, 4, 10},
+		Edge{3, 4, 15},
+	};
+
+	TestMaxFlow()
 	{
 	}
 
-	~Test() override
+	~TestMaxFlow() override
 	{
 	}
 };
 
-TEST_F(Test, HelloWorld)
+TEST_F(TestMaxFlow, EmptyInput)
 {
-	// pass
+	ASSERT_ANY_THROW(
+		{
+			MaxFlow* maxFlow = new MaxFlow(NULL, 0, 0, 0, 0);
+			maxFlow->flow();
+		});
 }
+
+TEST_F(TestMaxFlow, SourceSinkEqual)
+{
+	ASSERT_ANY_THROW(
+		{
+			MaxFlow* maxFlow = new MaxFlow(input, 4, 5, 1, 1);
+			maxFlow->flow();
+		});
+}
+
+TEST_F(TestMaxFlow, CorrectValue)
+{
+	MaxFlow* maxFlow = new MaxFlow(input, 4, 5, 1, 4);
+	long flow		 = maxFlow->flowValue();
+
+	ASSERT_EQ(25, flow);
+}
+
+TEST_F(TestMaxFlow, CorrectFlow)
+{
+	MaxFlow* maxFlow	   = new MaxFlow(input, 4, 5, 1, 4);
+	std::vector<Flow> flow = maxFlow->flow();
+
+	std::vector<Flow> expected = {
+		Flow{1, 2, 10},
+		Flow{1, 3, 15},
+		Flow{2, 4, 10},
+		Flow{3, 4, 15}};
+
+	ASSERT_EQ(expected.size(), flow.size());
+
+	for (int i = 0; i < expected.size(); i++)
+	{
+		bool flag = false;
+		for (int j = 0; j < flow.size(); j++)
+		{
+			if (expected[i].from == flow[i].from ||
+				expected[i].to == flow[i].to ||
+				expected[i].saturation == flow[i].saturation)
+			{
+				flag = true;
+			}
+		}
+		ASSERT_TRUE(flag);
+	}
+}
+
 int main(int argc, char** argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
