@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 	};
 
 	MaxFlow *mf = new MaxFlow(edges, 4, 5, 1, 4);
-	mf->flow();
+	mf->flow(true);
 
 	exit(0);
 }

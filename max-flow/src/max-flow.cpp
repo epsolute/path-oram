@@ -32,12 +32,21 @@ MaxFlow::~MaxFlow()
 {
 }
 
-long MaxFlow::flow()
+std::vector<Flow> MaxFlow::flow(bool print)
 {
-	long flow = push_relabel_max_flow(G, source, sink);
+	std::vector<Flow> flows = {};
 
-	std::cout << "The total flow: " << flow << std::endl;
-	std::cout << "The flow values:" << std::endl;
+	if (result < 0)
+	{
+		flowValue();
+	}
+
+	if (print)
+	{
+		std::cout << "The total flow: " << result << std::endl;
+		std::cout << "The flow values:" << std::endl;
+	}
+
 	graph_traits<Graph>::vertex_iterator u_iter, u_end;
 	graph_traits<Graph>::out_edge_iterator ei, e_end;
 	for (boost::tie(u_iter, u_end) = vertices(G); u_iter != u_end; ++u_iter)
@@ -46,10 +55,22 @@ long MaxFlow::flow()
 		{
 			if (capacity[*ei] > 0)
 			{
-				std::cout << (*u_iter) + 1 << " -> " << target(*ei, G) + 1 << " : " << (capacity[*ei] - residual_capacity[*ei]) << std::endl;
+				Flow instance = Flow{(long)((*u_iter) + 1), (long)(target(*ei, G) + 1), capacity[*ei] - residual_capacity[*ei]};
+				flows.push_back(instance);
+
+				if (print)
+				{
+					std::cout << instance.from << " -> " << instance.to << " : " << instance.saturation << std::endl;
+				}
 			}
 		}
 	}
+	
+	return flows;
+}
 
-	return flow;
+long MaxFlow::flowValue()
+{
+	result = push_relabel_max_flow(G, source, sink);
+	return result;
 }
