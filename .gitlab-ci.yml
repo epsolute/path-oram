@@ -48,7 +48,7 @@ test:
   artifacts:
     expire_in: 1 day
     paths:
-      - ./scheme/coverage-html/
+      - ./max-flow/coverage-html/
   tags:
   - docker
 
