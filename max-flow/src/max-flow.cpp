@@ -36,9 +36,8 @@ long MaxFlow::flow()
 {
 	long flow = push_relabel_max_flow(G, source, sink);
 
-	std::cout << "c  The total flow:" << std::endl;
-	std::cout << "s " << flow << std::endl;
-	std::cout << "c flow values:" << std::endl;
+	std::cout << "The total flow: " << flow << std::endl;
+	std::cout << "The flow values:" << std::endl;
 	graph_traits<Graph>::vertex_iterator u_iter, u_end;
 	graph_traits<Graph>::out_edge_iterator ei, e_end;
 	for (boost::tie(u_iter, u_end) = vertices(G); u_iter != u_end; ++u_iter)
@@ -47,7 +46,7 @@ long MaxFlow::flow()
 		{
 			if (capacity[*ei] > 0)
 			{
-				std::cout << "f " << *u_iter << " " << target(*ei, G) << " " << (capacity[*ei] - residual_capacity[*ei]) << std::endl;
+				std::cout << (*u_iter) + 1 << " -> " << target(*ei, G) + 1 << " : " << (capacity[*ei] - residual_capacity[*ei]) << std::endl;
 			}
 		}
 	}
