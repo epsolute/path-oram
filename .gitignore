@@ -8,3 +8,4 @@ test-max-flow
 *.gcno
 coverage-html/
 docs/
+ipch

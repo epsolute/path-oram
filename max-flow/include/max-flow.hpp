@@ -1,45 +1,28 @@
+#include "definitions.h"
+
 #include <iostream>
 
-#include <boost/config.hpp>
-#include <boost/graph/adjacency_list.hpp>
-
-using namespace boost;
-
-typedef struct
+namespace MaxFlowModule
 {
-	long from;
-	long to;
-	long weight;
-} Edge;
+	class MaxFlow
+	{
+		private:
+		Graph G;
+		Traits::vertex_descriptor source;
+		Traits::vertex_descriptor sink;
 
-typedef struct
-{
-	long from;
-	long to;
-	long saturation;
-} Flow;
+		property_map<Graph, edge_capacity_t>::type capacity;
+		property_map<Graph, edge_residual_capacity_t>::type residual_capacity;
 
-typedef adjacency_list_traits<vecS, vecS, directedS> Traits;
-typedef adjacency_list<vecS, vecS, directedS, property<vertex_name_t, std::string>, property<edge_capacity_t, long, property<edge_residual_capacity_t, long, property<edge_reverse_t, Traits::edge_descriptor>>>> Graph;
+		long result = -1;
 
-class MaxFlow
-{
-	private:
-	Graph G;
-	Traits::vertex_descriptor source;
-	Traits::vertex_descriptor sink;
+		public:
+		MaxFlow(std::vector<Edge> edges, long nVertices, long s, long t);
 
-	property_map<Graph, edge_capacity_t>::type capacity;
-	property_map<Graph, edge_residual_capacity_t>::type residual_capacity;
-
-	long result = -1;
-
-	public:
-	MaxFlow(Edge edges[], long nVertices, long nEdges, long s, long t);
-
-	long flowValue();
-	std::vector<Flow> flow(bool print = false, std::ostream& out = std::cout);
-};
+		long flowValue();
+		std::vector<Flow> flow(bool print = false, std::ostream& out = std::cout);
+	};
+}
 
 /**
  * DIMACS file format:

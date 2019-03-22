@@ -12,10 +12,10 @@ CPPFLAGS= --std=c++17 -I /usr/local/Cellar/boost/1.68.0_1/include -I $(IDIR) -Wa
 CC=g++
 RM=rm -rf
 
-_DEPS = definitions.h max-flow.hpp
+_DEPS = definitions.h max-flow.hpp solver.hpp
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = max-flow.o
+_OBJ = max-flow.o solver.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 TARGETS = main

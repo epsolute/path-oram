@@ -4,12 +4,13 @@
 #include "gtest/gtest.h"
 
 using namespace std;
+using namespace MaxFlowModule;
 
 class TestMaxFlow : public ::testing::Test
 {
 	private:
 	protected:
-	Edge input[5] = {
+	vector<Edge> input = {
 		Edge{1, 2, 10},
 		Edge{1, 3, 20},
 		Edge{2, 3, 5},
@@ -30,7 +31,7 @@ TEST_F(TestMaxFlow, EmptyInput)
 {
 	ASSERT_ANY_THROW(
 		{
-			MaxFlow* maxFlow = new MaxFlow(NULL, 0, 0, 0, 0);
+			MaxFlow* maxFlow = new MaxFlow(vector<Edge> {}, 0, 0, 0);
 			maxFlow->flow();
 		});
 }
@@ -39,14 +40,14 @@ TEST_F(TestMaxFlow, SourceSinkEqual)
 {
 	ASSERT_ANY_THROW(
 		{
-			MaxFlow* maxFlow = new MaxFlow(input, 4, 5, 1, 1);
+			MaxFlow* maxFlow = new MaxFlow(input, 5, 1, 1);
 			maxFlow->flow();
 		});
 }
 
 TEST_F(TestMaxFlow, CorrectValue)
 {
-	MaxFlow* maxFlow = new MaxFlow(input, 4, 5, 1, 4);
+	MaxFlow* maxFlow = new MaxFlow(input, 5, 1, 4);
 	long flow		 = maxFlow->flowValue();
 
 	ASSERT_EQ(25, flow);
@@ -54,7 +55,7 @@ TEST_F(TestMaxFlow, CorrectValue)
 
 TEST_F(TestMaxFlow, CorrectFlow)
 {
-	MaxFlow* maxFlow	   = new MaxFlow(input, 4, 5, 1, 4);
+	MaxFlow* maxFlow	   = new MaxFlow(input, 5, 1, 4);
 	std::vector<Flow> flow = maxFlow->flow();
 
 	std::vector<Flow> expected = {
@@ -85,7 +86,7 @@ TEST_F(TestMaxFlow, PrintFlow)
 {
 	std::ostringstream output;
 	
-	MaxFlow* maxFlow	   = new MaxFlow(input, 4, 5, 1, 4);
+	MaxFlow* maxFlow	   = new MaxFlow(input, 5, 1, 4);
 	std::vector<Flow> flow = maxFlow->flow(true, output);
 
 	std::vector<Flow> expected = {
