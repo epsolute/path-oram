@@ -18,7 +18,7 @@ namespace MaxFlowModule
 	typedef struct
 	{
 		long identifier;
-		double weight;
+		long weight;
 	} WeightedVertex;
 
 	typedef struct
