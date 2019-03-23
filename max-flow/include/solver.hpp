@@ -9,20 +9,26 @@ namespace MaxFlowModule
 	class Solver
 	{
 		private:
-		
 		long source;
 		long sink;
 		vector<Edge> originalEdges;
 		vector<Edge> addedSourceEdges;
 		vector<Edge> addedSinkEdges;
 		long nVertices;
-		
+
 		vector<Edge> constructEdges(double seedAlpha);
 		double saturatedSource(vector<Flow> flow, vector<Edge> edges, double alpha);
-		
+		std::tuple<long, std::vector<Flow>> solveBasic();
+
 		public:
-		
 		Solver(std::vector<Edge> edges, std::vector<WeightedVertex> vertices);
-		std::tuple<double, std::vector<Flow>> solve(double maxAlpha, double precisionEpsilon);
+		std::tuple<long, std::vector<Flow>, double> solve(double maxAlpha, double precisionEpsilon);
+		void amplify(long amplifier);
+
+		friend class SolverTest_Initialization_Test;
+		friend class SolverTest_ConstructEdges_Test;
+		friend class SolverTest_SaturatedSource_Test;
+		friend class SolverTest_Amplify_Test;
+		friend class SolverTest_Solve_Test;
 	};
 }

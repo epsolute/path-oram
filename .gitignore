@@ -2,6 +2,7 @@
 *.o
 main
 test-max-flow
+test-solver
 *.dSYM
 *.gcov
 *.gcda

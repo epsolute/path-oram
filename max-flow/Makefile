@@ -20,7 +20,7 @@ OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 TARGETS = main
 
-TESTS = max-flow
+TESTS = max-flow solver
 TESTTARGETS = $(addprefix test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
@@ -57,9 +57,10 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 
 run-tests: $(TESTTARGETS)
 	./test-max-flow
+	./test-solver
 
 coverage: profile
-	gcovr -r . -f $(SDIR)/max-flow.cpp
+	gcovr -r . -f $(SDIR)/max-flow.cpp -f $(SDIR)/solver.cpp --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
 
@@ -73,7 +74,7 @@ cleandocs:
 	$(RM) ../docs
 
 cleantests:
-	$(RM) test-max-flow
+	$(RM) $(TESTTARGETS)
 
 cleanall: clean cleandocs cleantests
 	$(RM) main

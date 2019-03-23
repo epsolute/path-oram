@@ -6,7 +6,12 @@ namespace MaxFlowModule
 {
 	Solver::Solver(vector<Edge> edges, vector<WeightedVertex> vertices)
 	{
-		long largestVertexIndex = min_element(
+		if (edges.size() == 0 || vertices.size() == 0)
+		{
+			throw "Empty input";
+		}
+
+		long largestVertexIndex = max_element(
 									  vertices.begin(),
 									  vertices.end(),
 									  [](WeightedVertex v1, WeightedVertex v2) { return v1.identifier < v2.identifier; })
@@ -17,24 +22,31 @@ namespace MaxFlowModule
 		this->originalEdges = edges;
 
 		this->source		   = largestVertexIndex + 1;
-		this->source		   = largestVertexIndex + 2;
+		this->sink			   = largestVertexIndex + 2;
 		this->addedSourceEdges = vector<Edge>{};
 		this->addedSinkEdges   = vector<Edge>{};
 
 		for (auto const& vertex : vertices)
 		{
-			if (vertex.weight <= 0)
+			if (vertex.weight < 0)
 			{
-				this->addedSourceEdges.push_back(Edge{source, vertex.identifier, vertex.weight});
+				this->addedSourceEdges.push_back(Edge{source, vertex.identifier, -vertex.weight});
 			}
-			else
+			else if (vertex.weight > 0)
 			{
-				this->addedSinkEdges.push_back(Edge{source, vertex.identifier, vertex.weight});
+				this->addedSinkEdges.push_back(Edge{vertex.identifier, sink, vertex.weight});
 			}
 		}
 	}
 
-	std::tuple<double, vector<Flow>> Solver::solve(double maxAlpha, double precisionEpsilon)
+	std::tuple<long, std::vector<Flow>> Solver::solveBasic()
+	{
+		MaxFlow* mf = new MaxFlow(this->constructEdges(1.0), this->nVertices, this->source, this->sink);
+		auto result = std::make_tuple(mf->flowValue(), mf->flow());
+		return result;
+	}
+
+	std::tuple<long, vector<Flow>, double> Solver::solve(double maxAlpha, double precisionEpsilon)
 	{
 		double L		   = 0;
 		double R		   = maxAlpha;
@@ -47,29 +59,35 @@ namespace MaxFlowModule
 			MaxFlow* mf		  = new MaxFlow(this->constructEdges(seedAlpha), this->nVertices, this->source, this->sink);
 			vector<Flow> flow = mf->flow();
 
-			if (saturatedSource(flow, this->addedSourceEdges, seedAlpha) < (1 - precisionEpsilon)) // switched to cut inside the graph
-			{
-				L			= seedAlpha;
+			auto saturation = saturatedSource(flow, this->addedSourceEdges, seedAlpha);
+			// cout << "alpha: " << seedAlpha << ", saturation: " << saturation << endl;
+
+			if (saturation < (1 - precisionEpsilon)) // e.g. 0.5, source edges are NOT saturated
+			{										 // decrease alpha, decrease source edges capacity
+				R			= seedAlpha;
 				resultAlpha = seedAlpha;
 			}
-			else
-			{
-				R = seedAlpha;
+			else // source edges are saturated
+			{	// increase source edges capacity
+				L = seedAlpha;
 			}
 
 		} while ((R - L) > precisionEpsilon);
 
 		MaxFlow* mf = new MaxFlow(this->constructEdges(resultAlpha), this->nVertices, this->source, this->sink);
 
-		return make_tuple(mf->flowValue(), mf->flow());
+		auto result = make_tuple(mf->flowValue(), mf->flow(), resultAlpha);
+		return result;
 	}
 
 	vector<Edge> Solver::constructEdges(double seedAlpha)
 	{
-		vector<Edge> edges{};
-		edges.resize(this->addedSourceEdges.size());
-
-		transform(this->addedSourceEdges.begin(), this->addedSourceEdges.end(), edges.begin(), [seedAlpha](Edge e) { return Edge{e.from, e.to, (long)std::round(e.weight * seedAlpha)}; });
+		vector<Edge> edges = {};
+		transform(
+			this->addedSourceEdges.begin(),
+			this->addedSourceEdges.end(),
+			std::back_inserter(edges),
+			[seedAlpha](Edge e) { return Edge{e.from, e.to, (long)std::round(e.weight * seedAlpha)}; });
 
 		edges.insert(edges.end(), this->originalEdges.begin(), this->originalEdges.end());
 		edges.insert(edges.end(), this->addedSinkEdges.begin(), this->addedSinkEdges.end());
@@ -99,5 +117,23 @@ namespace MaxFlowModule
 		}
 
 		return saturated / total;
+	}
+
+	void Solver::amplify(long amplifier)
+	{
+		for (int i = 0; i < this->originalEdges.size(); i++)
+		{
+			this->originalEdges[i].weight *= amplifier;
+		}
+
+		for (int i = 0; i < this->addedSourceEdges.size(); i++)
+		{
+			this->addedSourceEdges[i].weight *= amplifier;
+		}
+
+		for (int i = 0; i < this->addedSinkEdges.size(); i++)
+		{
+			this->addedSinkEdges[i].weight *= amplifier;
+		}
 	}
 }

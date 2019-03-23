@@ -1,7 +1,7 @@
 {
 	"version": "0.2.0",
 	"configurations": [{
-			"name": "(lldb) Launch",
+			"name": "Launch",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/max-flow/main",
@@ -14,10 +14,10 @@
 			"preLaunchTask": "build"
 		},
 		{
-			"name": "(lldb) Test",
+			"name": "Test",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/max-flow/test-max-flow",
+			"program": "${workspaceFolder}/max-flow/test-${input:test}",
 			"args": [],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}/max-flow",
@@ -26,5 +26,12 @@
 			"MIMode": "lldb",
 			"preLaunchTask": "build"
 		}
-	]
+	],
+	"inputs": [{
+		"id": "test",
+		"type": "pickString",
+		"description": "Pick the test file to debug",
+		"options": ["max-flow", "solver"],
+		"default": "max-flow"
+	}]
 }
