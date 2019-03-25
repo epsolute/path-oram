@@ -6,20 +6,23 @@
 
 extern "C"
 {
-	void helloWorld()
+	typedef struct
 	{
-		cout << "Simple tiny max flow computation" << endl;
+		long flowValue;
+		MaxFlowModule::Flow* flow;
+		long flowSize;
+		double alpha;
+	} Solution;
 
-		vector<MaxFlowModule::Edge> edges = {
-			MaxFlowModule::Edge{1, 2, 10},
-			MaxFlowModule::Edge{1, 3, 20},
-			MaxFlowModule::Edge{2, 3, 5},
-			MaxFlowModule::Edge{2, 4, 10},
-			MaxFlowModule::Edge{3, 4, 15},
-		};
+	Solution maxFlow(int nEdges, MaxFlowModule::Edge* edges, int nVertices, MaxFlowModule::WeightedVertex* vertices, double alpha, double epsilon)
+	{
+		std::vector<MaxFlowModule::Edge> edgesVec(edges, edges + nEdges);
+		std::vector<MaxFlowModule::WeightedVertex> verticesVec(vertices, vertices + nVertices);
 
-		MaxFlowModule::MaxFlow* mf = new MaxFlowModule::MaxFlow(edges, 5, 1, 4);
-		mf->flow(true);
+		auto* solver					= new MaxFlowModule::Solver(edgesVec, verticesVec);
+		auto [value, flow, alphaResult] = solver->solve(alpha, epsilon);
+
+		return Solution{value, &flow[0], (long)flow.size(), alphaResult};
 	}
 }
 
