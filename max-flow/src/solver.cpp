@@ -2,6 +2,27 @@
 
 #include "max-flow.hpp"
 
+#include <iostream>
+
+extern "C"
+{
+	void helloWorld()
+	{
+		cout << "Simple tiny max flow computation" << endl;
+
+		vector<MaxFlowModule::Edge> edges = {
+			MaxFlowModule::Edge{1, 2, 10},
+			MaxFlowModule::Edge{1, 3, 20},
+			MaxFlowModule::Edge{2, 3, 5},
+			MaxFlowModule::Edge{2, 4, 10},
+			MaxFlowModule::Edge{3, 4, 15},
+		};
+
+		MaxFlowModule::MaxFlow* mf = new MaxFlowModule::MaxFlow(edges, 5, 1, 4);
+		mf->flow(true);
+	}
+}
+
 namespace MaxFlowModule
 {
 	Solver::Solver(vector<Edge> edges, vector<WeightedVertex> vertices)

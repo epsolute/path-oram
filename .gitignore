@@ -10,3 +10,4 @@ test-solver
 coverage-html/
 docs/
 ipch
+max-flow/lib*.so

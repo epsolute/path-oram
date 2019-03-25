@@ -8,7 +8,7 @@ LDIR=lib
 
 LDFLAGS=-L /usr/local/Cellar/boost/1.68.0_1/lib -L $(LDIR)
 LDLIBS=-l gtest -l boost_system -l pthread
-CPPFLAGS= --std=c++17 -I /usr/local/Cellar/boost/1.68.0_1/include -I $(IDIR) -Wall
+CPPFLAGS= --std=c++17 -I /usr/local/Cellar/boost/1.68.0_1/include -I $(IDIR) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
@@ -54,6 +54,9 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CPPFLAGS)
 
 # commands
+
+shared: $(TARGETS)
+	$(CC) -shared -Wl -o libmaxflow.so $(OBJ)
 
 run-tests: $(TESTTARGETS)
 	./test-max-flow
