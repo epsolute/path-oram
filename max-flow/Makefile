@@ -37,7 +37,7 @@ debug: CPPFLAGS += -g
 debug: binaries
 
 profile: CPPFLAGS += -fprofile-arcs -ftest-coverage -fPIC -O0
-profile: cleanall
+profile: clean
 profile: run-tests
 
 # executables

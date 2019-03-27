@@ -15,8 +15,7 @@ build-binaries:
   artifacts:
     expire_in: 30 min
     paths:
-    - ./max-flow/main
-    - ./max-flow/test-max-flow
+    - ./max-flow/bin
   tags:
   - docker
 
@@ -40,8 +39,8 @@ test:
   stage: test
   script:
   - cd ./max-flow/
-  - make main
-  - ./main
+  - make bin/main
+  - ./bin/main
   - make coverage
   dependencies:
     - build-binaries
