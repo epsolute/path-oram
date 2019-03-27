@@ -1,8 +1,5 @@
 *.out
 *.o
-main
-test-max-flow
-test-solver
 *.dSYM
 *.gcov
 *.gcda
@@ -10,4 +7,4 @@ test-solver
 coverage-html/
 docs/
 ipch
-max-flow/lib*.so
+max-flow/bin/*

@@ -5,6 +5,7 @@ TDIR=test
 IDIR=include
 ODIR=obj
 LDIR=lib
+BDIR=bin
 
 LDFLAGS=-L /usr/local/Cellar/boost/1.68.0_1/lib -L $(LDIR)
 LDLIBS=-l gtest -l boost_system -l pthread
@@ -13,23 +14,24 @@ CC=g++
 RM=rm -rf
 
 _DEPS = definitions.h max-flow.hpp solver.hpp
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
 _OBJ = max-flow.o solver.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
+OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 TARGETS = main
+TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 
-TESTS = max-flow solver
-TESTTARGETS = $(addprefix test-, $(TESTS))
+TESTS = max-flow solver integration
+TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
 
 # flags-setting commands
 
-all: binaries docs
-binaries: $(TARGETS) $(TESTTARGETS)
-cleandebug: cleanall debug
+all: binaries shared docs
+binaries: $(TARGETBIN) $(TESTBIN)
+cleandebug: clean debug
 
 debug: CPPFLAGS += -g
 debug: binaries
@@ -41,12 +43,15 @@ profile: run-tests
 # executables
 
 .SECONDEXPANSION:
-$(TARGETS): $(OBJ) $(SDIR)/$$@.cpp
+$(TARGETBIN): $(OBJ) $$(subst $$(BDIR), $(SDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
 .SECONDEXPANSION:
-$(TESTTARGETS): $(OBJ) $(TDIR)/$$@.cpp
+$(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
+
+shared: $(OBJ)
+	$(CC) -shared -Wl -o $(BDIR)/libmaxflow.so $(OBJ)
 
 # objects
 
@@ -55,35 +60,28 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 
 # commands
 
-shared: $(TARGETS)
-	$(CC) -shared -Wl -o libmaxflow.so $(OBJ)
-
-run-tests: $(TESTTARGETS)
-	./test-max-flow
-	./test-solver
+run-tests: $(TESTBIN)
+	$(addsuffix ;, $(TESTBIN))
 
 coverage: profile
 	gcovr -r . -f $(SDIR)/max-flow.cpp -f $(SDIR)/solver.cpp --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
 
-docs: cleandocs
+docs: clean-docs
 	doxygen ../Doxyfile
 
-clean:
+clean: clean-docs clean-binaries
 	$(RM) $(ODIR)/* *~ *.dSYM *.gcov *.gcda *.gcno coverage-html
 
-cleandocs:
+clean-docs:
 	$(RM) ../docs
 
-cleantests:
-	$(RM) $(TESTTARGETS)
-
-cleanall: clean cleandocs cleantests
-	$(RM) main
+clean-binaries:
+	$(RM) $(BDIR)/*
 
 # phony
 
-.PHONY: docs clean cleandocs cleanall cleantests run-tests coverage 
+.PHONY: docs clean clean-docs clean-binaries run-tests coverage 
 .PHONY: profile debug cleandebug
-.PHONY: binaries all
+.PHONY: binaries all shared
