@@ -50,7 +50,8 @@ $(TARGETBIN): $(OBJ) $$(subst $$(BDIR), $(SDIR), $$@).cpp
 $(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
-shared: $(OBJ)
+shared: CPPFLAGS += -DSHARED
+shared: clean $(OBJ)
 	$(CC) -shared -Wl -o $(BDIR)/libmaxflow.so $(OBJ)
 
 # objects

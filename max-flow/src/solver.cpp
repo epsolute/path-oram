@@ -4,17 +4,11 @@
 
 #include <iostream>
 
+#ifdef SHARED
 extern "C"
 {
-	typedef struct
-	{
-		long flowValue;
-		MaxFlowModule::Flow* flow;
-		long flowSize;
-		double alpha;
-	} Solution;
-
-	Solution maxFlow(int nEdges, MaxFlowModule::Edge* edges, int nVertices, MaxFlowModule::WeightedVertex* vertices, double alpha, double epsilon)
+#endif
+	MaxFlowModule::Solution maxFlow(int nEdges, MaxFlowModule::Edge* edges, int nVertices, MaxFlowModule::WeightedVertex* vertices, double alpha, double epsilon)
 	{
 		std::vector<MaxFlowModule::Edge> edgesVec(edges, edges + nEdges);
 		std::vector<MaxFlowModule::WeightedVertex> verticesVec(vertices, vertices + nVertices);
@@ -22,9 +16,11 @@ extern "C"
 		auto* solver					= new MaxFlowModule::Solver(edgesVec, verticesVec);
 		auto [value, flow, alphaResult] = solver->solve(alpha, epsilon);
 
-		return Solution{value, &flow[0], (long)flow.size(), alphaResult};
+		return MaxFlowModule::Solution{value, &flow[0], (long)flow.size(), alphaResult};
 	}
+#ifdef SHARED
 }
+#endif
 
 namespace MaxFlowModule
 {
