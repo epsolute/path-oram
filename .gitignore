@@ -8,3 +8,4 @@ coverage-html/
 docs/
 ipch
 max-flow/bin/*
+!max-flow/bin/.gitkeep
