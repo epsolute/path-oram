@@ -7,9 +7,9 @@ ODIR=obj
 LDIR=lib
 BDIR=bin
 
-LDFLAGS=-L /usr/local/Cellar/boost/1.68.0_1/lib -L $(LDIR)
+LDFLAGS=-L $(LDIR)
 LDLIBS=-l gtest -l boost_system -l pthread
-CPPFLAGS= --std=c++17 -I /usr/local/Cellar/boost/1.68.0_1/include -I $(IDIR) -Wall -fPIC
+CPPFLAGS= --std=c++17 -I $(IDIR) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
@@ -29,7 +29,8 @@ ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
 
 # flags-setting commands
 
-all: binaries shared docs
+all: shared docs
+
 binaries: $(TARGETBIN) $(TESTBIN)
 cleandebug: clean debug
 
@@ -37,8 +38,7 @@ debug: CPPFLAGS += -g
 debug: binaries
 
 profile: CPPFLAGS += -fprofile-arcs -ftest-coverage -fPIC -O0
-profile: clean
-profile: run-tests
+profile: clean run-tests
 
 # executables
 
