@@ -24,12 +24,12 @@ class MaxFlowTest : public ::testing::Test
 
 		Edge{5, 6, 100},
 
-		Edge{5, 7, 15},
+		Edge{5, 150, 15},
 		Edge{5, 8, 25},
 		Edge{6, 8, 35},
 		Edge{6, 9, 45},
 
-		Edge{7, 11, 30}, // sink
+		Edge{150, 11, 30}, // sink
 		Edge{8, 11, 30},
 		Edge{9, 11, 30}};
 
