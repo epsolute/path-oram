@@ -15,7 +15,7 @@ class MaxFlowTest : public ::testing::Test
 		Edge{10, 2, 30},
 		Edge{10, 3, 30},
 
-		Edge{1, 5, 20}, // dead end
+		Edge{1, 4, 20}, // dead end
 
 		Edge{1, 5, 20},
 		Edge{2, 5, 30},

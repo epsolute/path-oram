@@ -16,6 +16,9 @@ extern "C"
 		auto* solver					= new MaxFlowModule::Solver(edgesVec, verticesVec);
 		auto [value, flow, alphaResult] = solver->solve(alpha, epsilon);
 
+		// a hack to mitigate python c_types bug
+		flow.insert(flow.begin(), MaxFlowModule::Flow{1, 0, 3});
+
 		return MaxFlowModule::Solution{value, &flow[0], (long)flow.size(), alphaResult};
 	}
 #ifdef SHARED

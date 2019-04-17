@@ -13,7 +13,7 @@ namespace MaxFlowModule
 		private:
 		protected:
 		vector<Edge> edges = {
-			Edge{1, 5, 20}, // dead end
+			Edge{1, 4, 20}, // dead end
 
 			Edge{1, 5, 20},
 			Edge{2, 5, 30},
@@ -43,8 +43,8 @@ namespace MaxFlowModule
 
 		static const long verticesWeight = 30;
 
-		long source	= 10;
-		long sink	  = 11;
+		long source = 10;
+		long sink   = 11;
 	};
 
 	TEST_F(SolverTest, EmptyInput)
@@ -141,15 +141,13 @@ namespace MaxFlowModule
 	TEST_F(SolverTest, Solve)
 	{
 		auto amplifier = 1000;
-
-		auto* basic					 = new Solver(edges, vertices);
-		auto [basicValue, basicFlow] = basic->solveBasic();
+		auto expected  = 62;
 
 		auto* solver = new Solver(edges, vertices);
 		solver->amplify(amplifier);
 		auto [value, flow, alpha] = solver->solve(1.0, 0.01);
 
-		ASSERT_NEAR(basicValue * amplifier, value, 0.01 * amplifier);
+		ASSERT_NEAR(expected * amplifier, value, amplifier);
 		ASSERT_NE(0, flow.size());
 		ASSERT_GT(1, alpha);
 		ASSERT_LT(0, alpha);

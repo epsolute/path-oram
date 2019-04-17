@@ -31,7 +31,7 @@ namespace MaxFlowModule
 	typedef struct
 	{
 		long flowValue;
-		MaxFlowModule::Flow* flow;
+		Flow* flow;
 		long flowSize;
 		double alpha;
 	} Solution;
