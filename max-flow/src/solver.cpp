@@ -37,8 +37,6 @@ namespace MaxFlowModule
 									  [](WeightedVertex v1, WeightedVertex v2) { return v1.identifier < v2.identifier; })
 									  ->identifier;
 
-		this->nVertices = vertices.size() + 2;
-
 		this->originalEdges = edges;
 
 		this->source		   = largestVertexIndex + 1;
@@ -61,7 +59,7 @@ namespace MaxFlowModule
 
 	std::tuple<long, std::vector<Flow>> Solver::solveBasic()
 	{
-		MaxFlow* mf = new MaxFlow(this->constructEdges(1.0), this->nVertices, this->source, this->sink);
+		MaxFlow* mf = new MaxFlow(this->constructEdges(1.0), this->source, this->sink);
 		auto result = std::make_tuple(mf->flowValue(), mf->flow());
 		return result;
 	}
@@ -76,7 +74,7 @@ namespace MaxFlowModule
 		{
 			double seedAlpha = (L + R) * 0.5;
 
-			MaxFlow* mf		  = new MaxFlow(this->constructEdges(seedAlpha), this->nVertices, this->source, this->sink);
+			MaxFlow* mf		  = new MaxFlow(this->constructEdges(seedAlpha), this->source, this->sink);
 			vector<Flow> flow = mf->flow();
 
 			auto saturation = saturatedSource(flow, this->addedSourceEdges, seedAlpha);
@@ -94,7 +92,7 @@ namespace MaxFlowModule
 
 		} while ((R - L) > precisionEpsilon);
 
-		MaxFlow* mf = new MaxFlow(this->constructEdges(resultAlpha), this->nVertices, this->source, this->sink);
+		MaxFlow* mf = new MaxFlow(this->constructEdges(resultAlpha), this->source, this->sink);
 
 		auto result = make_tuple(mf->flowValue(), mf->flow(), resultAlpha);
 		return result;

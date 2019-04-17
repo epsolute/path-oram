@@ -54,6 +54,8 @@ shared: CPPFLAGS += -DSHARED
 shared: clean $(OBJ)
 	$(CC) -shared -Wl -o $(BDIR)/libmaxflow.so $(OBJ)
 
+tests: $(TESTBIN)
+
 # objects
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
@@ -61,7 +63,7 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 
 # commands
 
-run-tests: $(TESTBIN)
+run-tests: tests
 	$(addsuffix ;, $(TESTBIN))
 
 coverage: profile

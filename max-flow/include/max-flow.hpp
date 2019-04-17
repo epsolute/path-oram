@@ -17,21 +17,9 @@ namespace MaxFlowModule
 		long result = -1;
 
 		public:
-		MaxFlow(std::vector<Edge> edges, long nVertices, long s, long t);
+		MaxFlow(std::vector<Edge> edges, long s, long t);
 
 		long flowValue();
 		std::vector<Flow> flow(bool print = false, std::ostream& out = std::cout);
 	};
 }
-
-/**
- * DIMACS file format:
- * 
- * c COMMENTS
- * p max VERTICES EDGES
- * n SOURCE s
- * n SINK t // sink
- * a FROM TO WEIGHT
- * ...
- * a FROM TO WEIGHT
- */

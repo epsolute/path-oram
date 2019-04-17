@@ -14,7 +14,6 @@ namespace MaxFlowModule
 		vector<Edge> originalEdges;
 		vector<Edge> addedSourceEdges;
 		vector<Edge> addedSinkEdges;
-		long nVertices;
 
 		vector<Edge> constructEdges(double seedAlpha);
 		double saturatedSource(vector<Flow> flow, vector<Edge> edges, double alpha);

@@ -81,13 +81,12 @@ namespace MaxFlowModule
 			Edge{8, 11, 30},
 			Edge{9, 11, 30}};
 
-		long nVertices = 11;
 		long source	= 10;
 		long sink	  = 11;
 
 		long result = 75;
 
-		MaxFlow* maxFlow = new MaxFlow(edges, nVertices, source, sink);
+		MaxFlow* maxFlow = new MaxFlow(edges, source, sink);
 		ASSERT_EQ(result, maxFlow->flowValue());
 	}
 

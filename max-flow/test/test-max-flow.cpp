@@ -33,7 +33,6 @@ class MaxFlowTest : public ::testing::Test
 		Edge{8, 11, 30},
 		Edge{9, 11, 30}};
 
-	long nVertices = 11;
 	long source	= 10;
 	long sink	  = 11;
 
@@ -44,7 +43,7 @@ TEST_F(MaxFlowTest, EmptyInput)
 {
 	ASSERT_ANY_THROW(
 		{
-			MaxFlow* maxFlow = new MaxFlow(vector<Edge>{}, 0, 0, 0);
+			MaxFlow* maxFlow = new MaxFlow(vector<Edge>{}, 0, 0);
 			maxFlow->flow();
 		});
 }
@@ -53,14 +52,14 @@ TEST_F(MaxFlowTest, SourceSinkEqual)
 {
 	ASSERT_ANY_THROW(
 		{
-			MaxFlow* maxFlow = new MaxFlow(edges, nVertices, source, source);
+			MaxFlow* maxFlow = new MaxFlow(edges, source, source);
 			maxFlow->flow();
 		});
 }
 
 TEST_F(MaxFlowTest, CorrectValue)
 {
-	MaxFlow* maxFlow = new MaxFlow(edges, nVertices, source, sink);
+	MaxFlow* maxFlow = new MaxFlow(edges, source, sink);
 	long flow		 = maxFlow->flowValue();
 
 	ASSERT_EQ(result, flow);
@@ -68,7 +67,7 @@ TEST_F(MaxFlowTest, CorrectValue)
 
 TEST_F(MaxFlowTest, ConseravationConstraints)
 {
-	MaxFlow* maxFlow   = new MaxFlow(edges, nVertices, source, sink);
+	MaxFlow* maxFlow   = new MaxFlow(edges, source, sink);
 	vector<Flow> flow  = maxFlow->flow();
 	set<long> vertices = {};
 
@@ -112,7 +111,7 @@ TEST_F(MaxFlowTest, PrintFlow)
 {
 	std::ostringstream output;
 
-	MaxFlow* maxFlow	   = new MaxFlow(edges, nVertices, source, sink);
+	MaxFlow* maxFlow	   = new MaxFlow(edges, source, sink);
 	std::vector<Flow> flow = maxFlow->flow(true, output);
 
 	std::string printed = output.str();

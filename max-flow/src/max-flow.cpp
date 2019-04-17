@@ -3,15 +3,14 @@
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/push_relabel_max_flow.hpp>
-#include <boost/graph/read_dimacs.hpp>
 
 namespace MaxFlowModule
 {
 	using namespace boost;
 
-	MaxFlow::MaxFlow(std::vector<Edge> edges, long nVertices, long s, long t)
+	MaxFlow::MaxFlow(std::vector<Edge> edges, long s, long t)
 	{
-		if (nVertices <= 0 || edges.size() == 0 || s == t)
+		if (edges.size() == 0 || s == t)
 		{
 			throw "Malformed parameters";
 		}
@@ -20,19 +19,19 @@ namespace MaxFlowModule
 		property_map<Graph, edge_reverse_t>::type rev = get(edge_reverse, G);
 		residual_capacity							  = get(edge_residual_capacity, G);
 
-		std::ostringstream input;
-		input << "c Input for max flow problem" << std::endl;
-		input << "p max " << nVertices << " " << edges.size() << std::endl;
-		input << "n " << s << " s" << std::endl;
-		input << "n " << t << " t" << std::endl;
 		for (auto const& edge : edges)
 		{
-			input << "a " << edge.from << " " << edge.to << " " << edge.weight << std::endl;
-		}
-		std::string inputStr = input.str();
-		std::istringstream inputStream(inputStr);
+			auto straight = std::get<Traits::edge_descriptor>(add_edge(edge.from, edge.to, G));
+			auto reverse  = std::get<Traits::edge_descriptor>(add_edge(edge.to, edge.from, G));
 
-		read_dimacs_max_flow(G, capacity, rev, source, sink, inputStream);
+			capacity[straight] = edge.weight;
+			capacity[reverse]  = 0;
+			rev[straight]	  = reverse;
+			rev[reverse]	   = straight;
+		}
+
+		source = s;
+		sink   = t;
 	}
 
 	std::vector<Flow> MaxFlow::flow(bool print, std::ostream& out)
@@ -58,7 +57,7 @@ namespace MaxFlowModule
 			{
 				if (capacity[*ei] > 0 && capacity[*ei] - residual_capacity[*ei] > 0)
 				{
-					Flow instance = Flow{(long)((*u_iter) + 1), (long)(target(*ei, G) + 1), capacity[*ei] - residual_capacity[*ei]};
+					Flow instance = Flow{(long)(*u_iter), (long)target(*ei, G), capacity[*ei] - residual_capacity[*ei]};
 					flows.push_back(instance);
 
 					if (print)

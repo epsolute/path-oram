@@ -45,7 +45,6 @@ namespace MaxFlowModule
 
 		long source	= 10;
 		long sink	  = 11;
-		long nVertices = 11;
 	};
 
 	TEST_F(SolverTest, EmptyInput)
@@ -84,7 +83,6 @@ namespace MaxFlowModule
 
 		ASSERT_EQ(source, solver->source);
 		ASSERT_EQ(sink, solver->sink);
-		ASSERT_EQ(nVertices, solver->nVertices);
 	}
 
 	TEST_F(SolverTest, ConstructEdges)
