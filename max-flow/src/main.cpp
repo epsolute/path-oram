@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 		Edge{3, 4, 15},
 	};
 
-	MaxFlow *mf = new MaxFlow(edges, 5, 1, 4);
+	MaxFlow *mf = new MaxFlow(edges, 1, 4);
 	mf->flow(true);
 
 	exit(0);
