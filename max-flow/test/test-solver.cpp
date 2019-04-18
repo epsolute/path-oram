@@ -132,9 +132,11 @@ namespace MaxFlowModule
 
 		auto amplified = solver->constructEdges(1.0);
 
-		for (int i = 0; i < original.size(); i++)
+		for (auto pair : zip(original, amplified))
 		{
-			ASSERT_EQ(original[i].weight * 5, amplified[i].weight);
+			auto [edge, amp] = asStdTuple(pair);
+
+			ASSERT_EQ(edge.weight * 5, amp.weight);
 		}
 	}
 

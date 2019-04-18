@@ -135,19 +135,19 @@ namespace MaxFlowModule
 
 	void Solver::amplify(long amplifier)
 	{
-		for (int i = 0; i < this->originalEdges.size(); i++)
+		for (auto& edge : originalEdges)
 		{
-			this->originalEdges[i].weight *= amplifier;
+			edge.weight *= amplifier;
 		}
-
-		for (int i = 0; i < this->addedSourceEdges.size(); i++)
+		
+		for (auto& edge : addedSourceEdges)
 		{
-			this->addedSourceEdges[i].weight *= amplifier;
+			edge.weight *= amplifier;
 		}
-
-		for (int i = 0; i < this->addedSinkEdges.size(); i++)
+		
+		for (auto& edge : addedSinkEdges)
 		{
-			this->addedSinkEdges[i].weight *= amplifier;
+			edge.weight *= amplifier;
 		}
 	}
 }
