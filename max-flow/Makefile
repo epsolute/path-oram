@@ -8,7 +8,7 @@ LDIR=lib
 BDIR=bin
 
 LDFLAGS=-L $(LDIR)
-LDLIBS=-l gtest -l boost_system -l pthread
+LDLIBS=-l gtest -l boost_system -l boost_filesystem -l pthread
 CPPFLAGS= --std=c++17 -I $(IDIR) -Wall -fPIC
 CC=g++
 RM=rm -rf
@@ -22,7 +22,7 @@ OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 TARGETS = main
 TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 
-TESTS = max-flow solver integration
+TESTS = max-flow solver integration files
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)

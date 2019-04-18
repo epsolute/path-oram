@@ -1,4 +1,5 @@
 #include "definitions.h"
+#include "gtest/gtest_prod.h"
 
 #include <tuple>
 
@@ -23,10 +24,10 @@ namespace MaxFlowModule
 		std::tuple<long, std::vector<Flow>, double> solve(double maxAlpha, double precisionEpsilon);
 		void amplify(long amplifier);
 
-		friend class SolverTest_Initialization_Test;
-		friend class SolverTest_ConstructEdges_Test;
-		friend class SolverTest_SaturatedSource_Test;
-		friend class SolverTest_Amplify_Test;
-		friend class SolverTest_Solve_Test;
+		FRIEND_TEST(SolverTest, Initialization);
+		FRIEND_TEST(SolverTest, ConstructEdges);
+		FRIEND_TEST(SolverTest, SaturatedSource);
+		FRIEND_TEST(SolverTest, Amplify);
+		FRIEND_TEST(SolverTest, Solve);
 	};
 }
