@@ -17,7 +17,6 @@ namespace MaxFlowModule
 
 		vector<Edge> constructEdges(double seedAlpha);
 		double saturatedSource(vector<Flow> flow, vector<Edge> edges, double alpha);
-		std::tuple<long, std::vector<Flow>> solveBasic();
 
 		public:
 		Solver(std::vector<Edge> edges, std::vector<WeightedVertex> vertices);

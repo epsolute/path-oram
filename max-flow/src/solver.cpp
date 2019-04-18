@@ -60,13 +60,6 @@ namespace MaxFlowModule
 		}
 	}
 
-	std::tuple<long, std::vector<Flow>> Solver::solveBasic()
-	{
-		MaxFlow* mf = new MaxFlow(this->constructEdges(1.0), this->source, this->sink);
-		auto result = std::make_tuple(mf->flowValue(), mf->flow());
-		return result;
-	}
-
 	std::tuple<long, vector<Flow>, double> Solver::solve(double maxAlpha, double precisionEpsilon)
 	{
 		double L		   = 0;
