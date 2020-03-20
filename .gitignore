@@ -7,5 +7,5 @@
 coverage-html/
 docs/
 ipch
-max-flow/bin/*
-!max-flow/bin/.gitkeep
+path-oram/bin/*
+!path-oram/bin/.gitkeep
