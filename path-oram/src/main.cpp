@@ -1,13 +1,14 @@
-#include "max-flow.hpp"
+#include "storage-adapter.hpp"
 
 #include <iostream>
+#include <vector>
 
+using namespace PathORAM;
 using namespace std;
-using namespace MaxFlowModule;
 
 int main(int argc, char **argv)
 {
-	cout << "Simple tiny max flow computation" << endl;
+	cout << "Work in progress..." << endl;
 
 	vector<Edge> edges = {
 		Edge{1, 2, 10},
@@ -16,9 +17,6 @@ int main(int argc, char **argv)
 		Edge{2, 4, 10},
 		Edge{3, 4, 15},
 	};
-
-	MaxFlow *mf = new MaxFlow(edges, 1, 4);
-	mf->flow(true);
 
 	exit(0);
 }

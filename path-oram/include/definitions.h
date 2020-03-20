@@ -2,8 +2,8 @@
 #define DEFINITIONS_INCLUDED
 
 #include <boost/config.hpp>
-#include <boost/graph/adjacency_list.hpp>
 #include <boost/iterator/zip_iterator.hpp>
+#include <boost/range/iterator_range.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <tuple>
 
@@ -42,7 +42,7 @@ auto zip(Containers&... containers) -> decltype(boost::make_iterator_range(
 			boost::make_zip_iterator(boost::make_tuple(containers.end()...))};
 }
 
-namespace MaxFlowModule
+namespace PathORAM
 {
 	using namespace boost;
 
@@ -52,30 +52,6 @@ namespace MaxFlowModule
 		long to;
 		long weight;
 	} Edge;
-
-	typedef struct
-	{
-		long identifier;
-		long weight;
-	} WeightedVertex;
-
-	typedef struct
-	{
-		long from;
-		long to;
-		long saturation;
-	} Flow;
-
-	typedef struct
-	{
-		long flowValue;
-		Flow* flow;
-		long flowSize;
-		double alpha;
-	} Solution;
-
-	typedef adjacency_list_traits<vecS, vecS, directedS> Traits;
-	typedef adjacency_list<vecS, vecS, directedS, property<vertex_name_t, std::string>, property<edge_capacity_t, long, property<edge_residual_capacity_t, long, property<edge_reverse_t, Traits::edge_descriptor>>>> Graph;
 }
 
 #endif

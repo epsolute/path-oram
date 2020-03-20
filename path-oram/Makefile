@@ -8,21 +8,21 @@ LDIR=lib
 BDIR=bin
 
 LDFLAGS=-L $(LDIR)
-LDLIBS=-l gtest -l boost_system -l boost_filesystem -l pthread
+LDLIBS=-l gtest -l boost_system -l boost_filesystem -l pthread # TODO
 CPPFLAGS= --std=c++17 -I $(IDIR) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
-_DEPS = definitions.h max-flow.hpp solver.hpp
+_DEPS = definitions.h storage-adapter.hpp
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
-_OBJ = max-flow.o solver.o
+_OBJ = storage-adapter.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 TARGETS = main
 TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 
-TESTS = max-flow solver integration files
+TESTS = storage-adapter
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
@@ -67,7 +67,7 @@ run-tests: tests
 	$(addsuffix ;, $(TESTBIN))
 
 coverage: profile
-	gcovr -r . -f $(SDIR)/max-flow.cpp -f $(SDIR)/solver.cpp --exclude-unreachable-branches
+	gcovr -r . -f $(SDIR)/storage-adapter.cpp --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
 
@@ -85,6 +85,6 @@ clean-binaries:
 
 # phony
 
-.PHONY: docs clean clean-docs clean-binaries run-tests coverage 
+.PHONY: docs clean clean-docs clean-binaries run-tests coverage
 .PHONY: profile debug cleandebug
 .PHONY: binaries all shared

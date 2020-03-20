@@ -4,8 +4,8 @@
 			"name": "Mac",
 			"includePath": [
 				"${workspaceFolder}/**",
-				"${workspaceFolder}/max-flow/include/*",
-				"/usr/local/Cellar/boost/1.68.0_1/include"
+				"${workspaceFolder}/path-oram/include/*",
+				"/usr/local/Cellar/boost/1.72.0/include"
 			],
 			"defines": [],
 			"macFrameworkPath": [
