@@ -1,37 +1,34 @@
 {
 	"version": "0.2.0",
-	"configurations": [{
+	"configurations": [
+		{
 			"name": "Launch",
-			"type": "cppdbg",
+			"type": "lldb",
 			"request": "launch",
-			"program": "${workspaceFolder}/max-flow/main",
+			"program": "${workspaceFolder}/path-oram/bin/main",
 			"args": [],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/max-flow",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "lldb",
-			"preLaunchTask": "build"
+			"cwd": "${workspaceFolder}/path-oram",
+			"preLaunchTask": "build",
 		},
 		{
 			"name": "Test",
-			"type": "cppdbg",
+			"type": "lldb",
 			"request": "launch",
-			"program": "${workspaceFolder}/max-flow/test-${input:test}",
+			"program": "${workspaceFolder}/path-oram/bin/test-${input:test}",
 			"args": [],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/max-flow",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "lldb",
+			"cwd": "${workspaceFolder}/path-oram/",
 			"preLaunchTask": "build"
 		}
 	],
-	"inputs": [{
-		"id": "test",
-		"type": "pickString",
-		"description": "Pick the test file to debug",
-		"options": ["max-flow", "solver"],
-		"default": "max-flow"
-	}]
+	"inputs": [
+		{
+			"id": "test",
+			"type": "pickString",
+			"description": "Pick the test file to debug",
+			"options": [
+				"storage-adapter"
+			],
+			"default": "storage-adapter"
+		}
+	]
 }

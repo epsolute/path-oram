@@ -6,6 +6,7 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <tuple>
+#include <vector>
 
 template <typename StdTuple, std::size_t... Is>
 auto asBoostTuple(StdTuple&& stdTuple, std::index_sequence<Is...>)

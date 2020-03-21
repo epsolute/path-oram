@@ -8,40 +8,74 @@ using namespace PathORAM;
 
 class StorageAdapterTest : public ::testing::Test
 {
-	private:
+	public:
+	inline static const unsigned int CAPACITY   = 10;
+	inline static const unsigned int BLOCK_SIZE = 32;
+
 	protected:
-	vector<Edge> edges = {
-		Edge{10, 1, 30}, // source
-		Edge{10, 2, 30},
-		Edge{10, 3, 30},
+	InMemoryStorageAdapter* adapter = new InMemoryStorageAdapter(CAPACITY, BLOCK_SIZE);
 
-		Edge{1, 4, 20}, // dead end
-
-		Edge{1, 5, 20},
-		Edge{2, 5, 30},
-		Edge{2, 6, 40},
-		Edge{3, 6, 50},
-
-		Edge{5, 6, 100},
-
-		Edge{5, 150, 15},
-		Edge{5, 8, 25},
-		Edge{6, 8, 35},
-		Edge{6, 9, 45},
-
-		Edge{150, 11, 30}, // sink
-		Edge{8, 11, 30},
-		Edge{9, 11, 30}};
-
-	long source = 10;
-	long sink   = 11;
-
-	long result = 75;
+	~StorageAdapterTest() override
+	{
+		delete adapter;
+	}
 };
 
-TEST_F(StorageAdapterTest, EmptyInput)
+TEST_F(StorageAdapterTest, Initialization)
 {
-	ASSERT_EQ(3, 3);
+	SUCCEED();
+}
+
+TEST_F(StorageAdapterTest, ReadWriteNoCrash)
+{
+	EXPECT_NO_THROW({
+		adapter->set(CAPACITY - 1, vector<unsigned char>());
+		adapter->get(CAPACITY - 2);
+	});
+}
+
+TEST_F(StorageAdapterTest, ReadEmpty)
+{
+	auto returned = adapter->get(CAPACITY - 2);
+	ASSERT_EQ(BLOCK_SIZE, returned.size());
+}
+
+TEST_F(StorageAdapterTest, IdOutOfBounds)
+{
+	ASSERT_ANY_THROW(adapter->get(CAPACITY + 1));
+	ASSERT_ANY_THROW(adapter->set(CAPACITY + 1, vector<unsigned char>()));
+}
+
+TEST_F(StorageAdapterTest, DataTooBig)
+{
+	ASSERT_ANY_THROW(adapter->set(CAPACITY - 1, vector<unsigned char>(BLOCK_SIZE + 1, 0x08)));
+}
+
+TEST_F(StorageAdapterTest, ReadWhatWasWritten)
+{
+	auto data = vector<unsigned char>{0xa8};
+
+	adapter->set(CAPACITY - 1, data);
+	auto returned = adapter->get(CAPACITY - 1);
+
+	data.resize(BLOCK_SIZE, 0x00);
+
+	ASSERT_EQ(data, returned);
+}
+
+TEST_F(StorageAdapterTest, Override)
+{
+	auto data = vector<unsigned char>{0xa8};
+	data.resize(BLOCK_SIZE, 0x00);
+
+	adapter->set(CAPACITY - 1, data);
+	data[0] = 0x56;
+
+	adapter->set(CAPACITY - 1, data);
+
+	auto returned = adapter->get(CAPACITY - 1);
+
+	ASSERT_EQ(data, returned);
 }
 
 int main(int argc, char** argv)

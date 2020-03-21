@@ -6,7 +6,7 @@
 		"command": "make cleandebug",
 		"args": [],
 		"options": {
-			"cwd": "${workspaceFolder}/max-flow"
+			"cwd": "${workspaceFolder}/path-oram"
 		},
 		"group": {
 			"kind": "build",

@@ -52,7 +52,7 @@ $(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 
 shared: CPPFLAGS += -DSHARED
 shared: clean $(OBJ)
-	$(CC) -shared -Wl -o $(BDIR)/libmaxflow.so $(OBJ)
+	$(CC) -shared -Wl -o $(BDIR)/libpathoram.so $(OBJ)
 
 tests: $(TESTBIN)
 
