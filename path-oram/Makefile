@@ -13,16 +13,16 @@ CPPFLAGS= --std=c++17 -I $(IDIR) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
-_DEPS = definitions.h storage-adapter.hpp
+_DEPS = definitions.h storage-adapter.hpp position-map-adapter.hpp
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
-_OBJ = storage-adapter.o
+_OBJ = storage-adapter.o position-map-adapter.o
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 TARGETS = main
 TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 
-TESTS = storage-adapter
+TESTS = storage-adapter position-map-adapter
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
@@ -67,7 +67,7 @@ run-tests: tests
 	$(addsuffix ;, $(TESTBIN))
 
 coverage: profile
-	gcovr -r . -f $(SDIR)/storage-adapter.cpp --exclude-unreachable-branches
+	gcovr -r . -f $(SDIR)/storage-adapter.cpp -f $(SDIR)/position-map-adapter.cpp --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
 
