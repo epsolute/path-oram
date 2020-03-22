@@ -12,19 +12,19 @@ namespace PathORAM
 
 	InMemoryStorageAdapter::~InMemoryStorageAdapter()
 	{
-		for (int i = 0; i < this->capacity; i++)
+		for (ulong i = 0; i < this->capacity; i++)
 		{
 			delete[] this->blocks[i];
 		}
 		delete[] this->blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(unsigned int capacity, unsigned int blockSize) :
+	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong blockSize) :
 		capacity(capacity),
 		blockSize(blockSize)
 	{
 		this->blocks = new unsigned char*[capacity];
-		for (int i = 0; i < capacity; i++)
+		for (ulong i = 0; i < capacity; i++)
 		{
 			this->blocks[i] = new unsigned char[blockSize];
 		}
@@ -50,7 +50,7 @@ namespace PathORAM
 		copy(data.begin(), data.end(), this->blocks[id]);
 	}
 
-	void InMemoryStorageAdapter::checkCapacity(unsigned int id)
+	void InMemoryStorageAdapter::checkCapacity(ulong id)
 	{
 		if (id >= this->capacity)
 		{
@@ -58,7 +58,7 @@ namespace PathORAM
 		}
 	}
 
-	void InMemoryStorageAdapter::checkBlockSize(unsigned int dataLength)
+	void InMemoryStorageAdapter::checkBlockSize(ulong dataLength)
 	{
 		if (dataLength > this->blockSize)
 		{

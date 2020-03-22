@@ -14,7 +14,7 @@ namespace PathORAM
 		delete[] this->map;
 	}
 
-	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(unsigned int capacity) :
+	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(ulong capacity) :
 		capacity(capacity)
 	{
 		this->map = new ulong[capacity];
@@ -34,7 +34,7 @@ namespace PathORAM
 		this->map[block] = leaf;
 	}
 
-	void InMemoryPositionMapAdapter::checkCapacity(unsigned int block)
+	void InMemoryPositionMapAdapter::checkCapacity(ulong block)
 	{
 		if (block >= this->capacity)
 		{

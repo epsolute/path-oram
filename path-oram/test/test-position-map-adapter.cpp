@@ -9,7 +9,7 @@ using namespace PathORAM;
 class PositionMapAdapterTest : public ::testing::Test
 {
 	public:
-	inline static const unsigned int CAPACITY = 10;
+	inline static const ulong CAPACITY = 10;
 
 	protected:
 	InMemoryPositionMapAdapter* adapter = new InMemoryPositionMapAdapter(CAPACITY);

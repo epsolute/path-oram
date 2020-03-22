@@ -9,8 +9,8 @@ using namespace PathORAM;
 class StorageAdapterTest : public ::testing::Test
 {
 	public:
-	inline static const unsigned int CAPACITY   = 10;
-	inline static const unsigned int BLOCK_SIZE = 32;
+	inline static const ulong CAPACITY   = 10;
+	inline static const ulong BLOCK_SIZE = 32;
 
 	protected:
 	InMemoryStorageAdapter* adapter = new InMemoryStorageAdapter(CAPACITY, BLOCK_SIZE);

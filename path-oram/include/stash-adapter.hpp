@@ -21,10 +21,10 @@ namespace PathORAM
 	{
 		private:
 		unordered_map<ulong, bytes> stash;
-		unsigned int capacity;
+		ulong capacity;
 
 		public:
-		InMemoryStashAdapter(unsigned int capacity);
+		InMemoryStashAdapter(ulong capacity);
 		~InMemoryStashAdapter() final;
 
 		unordered_map<ulong, bytes>::iterator begin() final;

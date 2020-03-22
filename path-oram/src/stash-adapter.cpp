@@ -14,7 +14,7 @@ namespace PathORAM
 		// TODO
 	}
 
-	InMemoryStashAdapter::InMemoryStashAdapter(unsigned int capacity) :
+	InMemoryStashAdapter::InMemoryStashAdapter(ulong capacity) :
 		capacity(capacity)
 	{
 		auto cmp = [](pair<ulong, bytes> a, pair<ulong, bytes> b) { return a.first < b.first; };
@@ -36,7 +36,7 @@ namespace PathORAM
 		this->map[block] = leaf;
 	}
 
-	void InMemoryPositionMapAdapter::checkCapacity(unsigned int block)
+	void InMemoryPositionMapAdapter::checkCapacity(ulong block)
 	{
 		if (block >= this->capacity)
 		{

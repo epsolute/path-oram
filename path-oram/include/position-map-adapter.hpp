@@ -18,12 +18,12 @@ namespace PathORAM
 	{
 		private:
 		ulong *map;
-		unsigned int capacity;
+		ulong capacity;
 
-		void checkCapacity(unsigned int block);
+		void checkCapacity(ulong block);
 
 		public:
-		InMemoryPositionMapAdapter(unsigned int capacity);
+		InMemoryPositionMapAdapter(ulong capacity);
 		~InMemoryPositionMapAdapter() final;
 		ulong get(ulong block) final;
 		void set(ulong block, ulong leaf) final;

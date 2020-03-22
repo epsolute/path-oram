@@ -18,14 +18,14 @@ namespace PathORAM
 	{
 		private:
 		unsigned char **blocks;
-		unsigned int capacity;
-		unsigned int blockSize;
+		ulong capacity;
+		ulong blockSize;
 
-		void checkCapacity(unsigned int id);
-		void checkBlockSize(unsigned int dataSize);
+		void checkCapacity(ulong id);
+		void checkBlockSize(ulong dataSize);
 
 		public:
-		InMemoryStorageAdapter(unsigned int capacity, unsigned int blockSize);
+		InMemoryStorageAdapter(ulong capacity, ulong blockSize);
 		~InMemoryStorageAdapter() final;
 		bytes get(ulong id) final;
 		void set(ulong id, bytes data) final;
