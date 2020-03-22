@@ -6,26 +6,26 @@ namespace PathORAM
 {
 	using namespace std;
 
-	class AbsPositionMapAdapeter
+	class AbsPositionMapAdapter
 	{
 		public:
-		virtual unsigned long get(unsigned long block)			  = 0;
-		virtual void set(unsigned long block, unsigned long leaf) = 0;
-		virtual ~AbsPositionMapAdapeter()						  = 0;
+		virtual ulong get(ulong block)			  = 0;
+		virtual void set(ulong block, ulong leaf) = 0;
+		virtual ~AbsPositionMapAdapter()						  = 0;
 	};
 
-	class InMemoryPositionMapAdapeter : AbsPositionMapAdapeter
+	class InMemoryPositionMapAdapter : public AbsPositionMapAdapter
 	{
 		private:
-		unsigned long *map;
+		ulong *map;
 		unsigned int capacity;
 
 		void checkCapacity(unsigned int block);
 
 		public:
-		InMemoryPositionMapAdapeter(unsigned int capacity);
-		~InMemoryPositionMapAdapeter() final;
-		unsigned long get(unsigned long block) final;
-		void set(unsigned long block, unsigned long leaf) final;
+		InMemoryPositionMapAdapter(unsigned int capacity);
+		~InMemoryPositionMapAdapter() final;
+		ulong get(ulong block) final;
+		void set(ulong block, ulong leaf) final;
 	};
 }

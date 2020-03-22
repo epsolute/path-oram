@@ -9,12 +9,12 @@ namespace PathORAM
 	class AbsStorageAdapter
 	{
 		public:
-		virtual vector<unsigned char> get(unsigned long id)			   = 0;
-		virtual void set(unsigned long id, vector<unsigned char> data) = 0;
-		virtual ~AbsStorageAdapter()								   = 0;
+		virtual bytes get(ulong id)			   = 0;
+		virtual void set(ulong id, bytes data) = 0;
+		virtual ~AbsStorageAdapter()		   = 0;
 	};
 
-	class InMemoryStorageAdapter : AbsStorageAdapter
+	class InMemoryStorageAdapter : public AbsStorageAdapter
 	{
 		private:
 		unsigned char **blocks;
@@ -27,7 +27,7 @@ namespace PathORAM
 		public:
 		InMemoryStorageAdapter(unsigned int capacity, unsigned int blockSize);
 		~InMemoryStorageAdapter() final;
-		vector<unsigned char> get(unsigned long id) final;
-		void set(unsigned long id, vector<unsigned char> data) final;
+		bytes get(ulong id) final;
+		void set(ulong id, bytes data) final;
 	};
 }

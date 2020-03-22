@@ -30,14 +30,14 @@ namespace PathORAM
 		}
 	}
 
-	vector<unsigned char> InMemoryStorageAdapter::get(unsigned long id)
+	bytes InMemoryStorageAdapter::get(ulong id)
 	{
 		this->checkCapacity(id);
 
-		return vector<unsigned char>(this->blocks[id], this->blocks[id] + this->blockSize);
+		return bytes(this->blocks[id], this->blocks[id] + this->blockSize);
 	}
 
-	void InMemoryStorageAdapter::set(unsigned long id, vector<unsigned char> data)
+	void InMemoryStorageAdapter::set(ulong id, bytes data)
 	{
 		this->checkCapacity(id);
 		this->checkBlockSize(data.size());

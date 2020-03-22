@@ -7,22 +7,25 @@ ODIR=obj
 LDIR=lib
 BDIR=bin
 
-LDFLAGS=-L $(LDIR)
-LDLIBS=-l gtest -l boost_system -l boost_filesystem -l pthread # TODO
-CPPFLAGS= --std=c++17 -I $(IDIR) -Wall -fPIC
+LDFLAGS=-L $(LDIR) -L /usr/local/opt/openssl/lib
+LDLIBS=-l gtest -l boost_system -l ssl -l crypto
+INCLUDES=-I $(IDIR) -I /usr/local/opt/openssl/include
+CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
-_DEPS = definitions.h storage-adapter.hpp position-map-adapter.hpp
+ENTITIES = storage-adapter position-map-adapter utility oram
+
+_DEPS = definitions.h $(addsuffix .hpp, $(ENTITIES))
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 
-_OBJ = storage-adapter.o position-map-adapter.o
+_OBJ = $(addsuffix .o, $(ENTITIES))
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
 TARGETS = main
 TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 
-TESTS = storage-adapter position-map-adapter
+TESTS = $(ENTITIES)
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
@@ -67,7 +70,7 @@ run-tests: tests
 	$(addsuffix ;, $(TESTBIN))
 
 coverage: profile
-	gcovr -r . -f $(SDIR)/storage-adapter.cpp -f $(SDIR)/position-map-adapter.cpp --exclude-unreachable-branches
+	gcovr -r . $(addprefix -f $(SDIR)/, $(addsuffix .cpp, $(ENTITIES))) --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
 

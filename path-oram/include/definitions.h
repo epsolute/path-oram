@@ -45,14 +45,8 @@ auto zip(Containers&... containers) -> decltype(boost::make_iterator_range(
 
 namespace PathORAM
 {
-	using namespace boost;
-
-	typedef struct
-	{
-		long from;
-		long to;
-		long weight;
-	} Edge;
+	typedef unsigned long ulong;
+	typedef std::vector<unsigned char> bytes;
 }
 
 #endif

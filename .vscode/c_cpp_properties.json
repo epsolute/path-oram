@@ -5,7 +5,8 @@
 			"includePath": [
 				"${workspaceFolder}/**",
 				"${workspaceFolder}/path-oram/include/*",
-				"/usr/local/Cellar/boost/1.72.0/include"
+				"/usr/local/Cellar/boost/1.72.0/include",
+				"/usr/local/opt/openssl/include"
 			],
 			"defines": [],
 			"macFrameworkPath": [

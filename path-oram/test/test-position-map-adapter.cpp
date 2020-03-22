@@ -12,7 +12,7 @@ class PositionMapAdapterTest : public ::testing::Test
 	inline static const unsigned int CAPACITY = 10;
 
 	protected:
-	InMemoryPositionMapAdapeter* adapter = new InMemoryPositionMapAdapeter(CAPACITY);
+	InMemoryPositionMapAdapter* adapter = new InMemoryPositionMapAdapter(CAPACITY);
 
 	~PositionMapAdapterTest() override
 	{
