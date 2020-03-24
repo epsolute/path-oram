@@ -38,7 +38,7 @@ namespace PathORAM
 
 	TEST_F(StorageAdapterTest, ReadEmpty)
 	{
-		auto [id, data] = adapter->get(CAPACITY - 2);
+		auto data = adapter->get(CAPACITY - 2).second;
 		ASSERT_EQ(BLOCK_SIZE - sizeof(ulong), data.size());
 	}
 
