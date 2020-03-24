@@ -9,38 +9,50 @@ namespace PathORAM
 
 	AbsStashAdapter::~AbsStashAdapter(){};
 
-	InMemoryStashAdapter::~InMemoryStashAdapter()
-	{
-		// TODO
-	}
+	InMemoryStashAdapter::~InMemoryStashAdapter() {}
 
 	InMemoryStashAdapter::InMemoryStashAdapter(ulong capacity) :
 		capacity(capacity)
 	{
-		auto cmp = [](pair<ulong, bytes> a, pair<ulong, bytes> b) { return a.first < b.first; };
-		// this->stash = set<pair<ulong, bytes>, decltype(cmp)>();
-		auto p = set<pair<ulong, bytes>, decltype(cmp)>();
+		this->stash = unordered_map<ulong, bytes>();
+		this->stash.reserve(this->capacity);
 	}
 
-	ulong InMemoryPositionMapAdapter::get(ulong block)
+	unordered_map<ulong, bytes> InMemoryStashAdapter::getAll()
 	{
-		this->checkCapacity(block);
-
-		return this->map[block];
+		auto result = this->stash;
+		return result;
 	}
 
-	void InMemoryPositionMapAdapter::set(ulong block, ulong leaf)
+	void InMemoryStashAdapter::add(ulong block, bytes data)
 	{
-		this->checkCapacity(block);
+		this->checkOverflow(block);
 
-		this->map[block] = leaf;
+		this->stash.insert({block, data});
 	}
 
-	void InMemoryPositionMapAdapter::checkCapacity(ulong block)
+	void InMemoryStashAdapter::update(ulong block, bytes data)
 	{
-		if (block >= this->capacity)
+		this->checkOverflow(block);
+
+		this->stash[block] = data;
+	}
+
+	bytes InMemoryStashAdapter::get(ulong block)
+	{
+		return this->stash[block];
+	}
+
+	void InMemoryStashAdapter::remove(ulong block)
+	{
+		this->stash.erase(block);
+	}
+
+	void InMemoryStashAdapter::checkOverflow(ulong block)
+	{
+		if (this->stash.size() == this->capacity && this->stash.count(block) == 0)
 		{
-			throw boost::format("block %1% out of bound (capacity %2%)") % block % this->capacity;
+			throw boost::format("trying to insert over capacity (capacity %2%)") % this->capacity;
 		}
 	}
 }

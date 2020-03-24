@@ -14,7 +14,7 @@ CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -fPIC
 CC=g++
 RM=rm -rf
 
-ENTITIES = storage-adapter position-map-adapter utility oram
+ENTITIES = storage-adapter position-map-adapter utility oram stash-adapter
 
 _DEPS = definitions.h $(addsuffix .hpp, $(ENTITIES))
 DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
@@ -37,7 +37,7 @@ all: shared docs
 binaries: $(TARGETBIN) $(TESTBIN)
 cleandebug: clean debug
 
-debug: CPPFLAGS += -g
+debug: CPPFLAGS += -g -DTESTING
 debug: binaries
 
 profile: CPPFLAGS += -fprofile-arcs -ftest-coverage -fPIC -O0
@@ -66,6 +66,7 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 
 # commands
 
+run-tests: CPPFLAGS += -DTESTING
 run-tests: tests
 	$(addsuffix ;, $(TESTBIN))
 

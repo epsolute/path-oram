@@ -45,8 +45,8 @@ auto zip(Containers&... containers) -> decltype(boost::make_iterator_range(
 
 namespace PathORAM
 {
-	typedef unsigned long ulong;
-	typedef std::vector<unsigned char> bytes;
+	using ulong = unsigned long;
+	using bytes = std::vector<unsigned char>;
 }
 
 #endif

@@ -26,9 +26,13 @@
 			"type": "pickString",
 			"description": "Pick the test file to debug",
 			"options": [
-				"storage-adapter"
+				"storage-adapter",
+				"stash-adapter",
+				"position-map-adapter",
+				"utility",
+				"oram"
 			],
-			"default": "storage-adapter"
+			"default": "oram"
 		}
 	]
 }
