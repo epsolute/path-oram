@@ -39,7 +39,7 @@ namespace PathORAM
 		{
 			for (ulong i = 0; i < CAPACITY + Z; i++)
 			{
-				this->storage->set(i, fromText(to_string(i), BLOCK_SIZE));
+				this->storage->set(i, {i, bytes()});
 			}
 		}
 	};
@@ -53,16 +53,6 @@ namespace PathORAM
 	TEST_F(ORAMTest, Initialization)
 	{
 		SUCCEED();
-	}
-
-	TEST_F(ORAMTest, PutNoException)
-	{
-		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
-	}
-
-	TEST_F(ORAMTest, GetNoException)
-	{
-		this->oram->get(CAPACITY - 1);
 	}
 
 	TEST_F(ORAMTest, BucketFromLevelLeaf)
@@ -106,7 +96,7 @@ namespace PathORAM
 
 		auto const block = CAPACITY - 1;
 		this->map->set(block, 1);
-		this->storage->set(5, fromText(to_string(5), BLOCK_SIZE));
+		this->storage->set(5, {block, bytes()});
 
 		ASSERT_ANY_THROW(this->oram->checkConsistency());
 	}
@@ -127,20 +117,29 @@ namespace PathORAM
 		{
 			for (ulong i = 0; i < this->Z; i++)
 			{
-				auto id		   = block * this->Z + i;
-				auto retrieved = this->stash->get(id);
-				EXPECT_EQ(to_string(id), toText(retrieved, BLOCK_SIZE));
+				auto id = block * this->Z + i;
+				EXPECT_TRUE(this->stash->exists(id));
 			}
 		}
 	}
 
-	// TEST_F(ORAMTest, GetPutSame)
-	// {
-	// 	this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
-	// 	auto returned = this->oram->get(CAPACITY - 1);
+	TEST_F(ORAMTest, GetNoException)
+	{
+		this->oram->get(CAPACITY - 1);
+	}
 
-	// 	ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
-	// }
+	TEST_F(ORAMTest, PutNoException)
+	{
+		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE - sizeof(ulong)));
+	}
+
+	TEST_F(ORAMTest, GetPutSame)
+	{
+		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE - sizeof(ulong)));
+		auto returned = this->oram->get(CAPACITY - 1);
+
+		ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
+	}
 }
 
 int main(int argc, char** argv)

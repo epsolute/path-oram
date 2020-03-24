@@ -13,11 +13,11 @@ namespace PathORAM
 
 	bytes getRandomBlock(ulong blockSize)
 	{
-		unsigned char material[blockSize];
+		uchar material[blockSize];
 #ifdef TESTING
 		for (int i = 0; i < blockSize; i++)
 		{
-			material[i] = (unsigned char)rand();
+			material[i] = (uchar)rand();
 		}
 #else
 		RAND_bytes(material, blockSize);
@@ -34,7 +34,7 @@ namespace PathORAM
 		intMaterial[0]   = rand();
 		intMaterial[1]   = rand();
 #else
-		RAND_bytes((unsigned char *)material, sizeof(ulong));
+		RAND_bytes((uchar *)material, sizeof(ulong));
 #endif
 		return material[0] % max;
 	}
@@ -50,7 +50,7 @@ namespace PathORAM
 		padded << setw(BLOCK_SIZE - 1) << left << text << endl;
 		text = padded.str();
 
-		return bytes((unsigned char *)text.c_str(), (unsigned char *)text.c_str() + text.length());
+		return bytes((uchar *)text.c_str(), (uchar *)text.c_str() + text.length());
 	}
 
 	string toText(bytes data, ulong BLOCK_SIZE)

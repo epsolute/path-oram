@@ -19,7 +19,7 @@ namespace PathORAM
 		AbsPositionMapAdapter *map;
 		AbsStashAdapter *stash;
 
-		ulong blockSize;
+		ulong dataSize;
 		ulong Z;
 
 		ulong height;

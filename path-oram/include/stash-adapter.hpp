@@ -17,6 +17,11 @@ namespace PathORAM
 		virtual void remove(ulong block)			 = 0;
 
 		virtual ~AbsStashAdapter() = 0;
+
+		protected:
+		virtual bool exists(ulong block) = 0;
+
+		friend class ORAMTest_ReadPath_Test;
 	};
 
 	class InMemoryStashAdapter : public AbsStashAdapter
@@ -26,6 +31,9 @@ namespace PathORAM
 		ulong capacity;
 
 		void checkOverflow(ulong block);
+		bool exists(ulong block);
+
+		friend class ORAMTest_ReadPath_Test;
 
 		public:
 		InMemoryStashAdapter(ulong capacity);

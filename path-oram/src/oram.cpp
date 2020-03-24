@@ -13,7 +13,7 @@ namespace PathORAM
 		storage(storage),
 		map(map),
 		stash(stash),
-		blockSize(blockSize),
+		dataSize(blockSize - sizeof(ulong)),
 		Z(Z)
 	{
 		this->height  = logCapacity;			  // we are given a height
@@ -32,8 +32,8 @@ namespace PathORAM
 		{
 			for (ulong j = 0uLL; j < this->Z; j++)
 			{
-				auto block = getRandomBlock(this->blockSize);
-				this->storage->set(i * this->Z + j, block);
+				auto block = getRandomBlock(this->dataSize);
+				this->storage->set(i * this->Z + j, {ULONG_MAX, block});
 			}
 		}
 
@@ -85,8 +85,12 @@ namespace PathORAM
 			auto bucket = this->bucketForLevelLeaf(level, leaf);
 			for (ulong i = 0; i < this->Z; i++)
 			{
-				auto block = bucket * this->Z + i;
-				this->stash->add(block, this->storage->get(block));
+				auto block		= bucket * this->Z + i;
+				auto [id, data] = this->storage->get(block);
+				if (id != ULONG_MAX)
+				{
+					this->stash->add(id, data);
+				}
 			}
 		}
 	}
@@ -123,15 +127,17 @@ namespace PathORAM
 
 			for (ulong i = 0; i < this->Z; i++)
 			{
-				if (toInsert.size() == 0)
-				{
-					break;
-				}
-
 				auto block = bucket * this->Z + i;
-				auto data  = toInsert.back();
-				toInsert.pop_back();
-				this->storage->set(block, data.second);
+				if (toInsert.size() != 0)
+				{
+					auto data = toInsert.back();
+					toInsert.pop_back();
+					this->storage->set(block, data);
+				}
+				else
+				{
+					this->storage->set(block, {ULONG_MAX, getRandomBlock(this->dataSize)});
+				}
 			}
 		}
 
@@ -157,7 +163,7 @@ namespace PathORAM
 		{
 			// skip intital random blocks;
 			// invariant does not apply to them;
-			if (toText(this->storage->get(block), this->blockSize) != to_string(block))
+			if (this->storage->get(block).first == ULONG_MAX)
 			{
 				continue;
 			}

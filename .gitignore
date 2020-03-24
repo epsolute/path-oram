@@ -4,6 +4,7 @@
 *.gcov
 *.gcda
 *.gcno
+*.tmp
 coverage-html/
 docs/
 ipch

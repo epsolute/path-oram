@@ -55,4 +55,9 @@ namespace PathORAM
 			throw boost::format("trying to insert over capacity (capacity %2%)") % this->capacity;
 		}
 	}
+
+	bool InMemoryStashAdapter::exists(ulong block)
+	{
+		return this->stash.count(block);
+	}
 }
