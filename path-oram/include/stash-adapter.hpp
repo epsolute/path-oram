@@ -22,6 +22,7 @@ namespace PathORAM
 		virtual bool exists(ulong block) = 0;
 
 		friend class ORAMTest_ReadPath_Test;
+		friend class ORAMTest_PutMany_Test;
 	};
 
 	class InMemoryStashAdapter : public AbsStashAdapter
