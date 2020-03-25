@@ -156,42 +156,4 @@ namespace PathORAM
 	{
 		return this->bucketForLevelLeaf(level, pathLeaf) == this->bucketForLevelLeaf(level, blockPosition);
 	}
-
-	void ORAM::checkConsistency()
-	{
-		for (ulong block = 0; block < this->blocks; block++)
-		{
-			// skip intital random blocks;
-			// invariant does not apply to them;
-			if (this->storage->get(block).first == ULONG_MAX)
-			{
-				continue;
-			}
-
-			// clean the stash
-			auto oldStash = this->stash->getAll();
-			for (auto entry : oldStash)
-			{
-				this->stash->remove(entry.first);
-			}
-
-			// get the leaf pointed by the position map
-			auto leaf = this->map->get(block);
-
-			// read the path to the stash
-			this->readPath(leaf);
-
-			// look for block in the stash
-			for (auto entry : this->stash->getAll())
-			{
-				if (entry.first == block)
-				{
-					// found
-					break;
-				}
-			}
-			// not found
-			throw boost::format("block %1% is mapped to leaf %2%, but was not found in the path") % block % leaf;
-		}
-	}
 }

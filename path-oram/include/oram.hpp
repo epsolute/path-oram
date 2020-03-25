@@ -33,8 +33,6 @@ namespace PathORAM
 		bool canInclude(ulong pathLeaf, ulong blockPosition, ulong level);
 		ulong bucketForLevelLeaf(ulong level, ulong leaf);
 
-		void checkConsistency();
-
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;

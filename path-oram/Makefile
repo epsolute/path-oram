@@ -28,13 +28,16 @@ TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
 TESTS = $(ENTITIES)
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
+INTEGRATION = oram-big
+INTEGRATIONBIN = $(addprefix $(BDIR)/test-, $(INTEGRATION))
+
 ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
 
 # flags-setting commands
 
 all: shared docs
 
-binaries: $(TARGETBIN) $(TESTBIN)
+binaries: $(TARGETBIN) $(TESTBIN) $(INTEGRATIONBIN)
 cleandebug: clean debug
 
 debug: CPPFLAGS += -g -DTESTING
@@ -53,11 +56,15 @@ $(TARGETBIN): $(OBJ) $$(subst $$(BDIR), $(SDIR), $$@).cpp
 $(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
+.SECONDEXPANSION:
+$(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
+	$(ENTRYPOINTCC)
+
 shared: CPPFLAGS += -DSHARED
 shared: clean $(OBJ)
 	$(CC) -shared -Wl -o $(BDIR)/libpathoram.so $(OBJ)
 
-tests: $(TESTBIN)
+# tests: $(TESTBIN)
 
 # objects
 
@@ -67,8 +74,12 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 # commands
 
 run-tests: CPPFLAGS += -DTESTING
-run-tests: tests
+run-tests: $(TESTBIN)
 	$(addsuffix ;, $(TESTBIN))
+
+run-integration: CPPFLAGS += -DTESTING
+run-integration: $(INTEGRATIONBIN)
+	$(addsuffix ;, $(INTEGRATIONBIN))
 
 coverage: profile
 	gcovr -r . $(addprefix -f $(SDIR)/, $(addsuffix .cpp, $(ENTITIES))) --exclude-unreachable-branches

@@ -30,7 +30,7 @@ build-docs:
   tags:
   - docker
 
-test:
+unit-test:
   image: dbogatov/docker-images:pbc-latest
   stage: test
   script:
@@ -38,11 +38,20 @@ test:
   - make bin/main
   - ./bin/main
   - make coverage
-  dependencies:
-    - build-binaries
   artifacts:
     expire_in: 1 day
     paths:
       - ./path-oram/coverage-html/
+  tags:
+  - docker
+
+integration-test:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+  - cd ./path-oram/
+  - make run-integration
+  dependencies:
+    - build-binaries
   tags:
   - docker

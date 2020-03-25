@@ -2,7 +2,6 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include <iomanip>
-#include <iostream> // TODO remove
 #include <openssl/rand.h>
 #include <sstream>
 #include <vector>
