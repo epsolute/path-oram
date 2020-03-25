@@ -1,6 +1,7 @@
 #include "storage-adapter.hpp"
 
 #include <boost/format.hpp>
+#include <openssl/aes.h>
 #include <vector>
 
 namespace PathORAM
@@ -65,8 +66,17 @@ namespace PathORAM
 
 	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong blockSize) :
 		capacity(capacity),
-		blockSize(blockSize)
+		blockSize(blockSize + sizeof(ulong))
 	{
+		if (blockSize < 2 * AES_BLOCK_SIZE)
+		{
+			throw boost::format("block size %1% is too small, need ata least %2%") % blockSize % (2 * AES_BLOCK_SIZE);
+		}
+
+		if (blockSize % AES_BLOCK_SIZE != 0)
+		{
+			throw boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % blockSize;
+		}
 	}
 
 	InMemoryStorageAdapter::~InMemoryStorageAdapter()
@@ -84,7 +94,7 @@ namespace PathORAM
 		this->blocks = new uchar *[capacity];
 		for (ulong i = 0; i < capacity; i++)
 		{
-			this->blocks[i] = new uchar[blockSize];
+			this->blocks[i] = new uchar[this->blockSize];
 		}
 
 		for (ulong i = 0; i < capacity; i++)

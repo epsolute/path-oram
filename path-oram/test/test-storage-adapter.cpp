@@ -3,6 +3,7 @@
 #include "utility.hpp"
 
 #include "gtest/gtest.h"
+#include <openssl/aes.h>
 
 using namespace std;
 
@@ -28,6 +29,12 @@ namespace PathORAM
 		SUCCEED();
 	}
 
+	TEST_F(StorageAdapterTest, InputsCheck)
+	{
+		ASSERT_ANY_THROW(new InMemoryStorageAdapter(CAPACITY, AES_BLOCK_SIZE));
+		ASSERT_ANY_THROW(new InMemoryStorageAdapter(CAPACITY, AES_BLOCK_SIZE * 3 - 1));
+	}
+
 	TEST_F(StorageAdapterTest, ReadWriteNoCrash)
 	{
 		EXPECT_NO_THROW({
@@ -39,7 +46,7 @@ namespace PathORAM
 	TEST_F(StorageAdapterTest, ReadEmpty)
 	{
 		auto data = adapter->get(CAPACITY - 2).second;
-		ASSERT_EQ(BLOCK_SIZE - sizeof(ulong), data.size());
+		ASSERT_EQ(BLOCK_SIZE, data.size());
 	}
 
 	TEST_F(StorageAdapterTest, IdOutOfBounds)
@@ -61,7 +68,7 @@ namespace PathORAM
 		adapter->set(CAPACITY - 1, {id, data});
 		auto [returnedId, returnedData] = adapter->get(CAPACITY - 1);
 
-		data.resize(BLOCK_SIZE - sizeof(ulong), 0x00);
+		data.resize(BLOCK_SIZE, 0x00);
 
 		ASSERT_EQ(id, returnedId);
 		ASSERT_EQ(data, returnedData);
@@ -71,7 +78,7 @@ namespace PathORAM
 	{
 		auto id   = 5;
 		auto data = bytes{0xa8};
-		data.resize(BLOCK_SIZE - sizeof(ulong), 0x00);
+		data.resize(BLOCK_SIZE, 0x00);
 
 		adapter->set(CAPACITY - 1, {id, data});
 		data[0] = 0x56;
@@ -90,7 +97,7 @@ namespace PathORAM
 		for (ulong i = 0; i < CAPACITY; i++)
 		{
 			auto expected = bytes();
-			expected.resize(BLOCK_SIZE - sizeof(ulong), 0x00);
+			expected.resize(BLOCK_SIZE, 0x00);
 			ASSERT_EQ(ULONG_MAX, adapter->get(i).first);
 			ASSERT_EQ(expected, adapter->get(i).second);
 		}

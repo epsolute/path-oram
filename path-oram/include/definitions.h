@@ -1,6 +1,7 @@
 #ifndef DEFINITIONS_INCLUDED
 #define DEFINITIONS_INCLUDED
 
+#include <climits>
 #include <vector>
 
 #define KEYSIZE 32
