@@ -2,6 +2,7 @@
 #include "utility.hpp"
 
 #include "gtest/gtest.h"
+#include <openssl/aes.h>
 
 using namespace std;
 
@@ -37,6 +38,46 @@ namespace PathORAM
 		auto second = getRandomBlock(n);
 
 		ASSERT_EQ(first, second);
+	}
+
+	TEST_F(UtilityTest, EncryptionInputChecks)
+	{
+		for (auto mode : {ENCRYPT, DECRYPT})
+		{
+			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE - 1), getRandomBlock(AES_BLOCK_SIZE), getRandomBlock(3 * AES_BLOCK_SIZE), mode));
+			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE), getRandomBlock(AES_BLOCK_SIZE - 1), getRandomBlock(3 * AES_BLOCK_SIZE), mode));
+			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE), getRandomBlock(AES_BLOCK_SIZE), getRandomBlock(3 * AES_BLOCK_SIZE - 1), mode));
+		}
+	}
+
+	TEST_F(UtilityTest, EncryptDecryptSingle)
+	{
+		auto key = getRandomBlock(KEYSIZE);
+		auto iv  = getRandomBlock(AES_BLOCK_SIZE);
+
+		auto input = fromText("Hello, world!", 64);
+
+		auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+
+		auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+
+		ASSERT_EQ(input, plaintext);
+	}
+
+	TEST_F(UtilityTest, EncryptDecryptMany)
+	{
+		for (ulong i = 0; i < 100; i++)
+		{
+			auto key   = getRandomBlock(KEYSIZE);
+			auto iv	= getRandomBlock(AES_BLOCK_SIZE);
+			auto input = getRandomBlock(AES_BLOCK_SIZE * 3);
+
+			auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+
+			auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+
+			ASSERT_EQ(input, plaintext);
+		}
 	}
 }
 

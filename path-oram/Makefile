@@ -64,8 +64,6 @@ shared: CPPFLAGS += -DSHARED
 shared: clean $(OBJ)
 	$(CC) -shared -Wl -o $(BDIR)/libpathoram.so $(OBJ)
 
-# tests: $(TESTBIN)
-
 # objects
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
