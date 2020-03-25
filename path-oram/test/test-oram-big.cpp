@@ -68,7 +68,7 @@ namespace PathORAM
 		// put all
 		for (ulong id = 0; id < ELEMENTS; id++)
 		{
-			auto data = fromText(to_string(id), BLOCK_SIZE - sizeof(ulong));
+			auto data = fromText(to_string(id), BLOCK_SIZE);
 			local[id] = data;
 			this->oram->put(id, data);
 		}
@@ -93,7 +93,7 @@ namespace PathORAM
 			}
 			else
 			{
-				auto data = fromText(to_string(ELEMENTS + getRandomULong(ELEMENTS)), BLOCK_SIZE - sizeof(ulong));
+				auto data = fromText(to_string(ELEMENTS + getRandomULong(ELEMENTS)), BLOCK_SIZE);
 				local[id] = data;
 				this->oram->put(id, data);
 			}

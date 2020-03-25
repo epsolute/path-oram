@@ -29,6 +29,14 @@ namespace PathORAM
 
 	void AbsStorageAdapter::set(ulong location, pair<ulong, bytes> data)
 	{
+		this->checkCapacity(location);
+		this->checkBlockSize(data.second.size());
+
+		if (data.second.size() < this->blockSize - sizeof(ulong))
+		{
+			data.second.resize(this->blockSize - sizeof(ulong), 0x00);
+		}
+
 		ulong buffer[1] = {data.first};
 		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(ulong));
 
@@ -36,14 +44,6 @@ namespace PathORAM
 		raw.reserve(sizeof(ulong) + data.second.size());
 		raw.insert(raw.end(), id.begin(), id.end());
 		raw.insert(raw.end(), data.second.begin(), data.second.end());
-
-		this->checkCapacity(location);
-		this->checkBlockSize(raw.size());
-
-		if (raw.size() < this->blockSize)
-		{
-			raw.resize(this->blockSize, 0x00);
-		}
 
 		this->setInternal(location, raw);
 	}
@@ -58,7 +58,7 @@ namespace PathORAM
 
 	void AbsStorageAdapter::checkBlockSize(ulong dataLength)
 	{
-		if (dataLength > this->blockSize)
+		if (dataLength > this->blockSize - sizeof(ulong))
 		{
 			throw boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->blockSize;
 		}
