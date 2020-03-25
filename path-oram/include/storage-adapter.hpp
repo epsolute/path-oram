@@ -12,16 +12,19 @@ namespace PathORAM
 		void checkCapacity(ulong location);
 		void checkBlockSize(ulong dataSize);
 
+		bytes key;
+
 		public:
 		pair<ulong, bytes> get(ulong location);
 		void set(ulong location, pair<ulong, bytes> data);
 
-		AbsStorageAdapter(ulong capacity, ulong blockSize);
+		AbsStorageAdapter(ulong capacity, ulong userBlockSize);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
 		ulong capacity;
 		ulong blockSize;
+		ulong userBlockSize;
 
 		virtual void setInternal(ulong location, bytes raw) = 0;
 		virtual bytes getInternal(ulong location)			= 0;
@@ -33,7 +36,7 @@ namespace PathORAM
 		uchar **blocks;
 
 		public:
-		InMemoryStorageAdapter(ulong capacity, ulong blockSize);
+		InMemoryStorageAdapter(ulong capacity, ulong userBlockSize);
 		~InMemoryStorageAdapter() final;
 
 		protected:

@@ -1,5 +1,7 @@
 #include "storage-adapter.hpp"
 
+#include "utility.hpp"
+
 #include <boost/format.hpp>
 #include <openssl/aes.h>
 #include <vector>
@@ -21,10 +23,14 @@ namespace PathORAM
 
 		copy(raw.begin(), raw.end(), buffer);
 
-		ulong id   = ((ulong *)buffer)[0];
-		bytes data = bytes(buffer + sizeof(ulong), buffer + sizeof(buffer));
+		auto id   = ((ulong *)buffer)[0];
+		auto iv   = bytes(buffer + sizeof(ulong), buffer + sizeof(ulong) + AES_BLOCK_SIZE);
+		auto data = bytes(buffer + sizeof(ulong) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
 
-		return {id, data};
+		// decryption
+		auto decrypted = encrypt(this->key, iv, data, DECRYPT);
+
+		return {id, decrypted};
 	}
 
 	void AbsStorageAdapter::set(ulong location, pair<ulong, bytes> data)
@@ -32,18 +38,23 @@ namespace PathORAM
 		this->checkCapacity(location);
 		this->checkBlockSize(data.second.size());
 
-		if (data.second.size() < this->blockSize - sizeof(ulong))
+		if (data.second.size() < this->userBlockSize)
 		{
-			data.second.resize(this->blockSize - sizeof(ulong), 0x00);
+			data.second.resize(this->userBlockSize, 0x00);
 		}
+
+		// encryption
+		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
+		auto encrypted = encrypt(this->key, iv, data.second, ENCRYPT);
 
 		ulong buffer[1] = {data.first};
 		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(ulong));
 
 		bytes raw;
-		raw.reserve(sizeof(ulong) + data.second.size());
+		raw.reserve(sizeof(ulong) + iv.size() + encrypted.size());
 		raw.insert(raw.end(), id.begin(), id.end());
-		raw.insert(raw.end(), data.second.begin(), data.second.end());
+		raw.insert(raw.end(), iv.begin(), iv.end());
+		raw.insert(raw.end(), encrypted.begin(), encrypted.end());
 
 		this->setInternal(location, raw);
 	}
@@ -58,24 +69,26 @@ namespace PathORAM
 
 	void AbsStorageAdapter::checkBlockSize(ulong dataLength)
 	{
-		if (dataLength > this->blockSize - sizeof(ulong))
+		if (dataLength > this->userBlockSize)
 		{
-			throw boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->blockSize;
+			throw boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->userBlockSize;
 		}
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong blockSize) :
+	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong userBlockSize) :
+		key(getRandomBlock(KEYSIZE)),
 		capacity(capacity),
-		blockSize(blockSize + sizeof(ulong))
+		blockSize(userBlockSize + sizeof(ulong) + AES_BLOCK_SIZE),
+		userBlockSize(userBlockSize)
 	{
-		if (blockSize < 2 * AES_BLOCK_SIZE)
+		if (userBlockSize < 2 * AES_BLOCK_SIZE)
 		{
-			throw boost::format("block size %1% is too small, need ata least %2%") % blockSize % (2 * AES_BLOCK_SIZE);
+			throw boost::format("block size %1% is too small, need ata least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE);
 		}
 
-		if (blockSize % AES_BLOCK_SIZE != 0)
+		if (userBlockSize % AES_BLOCK_SIZE != 0)
 		{
-			throw boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % blockSize;
+			throw boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % userBlockSize;
 		}
 	}
 
@@ -88,8 +101,8 @@ namespace PathORAM
 		delete[] this->blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong blockSize) :
-		AbsStorageAdapter(capacity, blockSize)
+	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong userBlockSize) :
+		AbsStorageAdapter(capacity, userBlockSize)
 	{
 		this->blocks = new uchar *[capacity];
 		for (ulong i = 0; i < capacity; i++)
