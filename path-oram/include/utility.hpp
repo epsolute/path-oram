@@ -1,5 +1,7 @@
 #include "definitions.h"
 
+#include <string>
+
 namespace PathORAM
 {
 	using namespace std;
