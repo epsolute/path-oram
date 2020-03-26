@@ -36,7 +36,7 @@ namespace PathORAM
 
 		PositionMapAdapterTest()
 		{
-			auto logCapacity = min((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto logCapacity = max((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
 			auto capacity	= (1 << logCapacity) * Z;
 
 			this->storage = new InMemoryStorageAdapter(capacity + Z, BLOCK_SIZE, bytes());

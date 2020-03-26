@@ -40,6 +40,7 @@ namespace PathORAM
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_ConsistencyCheck_Test;
+		friend class ORAMBigTest;
 
 		public:
 		ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash);

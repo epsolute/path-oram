@@ -4,12 +4,13 @@
 
 #include "gtest/gtest.h"
 #include <boost/format.hpp>
+#include <openssl/aes.h>
 
 using namespace std;
 
 namespace PathORAM
 {
-	class ORAMBigTest : public testing::TestWithParam<tuple<ulong, ulong, ulong>>
+	class ORAMBigTest : public testing::TestWithParam<tuple<ulong, ulong, ulong, bool>>
 	{
 		protected:
 		ORAM* oram;
@@ -23,19 +24,45 @@ namespace PathORAM
 
 		ORAMBigTest()
 		{
-			auto [LOG_CAPACITY, Z, BLOCK_SIZE] = GetParam();
-			this->BLOCK_SIZE				   = BLOCK_SIZE;
-			CAPACITY						   = (1 << LOG_CAPACITY) * Z;
-			ELEMENTS						   = (CAPACITY / 4) * 3;
+			auto [LOG_CAPACITY, Z, BLOCK_SIZE, useExternal] = GetParam();
+			this->BLOCK_SIZE								= BLOCK_SIZE;
+			this->CAPACITY									= (1 << LOG_CAPACITY) * Z;
+			this->ELEMENTS									= (CAPACITY / 4) * 3;
 
-			this->storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
-			this->map	 = new InMemoryPositionMapAdapter(CAPACITY + Z);
-			this->stash   = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
-			this->oram	= new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);
+			this->storage = !useExternal ?
+								(AbsStorageAdapter*)new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes()) :
+								(AbsStorageAdapter*)new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes(), "storage.bin", true);
+
+			auto logCapacity = max((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto z			 = 3uLL;
+			auto capacity	= (1 << logCapacity) * z;
+			auto blockSize   = 2 * AES_BLOCK_SIZE;
+			this->map		 = !useExternal ?
+							(AbsPositionMapAdapter*)new InMemoryPositionMapAdapter(CAPACITY + Z) :
+							(AbsPositionMapAdapter*)new ORAMPositionMapAdapter(
+								new ORAM(
+									logCapacity,
+									blockSize,
+									z,
+									new InMemoryStorageAdapter(capacity + z, blockSize, bytes()),
+									new InMemoryPositionMapAdapter(capacity + z),
+									new InMemoryStashAdapter(3 * logCapacity * z)));
+			this->stash = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
+
+			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);
 		}
 
 		~ORAMBigTest() override
 		{
+			auto useExternal = get<3>(GetParam());
+
+			if (useExternal)
+			{
+				delete ((ORAMPositionMapAdapter*)map)->oram->map;
+				delete ((ORAMPositionMapAdapter*)map)->oram->storage;
+				delete ((ORAMPositionMapAdapter*)map)->oram->stash;
+			}
+
 			delete oram;
 			delete storage;
 			delete map;
@@ -43,19 +70,20 @@ namespace PathORAM
 		}
 	};
 
-	string printTestName(testing::TestParamInfo<tuple<ulong, ulong, ulong>> input)
+	string printTestName(testing::TestParamInfo<tuple<ulong, ulong, ulong, bool>> input)
 	{
-		auto [LOG_CAPACITY, Z, BLOCK_SIZE] = input.param;
-		auto CAPACITY					   = (1 << LOG_CAPACITY) * Z;
+		auto [LOG_CAPACITY, Z, BLOCK_SIZE, useExternal] = input.param;
+		auto CAPACITY									= (1 << LOG_CAPACITY) * Z;
 
-		return boost::str(boost::format("i%1%i%2%i%3%i%4%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY);
+		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % useExternal);
 	}
 
-	tuple<ulong, ulong, ulong> cases[] = {
-		{5, 3, 32},
-		{10, 4, 64},
-		{10, 5, 64},
-		{10, 5, 256},
+	tuple<ulong, ulong, ulong, bool> cases[] = {
+		{5, 3, 32, false},
+		{10, 4, 64, false},
+		{10, 5, 64, false},
+		{10, 5, 256, false},
+		{7, 4, 64, true},
 	};
 
 	INSTANTIATE_TEST_SUITE_P(BigORAMSuite, ORAMBigTest, testing::ValuesIn(cases), printTestName);

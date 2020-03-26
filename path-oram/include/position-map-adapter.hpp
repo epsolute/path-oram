@@ -40,6 +40,8 @@ namespace PathORAM
 		private:
 		ORAM *oram;
 
+		friend class ORAMBigTest;
+
 		public:
 		ORAMPositionMapAdapter(ORAM *oram);
 		~ORAMPositionMapAdapter() final;
