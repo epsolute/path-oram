@@ -11,6 +11,8 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
+#pragma region AbsStorageAdapter
+
 	AbsStorageAdapter::~AbsStorageAdapter(){};
 
 	pair<ulong, bytes> AbsStorageAdapter::get(ulong location)
@@ -75,12 +77,17 @@ namespace PathORAM
 		}
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong userBlockSize) :
-		key(getRandomBlock(KEYSIZE)),
+	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong userBlockSize, bytes key) :
+		key(key),
 		capacity(capacity),
 		blockSize(userBlockSize + sizeof(ulong) + AES_BLOCK_SIZE),
 		userBlockSize(userBlockSize)
 	{
+		if (key.size() != KEYSIZE)
+		{
+			this->key = getRandomBlock(KEYSIZE);
+		}
+
 		if (userBlockSize < 2 * AES_BLOCK_SIZE)
 		{
 			throw boost::format("block size %1% is too small, need ata least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE);
@@ -92,6 +99,10 @@ namespace PathORAM
 		}
 	}
 
+#pragma endregion AbsStorageAdapter
+
+#pragma region InMemoryStorageAdapter
+
 	InMemoryStorageAdapter::~InMemoryStorageAdapter()
 	{
 		for (ulong i = 0; i < this->capacity; i++)
@@ -101,8 +112,8 @@ namespace PathORAM
 		delete[] this->blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong userBlockSize) :
-		AbsStorageAdapter(capacity, userBlockSize)
+	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong userBlockSize, bytes key) :
+		AbsStorageAdapter(capacity, userBlockSize, key)
 	{
 		this->blocks = new uchar *[capacity];
 		for (ulong i = 0; i < capacity; i++)
@@ -125,4 +136,65 @@ namespace PathORAM
 	{
 		copy(raw.begin(), raw.end(), this->blocks[location]);
 	}
+
+#pragma endregion InMemoryStorageAdapter
+
+#pragma region FileSystemStorageAdapter
+
+	FileSystemStorageAdapter::~FileSystemStorageAdapter()
+	{
+		this->file.close();
+	}
+
+	FileSystemStorageAdapter::FileSystemStorageAdapter(ulong capacity, ulong userBlockSize, bytes key, string filename, bool override) :
+		AbsStorageAdapter(capacity, userBlockSize, key)
+	{
+		auto flags = fstream::in | fstream::out | fstream::binary;
+		if (override)
+		{
+			flags |= fstream::trunc;
+		}
+
+		this->file.open(filename, flags);
+		if (!this->file)
+		{
+			throw boost::format("cannot open %1%: %2%") % filename % strerror(errno);
+		}
+
+		if (override)
+		{
+			this->file.seekg(0, this->file.beg);
+			uchar placeholder[this->blockSize];
+
+			for (ulong i = 0; i < capacity; i++)
+			{
+				this->file.write((const char *)placeholder, this->blockSize);
+			}
+
+			for (ulong i = 0; i < capacity; i++)
+			{
+				this->set(i, {ULONG_MAX, bytes()});
+			}
+		}
+	}
+
+	bytes FileSystemStorageAdapter::getInternal(ulong location)
+	{
+		uchar placeholder[this->blockSize];
+		this->file.seekg(location * this->blockSize, this->file.beg);
+		this->file.read((char *)placeholder, this->blockSize);
+
+		return bytes(placeholder, placeholder + this->blockSize);
+	}
+
+	void FileSystemStorageAdapter::setInternal(ulong location, bytes raw)
+	{
+		uchar placeholder[this->blockSize];
+		copy(raw.begin(), raw.end(), placeholder);
+
+		this->file.seekp(location * this->blockSize, this->file.beg);
+		this->file.write((const char *)placeholder, this->blockSize);
+	}
+
+#pragma endregion FileSystemStorageAdapter
 }

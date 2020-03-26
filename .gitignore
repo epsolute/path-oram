@@ -5,6 +5,7 @@
 *.gcda
 *.gcno
 *.tmp
+*.bin
 coverage-html/
 docs/
 ipch

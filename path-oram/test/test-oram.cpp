@@ -19,7 +19,7 @@ namespace PathORAM
 
 		protected:
 		ORAM* oram;
-		AbsStorageAdapter* storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE);
+		AbsStorageAdapter* storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
 		AbsPositionMapAdapter* map = new InMemoryPositionMapAdapter(CAPACITY + Z);
 		AbsStashAdapter* stash	 = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
 

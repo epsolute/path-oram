@@ -1,6 +1,6 @@
 #include "definitions.h"
 
-#include <iostream>
+#include <fstream>
 
 namespace PathORAM
 {
@@ -18,7 +18,7 @@ namespace PathORAM
 		pair<ulong, bytes> get(ulong location);
 		void set(ulong location, pair<ulong, bytes> data);
 
-		AbsStorageAdapter(ulong capacity, ulong userBlockSize);
+		AbsStorageAdapter(ulong capacity, ulong userBlockSize, bytes key);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
@@ -36,8 +36,22 @@ namespace PathORAM
 		uchar **blocks;
 
 		public:
-		InMemoryStorageAdapter(ulong capacity, ulong userBlockSize);
+		InMemoryStorageAdapter(ulong capacity, ulong userBlockSize, bytes key);
 		~InMemoryStorageAdapter() final;
+
+		protected:
+		void setInternal(ulong location, bytes raw) final;
+		bytes getInternal(ulong location) final;
+	};
+
+	class FileSystemStorageAdapter : public AbsStorageAdapter
+	{
+		private:
+		fstream file;
+
+		public:
+		FileSystemStorageAdapter(ulong capacity, ulong userBlockSize, bytes key, string filename, bool override);
+		~FileSystemStorageAdapter() final;
 
 		protected:
 		void setInternal(ulong location, bytes raw) final;
