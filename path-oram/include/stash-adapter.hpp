@@ -1,3 +1,6 @@
+#ifndef STASH_INCLUDED
+#define STASH_INCLUDED
+
 #include "definitions.h"
 
 #include <iostream>
@@ -47,3 +50,5 @@ namespace PathORAM
 		void remove(ulong block) final;
 	};
 }
+
+#endif

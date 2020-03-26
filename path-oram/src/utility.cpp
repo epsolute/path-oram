@@ -85,11 +85,6 @@ namespace PathORAM
 		return bytes(outputMaterial, outputMaterial + size);
 	}
 
-	void seedRandom(int seed)
-	{
-		srand(seed);
-	}
-
 	bytes fromText(string text, ulong BLOCK_SIZE)
 	{
 		stringstream padded;

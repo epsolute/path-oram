@@ -1,3 +1,6 @@
+#ifndef STORAGE_INCLUDED
+#define STORAGE_INCLUDED
+
 #include "definitions.h"
 
 #include <fstream>
@@ -58,3 +61,5 @@ namespace PathORAM
 		bytes getInternal(ulong location) final;
 	};
 }
+
+#endif

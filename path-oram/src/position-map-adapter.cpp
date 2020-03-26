@@ -41,4 +41,32 @@ namespace PathORAM
 			throw boost::format("block %1% out of bound (capacity %2%)") % block % this->capacity;
 		}
 	}
+
+	ORAMPositionMapAdapter::~ORAMPositionMapAdapter()
+	{
+	}
+
+	ORAMPositionMapAdapter::ORAMPositionMapAdapter(ORAM *oram) :
+		oram(oram)
+	{
+	}
+
+	ulong ORAMPositionMapAdapter::get(ulong block)
+	{
+		auto returned = this->oram->get(block);
+		uchar buffer[returned.size()];
+		copy(returned.begin(), returned.end(), buffer);
+
+		return ((ulong *)buffer)[0];
+	}
+
+	void ORAMPositionMapAdapter::set(ulong block, ulong leaf)
+	{
+		ulong buffer[1];
+		buffer[0] = leaf;
+
+		auto data = bytes((uchar *)buffer, (uchar *)buffer + sizeof(ulong));
+
+		this->oram->put(block, data);
+	}
 }

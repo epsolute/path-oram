@@ -3,31 +3,84 @@
 #include "utility.hpp"
 
 #include "gtest/gtest.h"
+#include <algorithm>
+#include <boost/format.hpp>
+#include <openssl/aes.h>
 
 using namespace std;
 
 namespace PathORAM
 {
-	class PositionMapAdapterTest : public ::testing::Test
+	enum TestingPositionMapAdapterType
+	{
+		PositionMapAdapterTypeInMemory,
+		PositionMapAdapterTypeORAM
+	};
+
+	class PositionMapAdapterTest : public testing::TestWithParam<TestingPositionMapAdapterType>
 	{
 		public:
 		inline static const ulong CAPACITY = 10;
 
+		inline static const ulong Z			 = 3;
+		inline static const ulong BLOCK_SIZE = 2 * AES_BLOCK_SIZE;
+
 		protected:
-		InMemoryPositionMapAdapter* adapter = new InMemoryPositionMapAdapter(CAPACITY);
+		AbsPositionMapAdapter* adapter;
+
+		ORAM* oram;
+		AbsStorageAdapter* storage;
+		AbsStashAdapter* stash;
+		AbsPositionMapAdapter* map;
+
+		PositionMapAdapterTest()
+		{
+			auto logCapacity = min((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto capacity	= (1 << logCapacity) * Z;
+
+			this->storage = new InMemoryStorageAdapter(capacity + Z, BLOCK_SIZE, bytes());
+			this->map	 = new InMemoryPositionMapAdapter(capacity + Z);
+			this->stash   = new InMemoryStashAdapter(3 * logCapacity * Z);
+
+			this->oram = new ORAM(
+				logCapacity,
+				BLOCK_SIZE,
+				Z,
+				this->storage,
+				this->map,
+				this->stash);
+
+			auto type = GetParam();
+			switch (type)
+			{
+				case PositionMapAdapterTypeInMemory:
+					this->adapter = new InMemoryPositionMapAdapter(CAPACITY);
+					break;
+				case PositionMapAdapterTypeORAM:
+					this->adapter = new ORAMPositionMapAdapter(this->oram);
+					break;
+				default:
+					throw boost::format("TestingPositionMapAdapterType %2% is not implemented") % type;
+			}
+		}
 
 		~PositionMapAdapterTest() override
 		{
 			delete adapter;
+
+			delete oram;
+			delete map;
+			delete storage;
+			delete stash;
 		}
 	};
 
-	TEST_F(PositionMapAdapterTest, Initialization)
+	TEST_P(PositionMapAdapterTest, Initialization)
 	{
 		SUCCEED();
 	}
 
-	TEST_F(PositionMapAdapterTest, ReadWriteNoCrash)
+	TEST_P(PositionMapAdapterTest, ReadWriteNoCrash)
 	{
 		EXPECT_NO_THROW({
 			adapter->set(CAPACITY - 1, 56uLL);
@@ -35,13 +88,13 @@ namespace PathORAM
 		});
 	}
 
-	TEST_F(PositionMapAdapterTest, BlockOutOfBounds)
+	TEST_P(PositionMapAdapterTest, BlockOutOfBounds)
 	{
-		ASSERT_ANY_THROW(adapter->get(CAPACITY + 1));
-		ASSERT_ANY_THROW(adapter->set(CAPACITY + 1, 56uLL));
+		ASSERT_ANY_THROW(adapter->get(CAPACITY * 10));
+		ASSERT_ANY_THROW(adapter->set(CAPACITY * 10, 56uLL));
 	}
 
-	TEST_F(PositionMapAdapterTest, ReadWhatWasWritten)
+	TEST_P(PositionMapAdapterTest, ReadWhatWasWritten)
 	{
 		auto leaf = 56uLL;
 
@@ -51,7 +104,7 @@ namespace PathORAM
 		ASSERT_EQ(leaf, returned);
 	}
 
-	TEST_F(PositionMapAdapterTest, Override)
+	TEST_P(PositionMapAdapterTest, Override)
 	{
 		auto old = 56uLL, _new = 25uLL;
 
@@ -62,11 +115,26 @@ namespace PathORAM
 
 		ASSERT_EQ(_new, returned);
 	}
+
+	string printTestName(testing::TestParamInfo<TestingPositionMapAdapterType> input)
+	{
+		switch (input.param)
+		{
+			case PositionMapAdapterTypeInMemory:
+				return "InMemory";
+			case PositionMapAdapterTypeORAM:
+				return "ORAM";
+			default:
+				throw boost::format("TestingPositionMapAdapterType %2% is not implemented") % input.param;
+		}
+	}
+
+	INSTANTIATE_TEST_SUITE_P(PositionMapSuite, PositionMapAdapterTest, testing::Values(PositionMapAdapterTypeInMemory, PositionMapAdapterTypeORAM), printTestName);
 }
 
 int main(int argc, char** argv)
 {
-	PathORAM::seedRandom(0x13);
+	srand(TEST_SEED);
 
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();

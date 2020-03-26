@@ -6,6 +6,8 @@
 
 #define KEYSIZE 32
 
+#define TEST_SEED 0x13
+
 namespace PathORAM
 {
 	using ulong = unsigned long long;

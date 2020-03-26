@@ -102,7 +102,7 @@ namespace PathORAM
 
 int main(int argc, char** argv)
 {
-	PathORAM::seedRandom(0x13);
+	srand(TEST_SEED);
 
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();

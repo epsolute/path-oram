@@ -27,13 +27,13 @@ namespace PathORAM
 	TEST_F(UtilityTest, SameSeed)
 	{
 		const auto n = 20uLL;
-		int seed	 = 0x13;
+		int seed	 = 0x15;
 
-		seedRandom(seed);
+		srand(seed);
 
 		auto first = getRandomBlock(n);
 
-		seedRandom(seed);
+		srand(seed);
 
 		auto second = getRandomBlock(n);
 

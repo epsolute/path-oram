@@ -1,9 +1,10 @@
+#ifndef ORAM_INCLUDED
+#define ORAM_INCLUDED
+
 #include "definitions.h"
 #include "position-map-adapter.hpp"
 #include "stash-adapter.hpp"
 #include "storage-adapter.hpp"
-
-// #include <gtest/gtest_prod.h>
 
 #include <iostream>
 #include <unordered_map>
@@ -11,6 +12,8 @@
 namespace PathORAM
 {
 	using namespace std;
+
+	class AbsPositionMapAdapter;
 
 	class ORAM
 	{
@@ -46,3 +49,5 @@ namespace PathORAM
 		void put(ulong block, bytes data);
 	};
 }
+
+#endif
