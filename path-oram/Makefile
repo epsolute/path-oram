@@ -10,7 +10,7 @@ BDIR=bin
 LDFLAGS=-L $(LDIR) -L /usr/local/opt/openssl/lib
 LDLIBS=-l gtest -l boost_system -l ssl -l crypto -l pthread
 INCLUDES=-I $(IDIR) -I /usr/local/opt/openssl/include
-CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -fPIC
+CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -Wno-unknown-pragmas -fPIC
 CC=g++
 RM=rm -rf
 

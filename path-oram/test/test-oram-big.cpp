@@ -28,7 +28,7 @@ namespace PathORAM
 			CAPACITY						   = (1 << LOG_CAPACITY) * Z;
 			ELEMENTS						   = (CAPACITY / 4) * 3;
 
-			this->storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE);
+			this->storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
 			this->map	 = new InMemoryPositionMapAdapter(CAPACITY + Z);
 			this->stash   = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
 			this->oram	= new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);

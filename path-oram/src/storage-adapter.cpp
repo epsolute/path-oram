@@ -3,6 +3,7 @@
 #include "utility.hpp"
 
 #include <boost/format.hpp>
+#include <cstring>
 #include <openssl/aes.h>
 #include <vector>
 
