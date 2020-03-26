@@ -1,57 +1,68 @@
 stages:
-- build
-- test
+  - build
+  - test
 
 build-binaries:
   image: dbogatov/docker-images:pbc-latest
   stage: build
   script:
-  - cd ./path-oram
-  - make binaries
+    - cd ./path-oram
+    - make binaries
   artifacts:
     expire_in: 30 min
     paths:
-    - ./path-oram/bin
+      - ./path-oram/bin
   tags:
-  - docker
+    - docker
 
 build-docs:
   image: dbogatov/docker-images:doxygen-latest
   stage: build
   script:
-  - cd ./path-oram
-  - doxygen ../Doxyfile
+    - cd ./path-oram
+    - doxygen ../Doxyfile
   artifacts:
     expire_in: 30 min
     paths:
-    - ./docs
-    - Dockerfile
-    - nginx.conf
+      - ./docs
+      - Dockerfile
+      - nginx.conf
   tags:
-  - docker
+    - docker
 
 unit-test:
   image: dbogatov/docker-images:pbc-latest
   stage: test
   script:
-  - cd ./path-oram/
-  - make bin/main
-  - ./bin/main
-  - make coverage
+    - cd ./path-oram/
+    - make bin/main
+    - ./bin/main
+    - make coverage
   artifacts:
     expire_in: 1 day
     paths:
       - ./path-oram/coverage-html/
   tags:
-  - docker
+    - docker
 
 integration-test:
   image: dbogatov/docker-images:pbc-latest
   stage: test
   script:
-  - cd ./path-oram/
-  - make run-integration
+    - cd ./path-oram/
+    - make run-integration
   dependencies:
     - build-binaries
   tags:
-  - docker
+    - docker
+
+benchmarks:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./path-oram/
+    - make run-benchmarks
+  dependencies:
+    - build-binaries
+  tags:
+    - docker

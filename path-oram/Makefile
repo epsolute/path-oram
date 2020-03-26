@@ -2,13 +2,14 @@
 
 SDIR=src
 TDIR=test
+HDIR=benchmark
 IDIR=include
 ODIR=obj
 LDIR=lib
 BDIR=bin
 
 LDFLAGS=-L $(LDIR) -L /usr/local/opt/openssl/lib
-LDLIBS=-l gtest -l boost_system -l ssl -l crypto -l pthread
+LDLIBS=-l gtest -l boost_system -l ssl -l crypto -l pthread -l benchmark
 INCLUDES=-I $(IDIR) -I /usr/local/opt/openssl/include
 CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -Wno-unknown-pragmas -fPIC
 CC=g++
@@ -22,11 +23,11 @@ DEPS = $(patsubst %, $(IDIR)/%, $(_DEPS))
 _OBJ = $(addsuffix .o, $(ENTITIES))
 OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 
-TARGETS = main
-TARGETBIN = $(addprefix $(BDIR)/, $(TARGETS))
-
 TESTS = $(ENTITIES)
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
+
+BENCHMARKS = storage-adapter
+BENCHMARKSBIN = $(addprefix $(BDIR)/benchmark-, $(BENCHMARKS))
 
 INTEGRATION = oram-big
 INTEGRATIONBIN = $(addprefix $(BDIR)/test-, $(INTEGRATION))
@@ -37,7 +38,7 @@ ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
 
 all: shared docs
 
-binaries: $(TARGETBIN) $(TESTBIN) $(INTEGRATIONBIN)
+binaries: $(TESTBIN) $(INTEGRATIONBIN) $(BENCHMARKSBIN)
 cleandebug: clean debug
 
 debug: CPPFLAGS += -g -DTESTING
@@ -49,11 +50,11 @@ profile: clean run-tests
 # executables
 
 .SECONDEXPANSION:
-$(TARGETBIN): $(OBJ) $$(subst $$(BDIR), $(SDIR), $$@).cpp
+$(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
 .SECONDEXPANSION:
-$(TESTBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
+$(BENCHMARKSBIN): $(OBJ) $$(subst $$(BDIR), $(HDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
 .SECONDEXPANSION:
@@ -74,6 +75,9 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 run-tests: CPPFLAGS += -DTESTING
 run-tests: $(TESTBIN)
 	$(addsuffix ;, $(TESTBIN))
+
+run-benchmarks: $(BENCHMARKSBIN)
+	$(addsuffix ;, $(BENCHMARKSBIN))
 
 run-integration: CPPFLAGS += -DTESTING
 run-integration: $(INTEGRATIONBIN)
