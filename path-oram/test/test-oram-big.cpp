@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include <boost/format.hpp>
+#include <math.h>
 #include <openssl/aes.h>
 
 using namespace std;
