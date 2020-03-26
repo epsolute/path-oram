@@ -26,7 +26,7 @@ OBJ = $(patsubst %, $(ODIR)/%, $(_OBJ))
 TESTS = $(ENTITIES)
 TESTBIN = $(addprefix $(BDIR)/test-, $(TESTS))
 
-BENCHMARKS = storage-adapter oram
+BENCHMARKS = storage-adapter oram utility
 BENCHMARKSBIN = $(addprefix $(BDIR)/benchmark-, $(BENCHMARKS))
 
 INTEGRATION = oram-big
