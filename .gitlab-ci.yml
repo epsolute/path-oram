@@ -35,8 +35,6 @@ unit-test:
   stage: test
   script:
     - cd ./path-oram/
-    - make bin/main
-    - ./bin/main
     - make coverage
   artifacts:
     expire_in: 1 day
