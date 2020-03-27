@@ -45,17 +45,17 @@ namespace PathORAM
 
 		if (key.size() != KEYSIZE)
 		{
-			throw boost::format("key of size %1% bytes provided, need %2% bytes") % key.size() % KEYSIZE;
+			throw boost::str(boost::format("key of size %1% bytes provided, need %2% bytes") % key.size() % KEYSIZE);
 		}
 
 		if (size == 0 || size % AES_BLOCK_SIZE != 0)
 		{
-			throw boost::format("input must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % size;
+			throw boost::str(boost::format("input must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % size);
 		}
 
 		if (iv.size() != AES_BLOCK_SIZE)
 		{
-			throw boost::format("IV of size %1% bytes provided, need %2% bytes") % iv.size() % AES_BLOCK_SIZE;
+			throw boost::str(boost::format("IV of size %1% bytes provided, need %2% bytes") % iv.size() % AES_BLOCK_SIZE);
 		}
 
 		AES_KEY aesKey;

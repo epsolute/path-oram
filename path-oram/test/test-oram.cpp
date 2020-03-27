@@ -56,6 +56,14 @@ namespace PathORAM
 		SUCCEED();
 	}
 
+	TEST_F(ORAMTest, InitializationShorthand)
+	{
+		ASSERT_NO_THROW({
+			auto oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z);
+			delete oram;
+		});
+	}
+
 	TEST_F(ORAMTest, BucketFromLevelLeaf)
 	{
 		vector<pair<ulong, vector<ulong>>> tests =

@@ -36,6 +36,7 @@ unit-test:
   script:
     - cd ./path-oram/
     - make coverage
+  dependencies: []
   artifacts:
     expire_in: 1 day
     paths:
@@ -49,8 +50,7 @@ integration-test:
   script:
     - cd ./path-oram/
     - make run-integration
-  dependencies:
-    - build-binaries
+  dependencies: []
   tags:
     - docker
 
@@ -60,7 +60,16 @@ benchmarks:
   script:
     - cd ./path-oram/
     - make run-benchmarks
-  dependencies:
-    - build-binaries
+  dependencies: []
+  tags:
+    - docker
+
+shared-library:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./path-oram/
+    - make run-shared-lib
+  dependencies: []
   tags:
     - docker

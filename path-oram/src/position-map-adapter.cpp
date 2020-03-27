@@ -38,7 +38,7 @@ namespace PathORAM
 	{
 		if (block >= this->capacity)
 		{
-			throw boost::format("block %1% out of bound (capacity %2%)") % block % this->capacity;
+			throw boost::str(boost::format("block %1% out of bound (capacity %2%)") % block % this->capacity);
 		}
 	}
 

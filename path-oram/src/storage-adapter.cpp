@@ -66,7 +66,7 @@ namespace PathORAM
 	{
 		if (location >= this->capacity)
 		{
-			throw boost::format("id %1% out of bound (capacity %2%)") % location % this->capacity;
+			throw boost::str(boost::format("id %1% out of bound (capacity %2%)") % location % this->capacity);
 		}
 	}
 
@@ -74,7 +74,7 @@ namespace PathORAM
 	{
 		if (dataLength > this->userBlockSize)
 		{
-			throw boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->userBlockSize;
+			throw boost::str(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->userBlockSize);
 		}
 	}
 
@@ -91,12 +91,12 @@ namespace PathORAM
 
 		if (userBlockSize < 2 * AES_BLOCK_SIZE)
 		{
-			throw boost::format("block size %1% is too small, need ata least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE);
+			throw boost::str(boost::format("block size %1% is too small, need ata least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE));
 		}
 
 		if (userBlockSize % AES_BLOCK_SIZE != 0)
 		{
-			throw boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % userBlockSize;
+			throw boost::str(boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % userBlockSize);
 		}
 	}
 
@@ -159,7 +159,7 @@ namespace PathORAM
 		this->file.open(filename, flags);
 		if (!this->file)
 		{
-			throw boost::format("cannot open %1%: %2%") % filename % strerror(errno);
+			throw boost::str(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
 		}
 
 		if (override)

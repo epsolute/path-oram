@@ -9,11 +9,14 @@ LDIR=lib
 BDIR=bin
 
 LDFLAGS=-L $(LDIR) -L /usr/local/opt/openssl/lib
-LDLIBS=-l gtest -l boost_system -l ssl -l crypto -l pthread -l benchmark
+LDLIBS=-l boost_system -l ssl -l crypto
+LDTESTLIBS=-l gtest -l pthread -l benchmark
 INCLUDES=-I $(IDIR) -I /usr/local/opt/openssl/include
-CPPFLAGS= --std=c++17 $(INCLUDES) -Wall -Wno-unknown-pragmas -fPIC
+CPPFLAGS= --std=c++17 -Wall -Wno-unknown-pragmas -fPIC
 CC=g++
 RM=rm -rf
+
+LIBNAME=pathoram
 
 ENTITIES = storage-adapter position-map-adapter utility oram stash-adapter
 
@@ -32,7 +35,7 @@ BENCHMARKSBIN = $(addprefix $(BDIR)/benchmark-, $(BENCHMARKS))
 INTEGRATION = oram-big
 INTEGRATIONBIN = $(addprefix $(BDIR)/test-, $(INTEGRATION))
 
-ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(LDLIBS) $(LDFLAGS)
+ENTRYPOINTCC = $(CC) -o $@ $^ $(CPPFLAGS) $(INCLUDES) $(LDLIBS) $(LDTESTLIBS) $(LDFLAGS)
 
 # flags-setting commands
 
@@ -62,26 +65,30 @@ $(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
 shared: CPPFLAGS += -DSHARED
-shared: clean $(OBJ)
-	$(CC) -shared -Wl -o $(BDIR)/libpathoram.so $(OBJ)
+shared: $(OBJ)
+	$(CC) -shared -Wl $(LDLIBS) $(LDFLAGS) -o $(BDIR)/lib$(LIBNAME).so $(OBJ)
 
 # objects
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
-	$(CC) -c -o $@ $< $(CPPFLAGS)
+	$(CC) -c -o $@ $< $(CPPFLAGS) $(INCLUDES)
 
 # commands
 
+run-shared-lib: shared
+	$(CC) -o $(BDIR)/test-shared-lib $(TDIR)/test-shared-lib.cpp -I $(IDIR) -L $(BDIR) -l $(LIBNAME) $(CPPFLAGS)
+	$(BDIR)/test-shared-lib
+
 run-tests: CPPFLAGS += -DTESTING
 run-tests: $(TESTBIN)
-	$(addsuffix ;, $(TESTBIN))
+	$(addsuffix &&, $(TESTBIN)) true
 
 run-benchmarks: $(BENCHMARKSBIN)
-	$(addsuffix ;, $(BENCHMARKSBIN))
+	$(addsuffix &&, $(BENCHMARKSBIN))
 
 run-integration: CPPFLAGS += -DTESTING
 run-integration: $(INTEGRATIONBIN)
-	$(addsuffix ;, $(INTEGRATIONBIN))
+	$(addsuffix &&, $(INTEGRATIONBIN))
 
 coverage: profile
 	gcovr -r . $(addprefix -f $(SDIR)/, $(addsuffix .cpp, $(ENTITIES))) --exclude-unreachable-branches
@@ -102,6 +109,7 @@ clean-binaries:
 
 # phony
 
-.PHONY: docs clean clean-docs clean-binaries run-tests coverage
+.PHONY: docs clean clean-docs clean-binaries coverage
 .PHONY: profile debug cleandebug
 .PHONY: binaries all shared
+.PHONY: run-tests run-integration run-benchmarks run-shared-lib

@@ -9,7 +9,7 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash) :
+	ORAM::ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash) :
 		storage(storage),
 		map(map),
 		stash(stash),
@@ -19,13 +19,6 @@ namespace PathORAM
 		this->height  = logCapacity;			  // we are given a height
 		this->buckets = (ulong)1 << this->height; // number of buckets is 2^height
 		this->blocks  = this->buckets * this->Z;  // number of blocks is buckets / Z (Z blocks per bucket)
-
-		// cout << logCapacity << endl;
-		// cout << blockSize << endl;
-		// cout << Z << endl;
-		// cout << height << endl;
-		// cout << buckets << endl;
-		// cout << blocks << endl;
 
 		// fill all blocks with random bits
 		for (ulong i = 0uLL; i < this->buckets; i++)
@@ -44,7 +37,26 @@ namespace PathORAM
 		}
 	}
 
-	ORAM::~ORAM() {}
+	ORAM::ORAM(ulong logCapacity, ulong blockSize, ulong Z) :
+		ORAM(logCapacity,
+			 blockSize,
+			 Z,
+			 new InMemoryStorageAdapter(((1 << logCapacity) * Z) + Z, blockSize, bytes()),
+			 new InMemoryPositionMapAdapter(((1 << logCapacity) * Z) + Z),
+			 new InMemoryStashAdapter(3 * logCapacity * Z))
+	{
+		ownDependencies = true;
+	}
+
+	ORAM::~ORAM()
+	{
+		if (this->ownDependencies)
+		{
+			delete this->storage;
+			delete this->map;
+			delete this->stash;
+		}
+	}
 
 	bytes ORAM::get(ulong block)
 	{

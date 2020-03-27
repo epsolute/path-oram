@@ -28,6 +28,8 @@ namespace PathORAM
 		ulong buckets;
 		ulong blocks;
 
+		bool ownDependencies = false;
+
 		bytes access(bool read, ulong block, bytes data);
 		void readPath(ulong leaf);
 		void writePath(ulong leaf);
@@ -43,6 +45,7 @@ namespace PathORAM
 
 		public:
 		ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash);
+		ORAM(ulong logCapacity, ulong blockSize, ulong Z);
 		~ORAM();
 
 		bytes get(ulong block);

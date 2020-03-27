@@ -52,7 +52,7 @@ namespace PathORAM
 	{
 		if (this->stash.size() == this->capacity && this->stash.count(block) == 0)
 		{
-			throw boost::format("trying to insert over capacity (capacity %1%)") % this->capacity;
+			throw boost::str(boost::format("trying to insert over capacity (capacity %1%)") % this->capacity);
 		}
 	}
 
