@@ -82,6 +82,18 @@ namespace PathORAM
 		}
 	}
 
+	TEST_P(StorageAdapterTest, CannotOpenFile)
+	{
+		if (GetParam() == StorageAdapterTypeFileSystem)
+		{
+			ASSERT_ANY_THROW(new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false));
+		}
+		else
+		{
+			SUCCEED();
+		}
+	}
+
 	TEST_P(StorageAdapterTest, InputsCheck)
 	{
 		ASSERT_ANY_THROW(new InMemoryStorageAdapter(CAPACITY, AES_BLOCK_SIZE, bytes()));

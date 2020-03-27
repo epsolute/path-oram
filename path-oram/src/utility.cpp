@@ -26,7 +26,6 @@ namespace PathORAM
 		return bytes(material, material + blockSize);
 	}
 
-	// TODO not secure!
 	ulong getRandomULong(ulong max)
 	{
 		ulong material[1];

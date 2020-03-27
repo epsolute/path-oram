@@ -92,7 +92,7 @@ docs: clean-docs
 	doxygen ../Doxyfile
 
 clean: clean-docs clean-binaries
-	$(RM) $(ODIR)/* *~ *.dSYM *.gcov *.gcda *.gcno coverage-html
+	$(RM) $(ODIR)/* *~ *.dSYM *.gcov *.gcda *.gcno *.bin coverage-html
 
 clean-docs:
 	$(RM) ../docs
