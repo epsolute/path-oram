@@ -13,7 +13,7 @@ namespace PathORAM
 		storage(storage),
 		map(map),
 		stash(stash),
-		dataSize(blockSize - sizeof(ulong)),
+		dataSize(blockSize),
 		Z(Z)
 	{
 		this->height  = logCapacity;			  // we are given a height

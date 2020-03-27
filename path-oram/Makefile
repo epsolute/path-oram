@@ -84,11 +84,11 @@ run-tests: $(TESTBIN)
 	$(addsuffix &&, $(TESTBIN)) true
 
 run-benchmarks: $(BENCHMARKSBIN)
-	$(addsuffix &&, $(BENCHMARKSBIN))
+	$(addsuffix &&, $(BENCHMARKSBIN)) true
 
 run-integration: CPPFLAGS += -DTESTING
 run-integration: $(INTEGRATIONBIN)
-	$(addsuffix &&, $(INTEGRATIONBIN))
+	$(addsuffix &&, $(INTEGRATIONBIN)) true
 
 coverage: profile
 	gcovr -r . $(addprefix -f $(SDIR)/, $(addsuffix .cpp, $(ENTITIES))) --exclude-unreachable-branches

@@ -128,12 +128,12 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, PutNoException)
 	{
-		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE - sizeof(ulong)));
+		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
 	}
 
 	TEST_F(ORAMTest, GetPutSame)
 	{
-		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE - sizeof(ulong)));
+		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
 		auto returned = this->oram->get(CAPACITY - 1);
 
 		ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
@@ -143,7 +143,7 @@ namespace PathORAM
 	{
 		for (ulong id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE - sizeof(ulong)));
+			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
 		for (ulong id = 0; id < CAPACITY; id++)
@@ -169,7 +169,7 @@ namespace PathORAM
 	{
 		for (ulong id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE - sizeof(ulong)));
+			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
 		for (ulong id = 0; id < CAPACITY; id++)
@@ -187,7 +187,7 @@ namespace PathORAM
 
 		for (ulong id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE - sizeof(ulong)));
+			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 			puts.push_back(this->stash->getAll().size());
 		}
 
