@@ -10,25 +10,25 @@ namespace PathORAM
 	class AbsStorageAdapter
 	{
 		private:
-		void checkCapacity(ulong location);
-		void checkBlockSize(ulong dataSize);
+		void checkCapacity(number location);
+		void checkBlockSize(number dataSize);
 
 		bytes key;
 
 		public:
-		pair<ulong, bytes> get(ulong location);
-		void set(ulong location, pair<ulong, bytes> data);
+		pair<number, bytes> get(number location);
+		void set(number location, pair<number, bytes> data);
 
-		AbsStorageAdapter(ulong capacity, ulong userBlockSize, bytes key);
+		AbsStorageAdapter(number capacity, number userBlockSize, bytes key);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
-		ulong capacity;
-		ulong blockSize;
-		ulong userBlockSize;
+		number capacity;
+		number blockSize;
+		number userBlockSize;
 
-		virtual void setInternal(ulong location, bytes raw) = 0;
-		virtual bytes getInternal(ulong location)			= 0;
+		virtual void setInternal(number location, bytes raw) = 0;
+		virtual bytes getInternal(number location)			= 0;
 	};
 
 	class InMemoryStorageAdapter : public AbsStorageAdapter
@@ -37,12 +37,12 @@ namespace PathORAM
 		uchar **blocks;
 
 		public:
-		InMemoryStorageAdapter(ulong capacity, ulong userBlockSize, bytes key);
+		InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key);
 		~InMemoryStorageAdapter() final;
 
 		protected:
-		void setInternal(ulong location, bytes raw) final;
-		bytes getInternal(ulong location) final;
+		void setInternal(number location, bytes raw) final;
+		bytes getInternal(number location) final;
 	};
 
 	class FileSystemStorageAdapter : public AbsStorageAdapter
@@ -51,11 +51,11 @@ namespace PathORAM
 		fstream file;
 
 		public:
-		FileSystemStorageAdapter(ulong capacity, ulong userBlockSize, bytes key, string filename, bool override);
+		FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override);
 		~FileSystemStorageAdapter() final;
 
 		protected:
-		void setInternal(ulong location, bytes raw) final;
-		bytes getInternal(ulong location) final;
+		void setInternal(number location, bytes raw) final;
+		bytes getInternal(number location) final;
 	};
 }

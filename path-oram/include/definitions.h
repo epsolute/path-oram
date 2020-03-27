@@ -9,7 +9,7 @@
 
 namespace PathORAM
 {
-	using ulong = unsigned long long;
+	using number = unsigned long long;
 	using uchar = unsigned char;
 	using bytes = std::vector<uchar>;
 

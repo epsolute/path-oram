@@ -69,7 +69,7 @@ shared-library:
   stage: test
   script:
     - cd ./path-oram/
-    - make run-shared-lib
+    - make shared ldconfig run-shared-lib
   dependencies: []
   tags:
     - docker

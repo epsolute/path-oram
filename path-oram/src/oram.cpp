@@ -9,7 +9,7 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash) :
 		storage(storage),
 		map(map),
 		stash(stash),
@@ -17,13 +17,13 @@ namespace PathORAM
 		Z(Z)
 	{
 		this->height  = logCapacity;			  // we are given a height
-		this->buckets = (ulong)1 << this->height; // number of buckets is 2^height
+		this->buckets = (number)1 << this->height; // number of buckets is 2^height
 		this->blocks  = this->buckets * this->Z;  // number of blocks is buckets / Z (Z blocks per bucket)
 
 		// fill all blocks with random bits
-		for (ulong i = 0uLL; i < this->buckets; i++)
+		for (number i = 0uLL; i < this->buckets; i++)
 		{
-			for (ulong j = 0uLL; j < this->Z; j++)
+			for (number j = 0uLL; j < this->Z; j++)
 			{
 				auto block = getRandomBlock(this->dataSize);
 				this->storage->set(i * this->Z + j, {ULONG_MAX, block});
@@ -31,13 +31,13 @@ namespace PathORAM
 		}
 
 		// generate random position map
-		for (ulong i = 0; i < this->blocks; ++i)
+		for (number i = 0; i < this->blocks; ++i)
 		{
 			this->map->set(i, getRandomULong(1 << (this->height - 1)));
 		}
 	}
 
-	ORAM::ORAM(ulong logCapacity, ulong blockSize, ulong Z) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z) :
 		ORAM(logCapacity,
 			 blockSize,
 			 Z,
@@ -58,17 +58,17 @@ namespace PathORAM
 		}
 	}
 
-	bytes ORAM::get(ulong block)
+	bytes ORAM::get(number block)
 	{
 		return this->access(true, block, bytes());
 	}
 
-	void ORAM::put(ulong block, bytes data)
+	void ORAM::put(number block, bytes data)
 	{
 		this->access(false, block, data);
 	}
 
-	bytes ORAM::access(bool read, ulong block, bytes data)
+	bytes ORAM::access(bool read, number block, bytes data)
 	{
 		// step 1 from paper: remap block
 		auto previousPosition = this->map->get(block);
@@ -90,12 +90,12 @@ namespace PathORAM
 		return returned;
 	}
 
-	void ORAM::readPath(ulong leaf)
+	void ORAM::readPath(number leaf)
 	{
-		for (ulong level = 0; level < this->height; level++)
+		for (number level = 0; level < this->height; level++)
 		{
 			auto bucket = this->bucketForLevelLeaf(level, leaf);
-			for (ulong i = 0; i < this->Z; i++)
+			for (number i = 0; i < this->Z; i++)
 			{
 				auto block		= bucket * this->Z + i;
 				auto [id, data] = this->storage->get(block);
@@ -107,14 +107,14 @@ namespace PathORAM
 		}
 	}
 
-	void ORAM::writePath(ulong leaf)
+	void ORAM::writePath(number leaf)
 	{
 		auto currentStash = this->stash->getAll();
 		vector<int> toDelete;
 
 		for (int level = this->height - 1; level >= 0; level--)
 		{
-			vector<pair<ulong, bytes>> toInsert;
+			vector<pair<number, bytes>> toInsert;
 			vector<int> toDeleteLocal;
 			for (auto entry : currentStash)
 			{
@@ -137,7 +137,7 @@ namespace PathORAM
 
 			auto bucket = this->bucketForLevelLeaf(level, leaf);
 
-			for (ulong i = 0; i < this->Z; i++)
+			for (number i = 0; i < this->Z; i++)
 			{
 				auto block = bucket * this->Z + i;
 				if (toInsert.size() != 0)
@@ -159,12 +159,12 @@ namespace PathORAM
 		}
 	}
 
-	ulong ORAM::bucketForLevelLeaf(ulong level, ulong leaf)
+	number ORAM::bucketForLevelLeaf(number level, number leaf)
 	{
 		return (leaf + (1 << (this->height - 1))) >> (height - 1 - level);
 	}
 
-	bool ORAM::canInclude(ulong pathLeaf, ulong blockPosition, ulong level)
+	bool ORAM::canInclude(number pathLeaf, number blockPosition, number level)
 	{
 		return this->bucketForLevelLeaf(level, pathLeaf) == this->bucketForLevelLeaf(level, blockPosition);
 	}

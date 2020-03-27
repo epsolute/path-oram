@@ -16,7 +16,7 @@ namespace PathORAM
 
 	AbsStorageAdapter::~AbsStorageAdapter(){};
 
-	pair<ulong, bytes> AbsStorageAdapter::get(ulong location)
+	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
 		this->checkCapacity(location);
 
@@ -26,9 +26,9 @@ namespace PathORAM
 
 		copy(raw.begin(), raw.end(), buffer);
 
-		auto id   = ((ulong *)buffer)[0];
-		auto iv   = bytes(buffer + sizeof(ulong), buffer + sizeof(ulong) + AES_BLOCK_SIZE);
-		auto data = bytes(buffer + sizeof(ulong) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
+		auto id   = ((number *)buffer)[0];
+		auto iv   = bytes(buffer + sizeof(number), buffer + sizeof(number) + AES_BLOCK_SIZE);
+		auto data = bytes(buffer + sizeof(number) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
 
 		// decryption
 		auto decrypted = encrypt(this->key, iv, data, DECRYPT);
@@ -36,7 +36,7 @@ namespace PathORAM
 		return {id, decrypted};
 	}
 
-	void AbsStorageAdapter::set(ulong location, pair<ulong, bytes> data)
+	void AbsStorageAdapter::set(number location, pair<number, bytes> data)
 	{
 		this->checkCapacity(location);
 		this->checkBlockSize(data.second.size());
@@ -50,11 +50,11 @@ namespace PathORAM
 		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
 		auto encrypted = encrypt(this->key, iv, data.second, ENCRYPT);
 
-		ulong buffer[1] = {data.first};
-		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(ulong));
+		number buffer[1] = {data.first};
+		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
 
 		bytes raw;
-		raw.reserve(sizeof(ulong) + iv.size() + encrypted.size());
+		raw.reserve(sizeof(number) + iv.size() + encrypted.size());
 		raw.insert(raw.end(), id.begin(), id.end());
 		raw.insert(raw.end(), iv.begin(), iv.end());
 		raw.insert(raw.end(), encrypted.begin(), encrypted.end());
@@ -62,7 +62,7 @@ namespace PathORAM
 		this->setInternal(location, raw);
 	}
 
-	void AbsStorageAdapter::checkCapacity(ulong location)
+	void AbsStorageAdapter::checkCapacity(number location)
 	{
 		if (location >= this->capacity)
 		{
@@ -70,7 +70,7 @@ namespace PathORAM
 		}
 	}
 
-	void AbsStorageAdapter::checkBlockSize(ulong dataLength)
+	void AbsStorageAdapter::checkBlockSize(number dataLength)
 	{
 		if (dataLength > this->userBlockSize)
 		{
@@ -78,10 +78,10 @@ namespace PathORAM
 		}
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(ulong capacity, ulong userBlockSize, bytes key) :
+	AbsStorageAdapter::AbsStorageAdapter(number capacity, number userBlockSize, bytes key) :
 		key(key),
 		capacity(capacity),
-		blockSize(userBlockSize + sizeof(ulong) + AES_BLOCK_SIZE),
+		blockSize(userBlockSize + sizeof(number) + AES_BLOCK_SIZE),
 		userBlockSize(userBlockSize)
 	{
 		if (key.size() != KEYSIZE)
@@ -106,34 +106,34 @@ namespace PathORAM
 
 	InMemoryStorageAdapter::~InMemoryStorageAdapter()
 	{
-		for (ulong i = 0; i < this->capacity; i++)
+		for (number i = 0; i < this->capacity; i++)
 		{
 			delete[] this->blocks[i];
 		}
 		delete[] this->blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(ulong capacity, ulong userBlockSize, bytes key) :
+	InMemoryStorageAdapter::InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key) :
 		AbsStorageAdapter(capacity, userBlockSize, key)
 	{
 		this->blocks = new uchar *[capacity];
-		for (ulong i = 0; i < capacity; i++)
+		for (number i = 0; i < capacity; i++)
 		{
 			this->blocks[i] = new uchar[this->blockSize];
 		}
 
-		for (ulong i = 0; i < capacity; i++)
+		for (number i = 0; i < capacity; i++)
 		{
 			this->set(i, {ULONG_MAX, bytes()});
 		}
 	}
 
-	bytes InMemoryStorageAdapter::getInternal(ulong location)
+	bytes InMemoryStorageAdapter::getInternal(number location)
 	{
 		return bytes(this->blocks[location], this->blocks[location] + this->blockSize);
 	}
 
-	void InMemoryStorageAdapter::setInternal(ulong location, bytes raw)
+	void InMemoryStorageAdapter::setInternal(number location, bytes raw)
 	{
 		copy(raw.begin(), raw.end(), this->blocks[location]);
 	}
@@ -147,7 +147,7 @@ namespace PathORAM
 		this->file.close();
 	}
 
-	FileSystemStorageAdapter::FileSystemStorageAdapter(ulong capacity, ulong userBlockSize, bytes key, string filename, bool override) :
+	FileSystemStorageAdapter::FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override) :
 		AbsStorageAdapter(capacity, userBlockSize, key)
 	{
 		auto flags = fstream::in | fstream::out | fstream::binary;
@@ -167,19 +167,19 @@ namespace PathORAM
 			this->file.seekg(0, this->file.beg);
 			uchar placeholder[this->blockSize];
 
-			for (ulong i = 0; i < capacity; i++)
+			for (number i = 0; i < capacity; i++)
 			{
 				this->file.write((const char *)placeholder, this->blockSize);
 			}
 
-			for (ulong i = 0; i < capacity; i++)
+			for (number i = 0; i < capacity; i++)
 			{
 				this->set(i, {ULONG_MAX, bytes()});
 			}
 		}
 	}
 
-	bytes FileSystemStorageAdapter::getInternal(ulong location)
+	bytes FileSystemStorageAdapter::getInternal(number location)
 	{
 		uchar placeholder[this->blockSize];
 		this->file.seekg(location * this->blockSize, this->file.beg);
@@ -188,7 +188,7 @@ namespace PathORAM
 		return bytes(placeholder, placeholder + this->blockSize);
 	}
 
-	void FileSystemStorageAdapter::setInternal(ulong location, bytes raw)
+	void FileSystemStorageAdapter::setInternal(number location, bytes raw)
 	{
 		uchar placeholder[this->blockSize];
 		copy(raw.begin(), raw.end(), placeholder);

@@ -11,11 +11,11 @@ namespace PathORAM
 	class ORAMTest : public ::testing::Test
 	{
 		public:
-		inline static const ulong LOG_CAPACITY = 5;
-		inline static const ulong Z			   = 3;
-		inline static const ulong BLOCK_SIZE   = 32;
+		inline static const number LOG_CAPACITY = 5;
+		inline static const number Z			   = 3;
+		inline static const number BLOCK_SIZE   = 32;
 
-		inline static const ulong CAPACITY = (1 << LOG_CAPACITY) * Z;
+		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
 
 		protected:
 		ORAM* oram;
@@ -38,7 +38,7 @@ namespace PathORAM
 
 		void populateStorage()
 		{
-			for (ulong i = 0; i < CAPACITY + Z; i++)
+			for (number i = 0; i < CAPACITY + Z; i++)
 			{
 				this->storage->set(i, {i, bytes()});
 			}
@@ -66,7 +66,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, BucketFromLevelLeaf)
 	{
-		vector<pair<ulong, vector<ulong>>> tests =
+		vector<pair<number, vector<number>>> tests =
 			{
 				{6, {1, 2, 5, 11, 22}},
 				{8, {1, 3, 6, 12, 24}},
@@ -75,7 +75,7 @@ namespace PathORAM
 
 		for (auto test : tests)
 		{
-			for (ulong level = 0; level < LOG_CAPACITY; level++)
+			for (number level = 0; level < LOG_CAPACITY; level++)
 			{
 				EXPECT_EQ(test.second[level], this->oram->bucketForLevelLeaf(level, test.first));
 			}
@@ -84,7 +84,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, CanInclude)
 	{
-		vector<tuple<ulong, ulong, ulong, bool>> tests =
+		vector<tuple<number, number, number, bool>> tests =
 			{
 				{8, 11, 2, true},
 				{8, 11, 3, false},
@@ -113,7 +113,7 @@ namespace PathORAM
 
 		for (auto block : expected)
 		{
-			for (ulong i = 0; i < this->Z; i++)
+			for (number i = 0; i < this->Z; i++)
 			{
 				auto id = block * this->Z + i;
 				EXPECT_TRUE(this->stash->exists(id));
@@ -141,15 +141,15 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, PutMany)
 	{
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			auto found = false;
-			for (ulong location = 0; location < CAPACITY; location++)
+			for (number location = 0; location < CAPACITY; location++)
 			{
 				if (this->storage->get(location).first == id)
 				{
@@ -167,12 +167,12 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, PutGetMany)
 	{
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			auto returned = this->oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
@@ -185,13 +185,13 @@ namespace PathORAM
 		puts.reserve(CAPACITY);
 		gets.reserve(CAPACITY);
 
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 			puts.push_back(this->stash->getAll().size());
 		}
 
-		for (ulong id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			this->oram->get(id);
 			gets.push_back(this->stash->getAll().size());

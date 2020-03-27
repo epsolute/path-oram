@@ -18,8 +18,8 @@ namespace PathORAM
 	class StorageAdapterBenchmark : public ::benchmark::Fixture
 	{
 		public:
-		inline static const ulong CAPACITY   = 1 << 17;
-		inline static const ulong BLOCK_SIZE = 32;
+		inline static const number CAPACITY   = 1 << 17;
+		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME = "storage.bin";
 
 		protected:
@@ -53,7 +53,7 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto random = state.range(1);
 
-		ulong location = 0;
+		number location = 0;
 		for (auto _ : state)
 		{
 			adapter->set((location * (random ? (1 << 10) : 1)) % CAPACITY, {5uLL, bytes()});
@@ -67,12 +67,12 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto random = state.range(1);
 
-		for (ulong i = 0; i < CAPACITY; i++)
+		for (number i = 0; i < CAPACITY; i++)
 		{
 			adapter->set(i, {5uLL, bytes()});
 		}
 
-		ulong location = 0;
+		number location = 0;
 		for (auto _ : state)
 		{
 			benchmark::DoNotOptimize(adapter->get((location * (random ? (1 << 10) : 1)) % CAPACITY));

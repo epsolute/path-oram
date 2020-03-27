@@ -21,21 +21,21 @@ namespace PathORAM
 		AbsPositionMapAdapter *map;
 		AbsStashAdapter *stash;
 
-		ulong dataSize;
-		ulong Z;
+		number dataSize;
+		number Z;
 
-		ulong height;
-		ulong buckets;
-		ulong blocks;
+		number height;
+		number buckets;
+		number blocks;
 
 		bool ownDependencies = false;
 
-		bytes access(bool read, ulong block, bytes data);
-		void readPath(ulong leaf);
-		void writePath(ulong leaf);
+		bytes access(bool read, number block, bytes data);
+		void readPath(number leaf);
+		void writePath(number leaf);
 
-		bool canInclude(ulong pathLeaf, ulong blockPosition, ulong level);
-		ulong bucketForLevelLeaf(ulong level, ulong leaf);
+		bool canInclude(number pathLeaf, number blockPosition, number level);
+		number bucketForLevelLeaf(number level, number leaf);
 
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
 		friend class ORAMTest_CanInclude_Test;
@@ -44,11 +44,11 @@ namespace PathORAM
 		friend class ORAMBigTest;
 
 		public:
-		ORAM(ulong logCapacity, ulong blockSize, ulong Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash);
-		ORAM(ulong logCapacity, ulong blockSize, ulong Z);
+		ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash);
+		ORAM(number logCapacity, number blockSize, number Z);
 		~ORAM();
 
-		bytes get(ulong block);
-		void put(ulong block, bytes data);
+		bytes get(number block);
+		void put(number block, bytes data);
 	};
 }

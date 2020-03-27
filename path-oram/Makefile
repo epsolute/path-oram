@@ -66,7 +66,7 @@ $(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 
 shared: CPPFLAGS += -DSHARED
 shared: $(OBJ)
-	$(CC) -shared -Wl $(LDLIBS) $(LDFLAGS) -o $(BDIR)/lib$(LIBNAME).so $(OBJ)
+	$(CC) -shared $(LDLIBS) $(LDFLAGS) -o $(BDIR)/lib$(LIBNAME).so $(OBJ)
 
 # objects
 
@@ -74,6 +74,10 @@ $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 	$(CC) -c -o $@ $< $(CPPFLAGS) $(INCLUDES)
 
 # commands
+
+ldconfig:
+	echo $(shell pwd)/bin > /etc/ld.so.conf.d/pathoram-dev.conf
+	ldconfig
 
 run-shared-lib: shared
 	$(CC) -o $(BDIR)/test-shared-lib $(TDIR)/test-shared-lib.cpp -I $(IDIR) -L $(BDIR) -l $(LIBNAME) $(CPPFLAGS)

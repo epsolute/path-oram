@@ -21,10 +21,10 @@ namespace PathORAM
 	class PositionMapAdapterTest : public testing::TestWithParam<TestingPositionMapAdapterType>
 	{
 		public:
-		inline static const ulong CAPACITY = 10;
+		inline static const number CAPACITY = 10;
 
-		inline static const ulong Z			 = 3;
-		inline static const ulong BLOCK_SIZE = 2 * AES_BLOCK_SIZE;
+		inline static const number Z			 = 3;
+		inline static const number BLOCK_SIZE = 2 * AES_BLOCK_SIZE;
 
 		protected:
 		AbsPositionMapAdapter* adapter;
@@ -36,7 +36,7 @@ namespace PathORAM
 
 		PositionMapAdapterTest()
 		{
-			auto logCapacity = max((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
 			auto capacity	= (1 << logCapacity) * Z;
 
 			this->storage = new InMemoryStorageAdapter(capacity + Z, BLOCK_SIZE, bytes());

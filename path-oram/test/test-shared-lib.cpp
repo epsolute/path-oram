@@ -25,20 +25,20 @@ int main()
 	auto oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z);
 
 	// put all
-	for (ulong id = 0; id < ELEMENTS; id++)
+	for (number id = 0; id < ELEMENTS; id++)
 	{
 		auto data = fromText(to_string(id), BLOCK_SIZE);
 		oram->put(id, data);
 	}
 
 	// get all
-	for (ulong id = 0; id < ELEMENTS; id++)
+	for (number id = 0; id < ELEMENTS; id++)
 	{
 		oram->get(id);
 	}
 
 	// random operations
-	for (ulong i = 0; i < 2 * ELEMENTS; i++)
+	for (number i = 0; i < 2 * ELEMENTS; i++)
 	{
 		auto id   = getRandomULong(ELEMENTS);
 		auto read = getRandomULong(2) == 0;

@@ -12,16 +12,16 @@ namespace PathORAM
 	class AbsStashAdapter
 	{
 		public:
-		virtual unordered_map<ulong, bytes> getAll() = 0;
-		virtual void add(ulong block, bytes data)	= 0;
-		virtual void update(ulong block, bytes data) = 0;
-		virtual bytes get(ulong block)				 = 0;
-		virtual void remove(ulong block)			 = 0;
+		virtual unordered_map<number, bytes> getAll() = 0;
+		virtual void add(number block, bytes data)	= 0;
+		virtual void update(number block, bytes data) = 0;
+		virtual bytes get(number block)				 = 0;
+		virtual void remove(number block)			 = 0;
 
 		virtual ~AbsStashAdapter() = 0;
 
 		protected:
-		virtual bool exists(ulong block) = 0;
+		virtual bool exists(number block) = 0;
 
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_PutMany_Test;
@@ -30,22 +30,22 @@ namespace PathORAM
 	class InMemoryStashAdapter : public AbsStashAdapter
 	{
 		private:
-		unordered_map<ulong, bytes> stash;
-		ulong capacity;
+		unordered_map<number, bytes> stash;
+		number capacity;
 
-		void checkOverflow(ulong block);
-		bool exists(ulong block);
+		void checkOverflow(number block);
+		bool exists(number block);
 
 		friend class ORAMTest_ReadPath_Test;
 
 		public:
-		InMemoryStashAdapter(ulong capacity);
+		InMemoryStashAdapter(number capacity);
 		~InMemoryStashAdapter() final;
 
-		unordered_map<ulong, bytes> getAll() final;
-		void add(ulong block, bytes data) final;
-		void update(ulong block, bytes data) final;
-		bytes get(ulong block) final;
-		void remove(ulong block) final;
+		unordered_map<number, bytes> getAll() final;
+		void add(number block, bytes data) final;
+		void update(number block, bytes data) final;
+		bytes get(number block) final;
+		void remove(number block) final;
 	};
 }

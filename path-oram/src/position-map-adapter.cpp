@@ -14,27 +14,27 @@ namespace PathORAM
 		delete[] this->map;
 	}
 
-	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(ulong capacity) :
+	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(number capacity) :
 		capacity(capacity)
 	{
-		this->map = new ulong[capacity];
+		this->map = new number[capacity];
 	}
 
-	ulong InMemoryPositionMapAdapter::get(ulong block)
+	number InMemoryPositionMapAdapter::get(number block)
 	{
 		this->checkCapacity(block);
 
 		return this->map[block];
 	}
 
-	void InMemoryPositionMapAdapter::set(ulong block, ulong leaf)
+	void InMemoryPositionMapAdapter::set(number block, number leaf)
 	{
 		this->checkCapacity(block);
 
 		this->map[block] = leaf;
 	}
 
-	void InMemoryPositionMapAdapter::checkCapacity(ulong block)
+	void InMemoryPositionMapAdapter::checkCapacity(number block)
 	{
 		if (block >= this->capacity)
 		{
@@ -51,21 +51,21 @@ namespace PathORAM
 	{
 	}
 
-	ulong ORAMPositionMapAdapter::get(ulong block)
+	number ORAMPositionMapAdapter::get(number block)
 	{
 		auto returned = this->oram->get(block);
 		uchar buffer[returned.size()];
 		copy(returned.begin(), returned.end(), buffer);
 
-		return ((ulong *)buffer)[0];
+		return ((number *)buffer)[0];
 	}
 
-	void ORAMPositionMapAdapter::set(ulong block, ulong leaf)
+	void ORAMPositionMapAdapter::set(number block, number leaf)
 	{
-		ulong buffer[1];
+		number buffer[1];
 		buffer[0] = leaf;
 
-		auto data = bytes((uchar *)buffer, (uchar *)buffer + sizeof(ulong));
+		auto data = bytes((uchar *)buffer, (uchar *)buffer + sizeof(number));
 
 		this->oram->put(block, data);
 	}

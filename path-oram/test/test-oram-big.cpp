@@ -11,7 +11,7 @@ using namespace std;
 
 namespace PathORAM
 {
-	class ORAMBigTest : public testing::TestWithParam<tuple<ulong, ulong, ulong, bool>>
+	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, bool>>
 	{
 		protected:
 		ORAM* oram;
@@ -19,9 +19,9 @@ namespace PathORAM
 		AbsPositionMapAdapter* map;
 		AbsStashAdapter* stash;
 
-		inline static ulong BLOCK_SIZE;
-		inline static ulong CAPACITY;
-		inline static ulong ELEMENTS;
+		inline static number BLOCK_SIZE;
+		inline static number CAPACITY;
+		inline static number ELEMENTS;
 
 		ORAMBigTest()
 		{
@@ -34,7 +34,7 @@ namespace PathORAM
 								(AbsStorageAdapter*)new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes()) :
 								(AbsStorageAdapter*)new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes(), "storage.bin", true);
 
-			auto logCapacity = max((ulong)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
 			auto z			 = 3uLL;
 			auto capacity	= (1 << logCapacity) * z;
 			auto blockSize   = 2 * AES_BLOCK_SIZE;
@@ -71,7 +71,7 @@ namespace PathORAM
 		}
 	};
 
-	string printTestName(testing::TestParamInfo<tuple<ulong, ulong, ulong, bool>> input)
+	string printTestName(testing::TestParamInfo<tuple<number, number, number, bool>> input)
 	{
 		auto [LOG_CAPACITY, Z, BLOCK_SIZE, useExternal] = input.param;
 		auto CAPACITY									= (1 << LOG_CAPACITY) * Z;
@@ -79,7 +79,7 @@ namespace PathORAM
 		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % useExternal);
 	}
 
-	tuple<ulong, ulong, ulong, bool> cases[] = {
+	tuple<number, number, number, bool> cases[] = {
 		{5, 3, 32, false},
 		{10, 4, 64, false},
 		{10, 5, 64, false},
@@ -91,11 +91,11 @@ namespace PathORAM
 
 	TEST_P(ORAMBigTest, Simulation)
 	{
-		unordered_map<ulong, bytes> local;
+		unordered_map<number, bytes> local;
 		local.reserve(ELEMENTS);
 
 		// put all
-		for (ulong id = 0; id < ELEMENTS; id++)
+		for (number id = 0; id < ELEMENTS; id++)
 		{
 			auto data = fromText(to_string(id), BLOCK_SIZE);
 			local[id] = data;
@@ -103,14 +103,14 @@ namespace PathORAM
 		}
 
 		// get all
-		for (ulong id = 0; id < ELEMENTS; id++)
+		for (number id = 0; id < ELEMENTS; id++)
 		{
 			auto returned = this->oram->get(id);
 			EXPECT_EQ(local[id], returned);
 		}
 
 		// random operations
-		for (ulong i = 0; i < ELEMENTS * 5; i++)
+		for (number i = 0; i < ELEMENTS * 5; i++)
 		{
 			auto id   = getRandomULong(ELEMENTS);
 			auto read = getRandomULong(2) == 0;

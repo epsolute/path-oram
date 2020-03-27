@@ -11,7 +11,7 @@ namespace PathORAM
 	class StashAdapterTest : public ::testing::Test
 	{
 		public:
-		inline static const ulong CAPACITY = 10;
+		inline static const number CAPACITY = 10;
 
 		protected:
 		InMemoryStashAdapter* adapter = new InMemoryStashAdapter(CAPACITY);
@@ -38,7 +38,7 @@ namespace PathORAM
 
 	TEST_F(StashAdapterTest, OverflowAdd)
 	{
-		for (ulong i = 0uLL; i < CAPACITY; i++)
+		for (number i = 0uLL; i < CAPACITY; i++)
 		{
 			adapter->add(i, bytes());
 		}
@@ -50,7 +50,7 @@ namespace PathORAM
 
 	TEST_F(StashAdapterTest, OverflowUpdate)
 	{
-		for (ulong i = 0uLL; i < CAPACITY; i++)
+		for (number i = 0uLL; i < CAPACITY; i++)
 		{
 			adapter->update(i, bytes());
 		}

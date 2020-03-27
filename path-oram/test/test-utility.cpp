@@ -15,7 +15,7 @@ namespace PathORAM
 	TEST_F(UtilityTest, NoSeed)
 	{
 		const auto n = 20uLL;
-		for (ulong i = 0; i < 100; i++)
+		for (number i = 0; i < 100; i++)
 		{
 			auto first  = getRandomBlock(n);
 			auto second = getRandomBlock(n);
@@ -66,7 +66,7 @@ namespace PathORAM
 
 	TEST_F(UtilityTest, EncryptDecryptMany)
 	{
-		for (ulong i = 0; i < 100; i++)
+		for (number i = 0; i < 100; i++)
 		{
 			auto key   = getRandomBlock(KEYSIZE);
 			auto iv	= getRandomBlock(AES_BLOCK_SIZE);

@@ -20,8 +20,8 @@ namespace PathORAM
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
 	{
 		public:
-		inline static const ulong CAPACITY   = 10;
-		inline static const ulong BLOCK_SIZE = 32;
+		inline static const number CAPACITY   = 10;
+		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME = "storage.bin";
 
 		protected:
@@ -159,7 +159,7 @@ namespace PathORAM
 
 	TEST_P(StorageAdapterTest, InitializeToEmpty)
 	{
-		for (ulong i = 0; i < CAPACITY; i++)
+		for (number i = 0; i < CAPACITY; i++)
 		{
 			auto expected = bytes();
 			expected.resize(BLOCK_SIZE, 0x00);

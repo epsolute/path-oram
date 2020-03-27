@@ -12,7 +12,7 @@ namespace PathORAM
 {
 	using namespace std;
 
-	bytes getRandomBlock(ulong blockSize)
+	bytes getRandomBlock(number blockSize)
 	{
 		uchar material[blockSize];
 #ifdef TESTING
@@ -26,15 +26,15 @@ namespace PathORAM
 		return bytes(material, material + blockSize);
 	}
 
-	ulong getRandomULong(ulong max)
+	number getRandomULong(number max)
 	{
-		ulong material[1];
+		number material[1];
 #ifdef TESTING
 		auto intMaterial = (int *)material;
 		intMaterial[0]   = rand();
 		intMaterial[1]   = rand();
 #else
-		RAND_bytes((uchar *)material, sizeof(ulong));
+		RAND_bytes((uchar *)material, sizeof(number));
 #endif
 		return material[0] % max;
 	}
@@ -84,7 +84,7 @@ namespace PathORAM
 		return bytes(outputMaterial, outputMaterial + size);
 	}
 
-	bytes fromText(string text, ulong BLOCK_SIZE)
+	bytes fromText(string text, number BLOCK_SIZE)
 	{
 		stringstream padded;
 		padded << setw(BLOCK_SIZE - 1) << left << text << endl;
@@ -93,7 +93,7 @@ namespace PathORAM
 		return bytes((uchar *)text.c_str(), (uchar *)text.c_str() + text.length());
 	}
 
-	string toText(bytes data, ulong BLOCK_SIZE)
+	string toText(bytes data, number BLOCK_SIZE)
 	{
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, sizeof buffer);

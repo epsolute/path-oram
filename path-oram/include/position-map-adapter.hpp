@@ -12,24 +12,24 @@ namespace PathORAM
 	class AbsPositionMapAdapter
 	{
 		public:
-		virtual ulong get(ulong block)			  = 0;
-		virtual void set(ulong block, ulong leaf) = 0;
+		virtual number get(number block)			  = 0;
+		virtual void set(number block, number leaf) = 0;
 		virtual ~AbsPositionMapAdapter()		  = 0;
 	};
 
 	class InMemoryPositionMapAdapter : public AbsPositionMapAdapter
 	{
 		private:
-		ulong *map;
-		ulong capacity;
+		number *map;
+		number capacity;
 
-		void checkCapacity(ulong block);
+		void checkCapacity(number block);
 
 		public:
-		InMemoryPositionMapAdapter(ulong capacity);
+		InMemoryPositionMapAdapter(number capacity);
 		~InMemoryPositionMapAdapter() final;
-		ulong get(ulong block) final;
-		void set(ulong block, ulong leaf) final;
+		number get(number block) final;
+		void set(number block, number leaf) final;
 	};
 
 	class ORAM;
@@ -44,7 +44,7 @@ namespace PathORAM
 		public:
 		ORAMPositionMapAdapter(ORAM *oram);
 		~ORAMPositionMapAdapter() final;
-		ulong get(ulong block) final;
-		void set(ulong block, ulong leaf) final;
+		number get(number block) final;
+		void set(number block, number leaf) final;
 	};
 }

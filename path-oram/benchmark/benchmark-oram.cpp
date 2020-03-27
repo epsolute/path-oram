@@ -13,12 +13,12 @@ namespace PathORAM
 	class ORAMBenchmark : public ::benchmark::Fixture
 	{
 		public:
-		inline static ulong LOG_CAPACITY;
-		inline static ulong Z;
-		inline static ulong BLOCK_SIZE;
+		inline static number LOG_CAPACITY;
+		inline static number Z;
+		inline static number BLOCK_SIZE;
 
-		inline static ulong CAPACITY;
-		inline static ulong ELEMENTS;
+		inline static number CAPACITY;
+		inline static number ELEMENTS;
 
 		protected:
 		ORAM* oram;
@@ -26,7 +26,7 @@ namespace PathORAM
 		AbsPositionMapAdapter* map;
 		AbsStashAdapter* stash;
 
-		void Configure(ulong LOG_CAPACITY, ulong Z, ulong BLOCK_SIZE)
+		void Configure(number LOG_CAPACITY, number Z, number BLOCK_SIZE)
 		{
 			this->LOG_CAPACITY = LOG_CAPACITY;
 			this->Z			   = Z;
@@ -56,14 +56,14 @@ namespace PathORAM
 		Configure(state.range(0), state.range(1), state.range(2));
 
 		// put all
-		for (ulong id = 0; id < ELEMENTS; id++)
+		for (number id = 0; id < ELEMENTS; id++)
 		{
 			auto data = fromText(to_string(id), BLOCK_SIZE);
 			this->oram->put(id, data);
 		}
 
 		// get all
-		for (ulong id = 0; id < ELEMENTS; id++)
+		for (number id = 0; id < ELEMENTS; id++)
 		{
 			this->oram->get(id);
 		}

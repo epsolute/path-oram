@@ -11,44 +11,44 @@ namespace PathORAM
 
 	InMemoryStashAdapter::~InMemoryStashAdapter() {}
 
-	InMemoryStashAdapter::InMemoryStashAdapter(ulong capacity) :
+	InMemoryStashAdapter::InMemoryStashAdapter(number capacity) :
 		capacity(capacity)
 	{
-		this->stash = unordered_map<ulong, bytes>();
+		this->stash = unordered_map<number, bytes>();
 		this->stash.reserve(this->capacity);
 	}
 
-	unordered_map<ulong, bytes> InMemoryStashAdapter::getAll()
+	unordered_map<number, bytes> InMemoryStashAdapter::getAll()
 	{
 		auto result = this->stash;
 		return result;
 	}
 
-	void InMemoryStashAdapter::add(ulong block, bytes data)
+	void InMemoryStashAdapter::add(number block, bytes data)
 	{
 		this->checkOverflow(block);
 
 		this->stash.insert({block, data});
 	}
 
-	void InMemoryStashAdapter::update(ulong block, bytes data)
+	void InMemoryStashAdapter::update(number block, bytes data)
 	{
 		this->checkOverflow(block);
 
 		this->stash[block] = data;
 	}
 
-	bytes InMemoryStashAdapter::get(ulong block)
+	bytes InMemoryStashAdapter::get(number block)
 	{
 		return this->stash[block];
 	}
 
-	void InMemoryStashAdapter::remove(ulong block)
+	void InMemoryStashAdapter::remove(number block)
 	{
 		this->stash.erase(block);
 	}
 
-	void InMemoryStashAdapter::checkOverflow(ulong block)
+	void InMemoryStashAdapter::checkOverflow(number block)
 	{
 		if (this->stash.size() == this->capacity && this->stash.count(block) == 0)
 		{
@@ -56,7 +56,7 @@ namespace PathORAM
 		}
 	}
 
-	bool InMemoryStashAdapter::exists(ulong block)
+	bool InMemoryStashAdapter::exists(number block)
 	{
 		return this->stash.count(block);
 	}
