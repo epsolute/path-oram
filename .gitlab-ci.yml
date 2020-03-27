@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - release
+  - deploy
 
 build-binaries:
   image: dbogatov/docker-images:pbc-latest
@@ -108,3 +109,12 @@ pages:
     - docker
   only:
     - master
+
+variables:
+  CI_REF: &ref 85f8a6f6305719f3c234b5368fa8f7e5ce5d099c
+
+include:
+  # DEPLOY
+  - project: "templates/ci-snippets"
+    file: "trigger-websites-deploy.yml"
+    ref: *ref
