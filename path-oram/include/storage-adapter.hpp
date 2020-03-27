@@ -1,10 +1,8 @@
-#ifndef STORAGE_INCLUDED
-#define STORAGE_INCLUDED
+#pragma once
 
 #include "definitions.h"
 
 #include <fstream>
-
 namespace PathORAM
 {
 	using namespace std;
@@ -61,5 +59,3 @@ namespace PathORAM
 		bytes getInternal(ulong location) final;
 	};
 }
-
-#endif

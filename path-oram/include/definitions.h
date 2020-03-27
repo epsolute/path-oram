@@ -1,5 +1,4 @@
-#ifndef DEFINITIONS_INCLUDED
-#define DEFINITIONS_INCLUDED
+#pragma once
 
 #include <climits>
 #include <vector>
@@ -20,5 +19,3 @@ namespace PathORAM
 		DECRYPT
 	};
 }
-
-#endif

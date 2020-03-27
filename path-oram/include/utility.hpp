@@ -1,5 +1,4 @@
-#ifndef UTILITY_INCLUDED
-#define UTILITY_INCLUDED
+#pragma once
 
 #include "definitions.h"
 
@@ -16,5 +15,3 @@ namespace PathORAM
 	bytes fromText(string text, ulong BLOCK_SIZE);
 	string toText(bytes data, ulong BLOCK_SIZE);
 }
-
-#endif

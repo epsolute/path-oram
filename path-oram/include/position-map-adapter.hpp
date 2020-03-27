@@ -1,5 +1,4 @@
-#ifndef POSITION_MAP_INCLUDED
-#define POSITION_MAP_INCLUDED
+#pragma once
 
 #include "definitions.h"
 #include "oram.hpp"
@@ -49,5 +48,3 @@ namespace PathORAM
 		void set(ulong block, ulong leaf) final;
 	};
 }
-
-#endif

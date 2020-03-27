@@ -1,5 +1,4 @@
-#ifndef ORAM_INCLUDED
-#define ORAM_INCLUDED
+#pragma once
 
 #include "definitions.h"
 #include "position-map-adapter.hpp"
@@ -50,5 +49,3 @@ namespace PathORAM
 		void put(ulong block, bytes data);
 	};
 }
-
-#endif
