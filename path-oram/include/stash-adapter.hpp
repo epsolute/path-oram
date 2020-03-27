@@ -15,8 +15,8 @@ namespace PathORAM
 		virtual unordered_map<number, bytes> getAll() = 0;
 		virtual void add(number block, bytes data)	= 0;
 		virtual void update(number block, bytes data) = 0;
-		virtual bytes get(number block)				 = 0;
-		virtual void remove(number block)			 = 0;
+		virtual bytes get(number block)				  = 0;
+		virtual void remove(number block)			  = 0;
 
 		virtual ~AbsStashAdapter() = 0;
 

@@ -11,7 +11,7 @@ namespace PathORAM
 
 	InMemoryPositionMapAdapter::~InMemoryPositionMapAdapter()
 	{
-		delete[] this->map;
+		delete[] map;
 	}
 
 	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(number capacity) :
@@ -22,23 +22,23 @@ namespace PathORAM
 
 	number InMemoryPositionMapAdapter::get(number block)
 	{
-		this->checkCapacity(block);
+		checkCapacity(block);
 
-		return this->map[block];
+		return map[block];
 	}
 
 	void InMemoryPositionMapAdapter::set(number block, number leaf)
 	{
-		this->checkCapacity(block);
+		checkCapacity(block);
 
-		this->map[block] = leaf;
+		map[block] = leaf;
 	}
 
 	void InMemoryPositionMapAdapter::checkCapacity(number block)
 	{
-		if (block >= this->capacity)
+		if (block >= capacity)
 		{
-			throw boost::str(boost::format("block %1% out of bound (capacity %2%)") % block % this->capacity);
+			throw boost::str(boost::format("block %1% out of bound (capacity %2%)") % block % capacity);
 		}
 	}
 
@@ -53,7 +53,7 @@ namespace PathORAM
 
 	number ORAMPositionMapAdapter::get(number block)
 	{
-		auto returned = this->oram->get(block);
+		auto returned = oram->get(block);
 		uchar buffer[returned.size()];
 		copy(returned.begin(), returned.end(), buffer);
 
@@ -67,6 +67,6 @@ namespace PathORAM
 
 		auto data = bytes((uchar *)buffer, (uchar *)buffer + sizeof(number));
 
-		this->oram->put(block, data);
+		oram->put(block, data);
 	}
 }

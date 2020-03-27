@@ -16,24 +16,24 @@ namespace PathORAM
 		dataSize(blockSize),
 		Z(Z)
 	{
-		this->height  = logCapacity;			  // we are given a height
-		this->buckets = (number)1 << this->height; // number of buckets is 2^height
-		this->blocks  = this->buckets * this->Z;  // number of blocks is buckets / Z (Z blocks per bucket)
+		this->height  = logCapacity;		 // we are given a height
+		this->buckets = (number)1 << height; // number of buckets is 2^height
+		this->blocks  = buckets * Z;		 // number of blocks is buckets / Z (Z blocks per bucket)
 
 		// fill all blocks with random bits
-		for (number i = 0uLL; i < this->buckets; i++)
+		for (number i = 0uLL; i < buckets; i++)
 		{
-			for (number j = 0uLL; j < this->Z; j++)
+			for (number j = 0uLL; j < Z; j++)
 			{
-				auto block = getRandomBlock(this->dataSize);
-				this->storage->set(i * this->Z + j, {ULONG_MAX, block});
+				auto block = getRandomBlock(dataSize);
+				storage->set(i * Z + j, {ULONG_MAX, block});
 			}
 		}
 
 		// generate random position map
-		for (number i = 0; i < this->blocks; ++i)
+		for (number i = 0; i < blocks; ++i)
 		{
-			this->map->set(i, getRandomULong(1 << (this->height - 1)));
+			map->set(i, getRandomULong(1 << (height - 1)));
 		}
 	}
 
@@ -50,39 +50,39 @@ namespace PathORAM
 
 	ORAM::~ORAM()
 	{
-		if (this->ownDependencies)
+		if (ownDependencies)
 		{
-			delete this->storage;
-			delete this->map;
-			delete this->stash;
+			delete storage;
+			delete map;
+			delete stash;
 		}
 	}
 
 	bytes ORAM::get(number block)
 	{
-		return this->access(true, block, bytes());
+		return access(true, block, bytes());
 	}
 
 	void ORAM::put(number block, bytes data)
 	{
-		this->access(false, block, data);
+		access(false, block, data);
 	}
 
 	bytes ORAM::access(bool read, number block, bytes data)
 	{
 		// step 1 from paper: remap block
-		auto previousPosition = this->map->get(block);
-		this->map->set(block, getRandomULong(1 << (this->height - 1)));
+		auto previousPosition = map->get(block);
+		map->set(block, getRandomULong(1 << (height - 1)));
 
 		// step 2 from paper: read path
-		this->readPath(previousPosition); // stash updated
+		readPath(previousPosition); // stash updated
 
 		// step 3 from paper: update block
 		if (!read) // if "write"
 		{
-			this->stash->update(block, data);
+			stash->update(block, data);
 		}
-		auto returned = this->stash->get(block);
+		auto returned = stash->get(block);
 
 		// step 4 from paper: write path
 		writePath(previousPosition); // stash updated
@@ -92,16 +92,16 @@ namespace PathORAM
 
 	void ORAM::readPath(number leaf)
 	{
-		for (number level = 0; level < this->height; level++)
+		for (number level = 0; level < height; level++)
 		{
-			auto bucket = this->bucketForLevelLeaf(level, leaf);
-			for (number i = 0; i < this->Z; i++)
+			auto bucket = bucketForLevelLeaf(level, leaf);
+			for (number i = 0; i < Z; i++)
 			{
-				auto block		= bucket * this->Z + i;
-				auto [id, data] = this->storage->get(block);
+				auto block		= bucket * Z + i;
+				auto [id, data] = storage->get(block);
 				if (id != ULONG_MAX)
 				{
-					this->stash->add(id, data);
+					stash->add(id, data);
 				}
 			}
 		}
@@ -109,22 +109,22 @@ namespace PathORAM
 
 	void ORAM::writePath(number leaf)
 	{
-		auto currentStash = this->stash->getAll();
+		auto currentStash = stash->getAll();
 		vector<int> toDelete;
 
-		for (int level = this->height - 1; level >= 0; level--)
+		for (int level = height - 1; level >= 0; level--)
 		{
 			vector<pair<number, bytes>> toInsert;
 			vector<int> toDeleteLocal;
 			for (auto entry : currentStash)
 			{
-				auto entryLeaf = this->map->get(entry.first);
-				if (this->canInclude(entryLeaf, leaf, level))
+				auto entryLeaf = map->get(entry.first);
+				if (canInclude(entryLeaf, leaf, level))
 				{
 					toInsert.push_back(entry);
 					toDelete.push_back(entry.first);
 					toDeleteLocal.push_back(entry.first);
-					if (toInsert.size() == this->Z)
+					if (toInsert.size() == Z)
 					{
 						break;
 					}
@@ -135,37 +135,37 @@ namespace PathORAM
 				currentStash.erase(removed);
 			}
 
-			auto bucket = this->bucketForLevelLeaf(level, leaf);
+			auto bucket = bucketForLevelLeaf(level, leaf);
 
-			for (number i = 0; i < this->Z; i++)
+			for (number i = 0; i < Z; i++)
 			{
-				auto block = bucket * this->Z + i;
+				auto block = bucket * Z + i;
 				if (toInsert.size() != 0)
 				{
 					auto data = toInsert.back();
 					toInsert.pop_back();
-					this->storage->set(block, data);
+					storage->set(block, data);
 				}
 				else
 				{
-					this->storage->set(block, {ULONG_MAX, getRandomBlock(this->dataSize)});
+					storage->set(block, {ULONG_MAX, getRandomBlock(dataSize)});
 				}
 			}
 		}
 
 		for (auto removed : toDelete)
 		{
-			this->stash->remove(removed);
+			stash->remove(removed);
 		}
 	}
 
 	number ORAM::bucketForLevelLeaf(number level, number leaf)
 	{
-		return (leaf + (1 << (this->height - 1))) >> (height - 1 - level);
+		return (leaf + (1 << (height - 1))) >> (height - 1 - level);
 	}
 
 	bool ORAM::canInclude(number pathLeaf, number blockPosition, number level)
 	{
-		return this->bucketForLevelLeaf(level, pathLeaf) == this->bucketForLevelLeaf(level, blockPosition);
+		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);
 	}
 }

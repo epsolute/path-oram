@@ -28,7 +28,7 @@ namespace PathORAM
 		number userBlockSize;
 
 		virtual void setInternal(number location, bytes raw) = 0;
-		virtual bytes getInternal(number location)			= 0;
+		virtual bytes getInternal(number location)			 = 0;
 	};
 
 	class InMemoryStorageAdapter : public AbsStorageAdapter

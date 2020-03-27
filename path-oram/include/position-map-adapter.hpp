@@ -12,9 +12,9 @@ namespace PathORAM
 	class AbsPositionMapAdapter
 	{
 		public:
-		virtual number get(number block)			  = 0;
+		virtual number get(number block)			= 0;
 		virtual void set(number block, number leaf) = 0;
-		virtual ~AbsPositionMapAdapter()		  = 0;
+		virtual ~AbsPositionMapAdapter()			= 0;
 	};
 
 	class InMemoryPositionMapAdapter : public AbsPositionMapAdapter

@@ -12,7 +12,7 @@ namespace PathORAM
 	{
 		public:
 		inline static const number LOG_CAPACITY = 5;
-		inline static const number Z			   = 3;
+		inline static const number Z			= 3;
 		inline static const number BLOCK_SIZE   = 32;
 
 		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
@@ -25,7 +25,7 @@ namespace PathORAM
 
 		ORAMTest()
 		{
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);
+			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
 		}
 
 		~ORAMTest() override
@@ -40,7 +40,7 @@ namespace PathORAM
 		{
 			for (number i = 0; i < CAPACITY + Z; i++)
 			{
-				this->storage->set(i, {i, bytes()});
+				storage->set(i, {i, bytes()});
 			}
 		}
 	};
@@ -48,7 +48,7 @@ namespace PathORAM
 	TEST_F(ORAMTest, Helpers)
 	{
 		ASSERT_EQ(toText(fromText("hello", BLOCK_SIZE), BLOCK_SIZE), "hello");
-		ASSERT_EQ(this->BLOCK_SIZE, fromText("hello", BLOCK_SIZE).size());
+		ASSERT_EQ(BLOCK_SIZE, fromText("hello", BLOCK_SIZE).size());
 	}
 
 	TEST_F(ORAMTest, Initialization)
@@ -77,7 +77,7 @@ namespace PathORAM
 		{
 			for (number level = 0; level < LOG_CAPACITY; level++)
 			{
-				EXPECT_EQ(test.second[level], this->oram->bucketForLevelLeaf(level, test.first));
+				EXPECT_EQ(test.second[level], oram->bucketForLevelLeaf(level, test.first));
 			}
 		}
 	}
@@ -95,46 +95,46 @@ namespace PathORAM
 
 		for (auto test : tests)
 		{
-			EXPECT_EQ(get<3>(test), this->oram->canInclude(get<0>(test), get<1>(test), get<2>(test)));
+			EXPECT_EQ(get<3>(test), oram->canInclude(get<0>(test), get<1>(test), get<2>(test)));
 		}
 	}
 
 	TEST_F(ORAMTest, ReadPath)
 	{
-		this->populateStorage();
+		populateStorage();
 
-		EXPECT_EQ(0, this->stash->getAll().size());
+		EXPECT_EQ(0, stash->getAll().size());
 
-		this->oram->readPath(10uLL);
+		oram->readPath(10uLL);
 
-		EXPECT_EQ(this->LOG_CAPACITY * this->Z, this->stash->getAll().size());
+		EXPECT_EQ(LOG_CAPACITY * Z, stash->getAll().size());
 
 		vector<int> expected = {1, 3, 6, 13, 26};
 
 		for (auto block : expected)
 		{
-			for (number i = 0; i < this->Z; i++)
+			for (number i = 0; i < Z; i++)
 			{
-				auto id = block * this->Z + i;
-				EXPECT_TRUE(this->stash->exists(id));
+				auto id = block * Z + i;
+				EXPECT_TRUE(stash->exists(id));
 			}
 		}
 	}
 
 	TEST_F(ORAMTest, GetNoException)
 	{
-		this->oram->get(CAPACITY - 1);
+		oram->get(CAPACITY - 1);
 	}
 
 	TEST_F(ORAMTest, PutNoException)
 	{
-		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
+		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
 	}
 
 	TEST_F(ORAMTest, GetPutSame)
 	{
-		this->oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
-		auto returned = this->oram->get(CAPACITY - 1);
+		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
+		auto returned = oram->get(CAPACITY - 1);
 
 		ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
 	}
@@ -143,7 +143,7 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
 		for (number id = 0; id < CAPACITY; id++)
@@ -151,7 +151,7 @@ namespace PathORAM
 			auto found = false;
 			for (number location = 0; location < CAPACITY; location++)
 			{
-				if (this->storage->get(location).first == id)
+				if (storage->get(location).first == id)
 				{
 					found = true;
 					break;
@@ -159,7 +159,7 @@ namespace PathORAM
 			}
 			if (!found)
 			{
-				found = this->stash->exists(id);
+				found = stash->exists(id);
 			}
 			EXPECT_TRUE(found);
 		}
@@ -169,12 +169,12 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
 		for (number id = 0; id < CAPACITY; id++)
 		{
-			auto returned = this->oram->get(id);
+			auto returned = oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -187,14 +187,14 @@ namespace PathORAM
 
 		for (number id = 0; id < CAPACITY; id++)
 		{
-			this->oram->put(id, fromText(to_string(id), BLOCK_SIZE));
-			puts.push_back(this->stash->getAll().size());
+			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			puts.push_back(stash->getAll().size());
 		}
 
 		for (number id = 0; id < CAPACITY; id++)
 		{
-			this->oram->get(id);
-			gets.push_back(this->stash->getAll().size());
+			oram->get(id);
+			gets.push_back(stash->getAll().size());
 		}
 
 		EXPECT_GE(LOG_CAPACITY * Z * 2, *max_element(gets.begin(), gets.end()));

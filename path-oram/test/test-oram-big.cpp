@@ -50,7 +50,7 @@ namespace PathORAM
 									new InMemoryStashAdapter(3 * logCapacity * z)));
 			this->stash = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
 
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);
+			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
 		}
 
 		~ORAMBigTest() override
@@ -99,13 +99,13 @@ namespace PathORAM
 		{
 			auto data = fromText(to_string(id), BLOCK_SIZE);
 			local[id] = data;
-			this->oram->put(id, data);
+			oram->put(id, data);
 		}
 
 		// get all
 		for (number id = 0; id < ELEMENTS; id++)
 		{
-			auto returned = this->oram->get(id);
+			auto returned = oram->get(id);
 			EXPECT_EQ(local[id], returned);
 		}
 
@@ -117,14 +117,14 @@ namespace PathORAM
 			if (read)
 			{
 				// get
-				auto returned = this->oram->get(id);
+				auto returned = oram->get(id);
 				EXPECT_EQ(local[id], returned);
 			}
 			else
 			{
 				auto data = fromText(to_string(ELEMENTS + getRandomULong(ELEMENTS)), BLOCK_SIZE);
 				local[id] = data;
-				this->oram->put(id, data);
+				oram->put(id, data);
 			}
 		}
 	}

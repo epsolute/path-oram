@@ -18,9 +18,9 @@ namespace PathORAM
 
 	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
-		this->checkCapacity(location);
+		checkCapacity(location);
 
-		auto raw = this->getInternal(location);
+		auto raw = getInternal(location);
 
 		uchar buffer[raw.size()];
 
@@ -31,24 +31,24 @@ namespace PathORAM
 		auto data = bytes(buffer + sizeof(number) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
 
 		// decryption
-		auto decrypted = encrypt(this->key, iv, data, DECRYPT);
+		auto decrypted = encrypt(key, iv, data, DECRYPT);
 
 		return {id, decrypted};
 	}
 
 	void AbsStorageAdapter::set(number location, pair<number, bytes> data)
 	{
-		this->checkCapacity(location);
-		this->checkBlockSize(data.second.size());
+		checkCapacity(location);
+		checkBlockSize(data.second.size());
 
-		if (data.second.size() < this->userBlockSize)
+		if (data.second.size() < userBlockSize)
 		{
-			data.second.resize(this->userBlockSize, 0x00);
+			data.second.resize(userBlockSize, 0x00);
 		}
 
 		// encryption
 		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
-		auto encrypted = encrypt(this->key, iv, data.second, ENCRYPT);
+		auto encrypted = encrypt(key, iv, data.second, ENCRYPT);
 
 		number buffer[1] = {data.first};
 		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
@@ -59,22 +59,22 @@ namespace PathORAM
 		raw.insert(raw.end(), iv.begin(), iv.end());
 		raw.insert(raw.end(), encrypted.begin(), encrypted.end());
 
-		this->setInternal(location, raw);
+		setInternal(location, raw);
 	}
 
 	void AbsStorageAdapter::checkCapacity(number location)
 	{
-		if (location >= this->capacity)
+		if (location >= capacity)
 		{
-			throw boost::str(boost::format("id %1% out of bound (capacity %2%)") % location % this->capacity);
+			throw boost::str(boost::format("id %1% out of bound (capacity %2%)") % location % capacity);
 		}
 	}
 
 	void AbsStorageAdapter::checkBlockSize(number dataLength)
 	{
-		if (dataLength > this->userBlockSize)
+		if (dataLength > userBlockSize)
 		{
-			throw boost::str(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % this->userBlockSize);
+			throw boost::str(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % userBlockSize);
 		}
 	}
 
@@ -106,11 +106,11 @@ namespace PathORAM
 
 	InMemoryStorageAdapter::~InMemoryStorageAdapter()
 	{
-		for (number i = 0; i < this->capacity; i++)
+		for (number i = 0; i < capacity; i++)
 		{
-			delete[] this->blocks[i];
+			delete[] blocks[i];
 		}
-		delete[] this->blocks;
+		delete[] blocks;
 	}
 
 	InMemoryStorageAdapter::InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key) :
@@ -119,23 +119,23 @@ namespace PathORAM
 		this->blocks = new uchar *[capacity];
 		for (number i = 0; i < capacity; i++)
 		{
-			this->blocks[i] = new uchar[this->blockSize];
+			blocks[i] = new uchar[blockSize];
 		}
 
 		for (number i = 0; i < capacity; i++)
 		{
-			this->set(i, {ULONG_MAX, bytes()});
+			set(i, {ULONG_MAX, bytes()});
 		}
 	}
 
 	bytes InMemoryStorageAdapter::getInternal(number location)
 	{
-		return bytes(this->blocks[location], this->blocks[location] + this->blockSize);
+		return bytes(blocks[location], blocks[location] + blockSize);
 	}
 
 	void InMemoryStorageAdapter::setInternal(number location, bytes raw)
 	{
-		copy(raw.begin(), raw.end(), this->blocks[location]);
+		copy(raw.begin(), raw.end(), blocks[location]);
 	}
 
 #pragma endregion InMemoryStorageAdapter
@@ -144,7 +144,7 @@ namespace PathORAM
 
 	FileSystemStorageAdapter::~FileSystemStorageAdapter()
 	{
-		this->file.close();
+		file.close();
 	}
 
 	FileSystemStorageAdapter::FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override) :
@@ -156,45 +156,45 @@ namespace PathORAM
 			flags |= fstream::trunc;
 		}
 
-		this->file.open(filename, flags);
-		if (!this->file)
+		file.open(filename, flags);
+		if (!file)
 		{
 			throw boost::str(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
 		}
 
 		if (override)
 		{
-			this->file.seekg(0, this->file.beg);
-			uchar placeholder[this->blockSize];
+			file.seekg(0, file.beg);
+			uchar placeholder[blockSize];
 
 			for (number i = 0; i < capacity; i++)
 			{
-				this->file.write((const char *)placeholder, this->blockSize);
+				file.write((const char *)placeholder, blockSize);
 			}
 
 			for (number i = 0; i < capacity; i++)
 			{
-				this->set(i, {ULONG_MAX, bytes()});
+				set(i, {ULONG_MAX, bytes()});
 			}
 		}
 	}
 
 	bytes FileSystemStorageAdapter::getInternal(number location)
 	{
-		uchar placeholder[this->blockSize];
-		this->file.seekg(location * this->blockSize, this->file.beg);
-		this->file.read((char *)placeholder, this->blockSize);
+		uchar placeholder[blockSize];
+		file.seekg(location * blockSize, file.beg);
+		file.read((char *)placeholder, blockSize);
 
-		return bytes(placeholder, placeholder + this->blockSize);
+		return bytes(placeholder, placeholder + blockSize);
 	}
 
 	void FileSystemStorageAdapter::setInternal(number location, bytes raw)
 	{
-		uchar placeholder[this->blockSize];
+		uchar placeholder[blockSize];
 		copy(raw.begin(), raw.end(), placeholder);
 
-		this->file.seekp(location * this->blockSize, this->file.beg);
-		this->file.write((const char *)placeholder, this->blockSize);
+		file.seekp(location * blockSize, file.beg);
+		file.write((const char *)placeholder, blockSize);
 	}
 
 #pragma endregion FileSystemStorageAdapter

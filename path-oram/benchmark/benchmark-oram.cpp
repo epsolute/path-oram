@@ -38,7 +38,7 @@ namespace PathORAM
 			this->map	 = new InMemoryPositionMapAdapter(CAPACITY + Z);
 			this->stash   = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
 
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, this->storage, this->map, this->stash);
+			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
 		}
 
 		~ORAMBenchmark() override
@@ -59,13 +59,13 @@ namespace PathORAM
 		for (number id = 0; id < ELEMENTS; id++)
 		{
 			auto data = fromText(to_string(id), BLOCK_SIZE);
-			this->oram->put(id, data);
+			oram->put(id, data);
 		}
 
 		// get all
 		for (number id = 0; id < ELEMENTS; id++)
 		{
-			this->oram->get(id);
+			oram->get(id);
 		}
 
 		// random operations
@@ -76,12 +76,12 @@ namespace PathORAM
 			if (read)
 			{
 				// get
-				benchmark::DoNotOptimize(this->oram->get(id));
+				benchmark::DoNotOptimize(oram->get(id));
 			}
 			else
 			{
 				auto data = fromText(to_string(ELEMENTS + getRandomULong(ELEMENTS)), BLOCK_SIZE);
-				this->oram->put(id, data);
+				oram->put(id, data);
 			}
 		}
 	}

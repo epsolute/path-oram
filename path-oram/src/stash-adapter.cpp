@@ -15,49 +15,49 @@ namespace PathORAM
 		capacity(capacity)
 	{
 		this->stash = unordered_map<number, bytes>();
-		this->stash.reserve(this->capacity);
+		stash.reserve(capacity);
 	}
 
 	unordered_map<number, bytes> InMemoryStashAdapter::getAll()
 	{
-		auto result = this->stash;
+		auto result = stash;
 		return result;
 	}
 
 	void InMemoryStashAdapter::add(number block, bytes data)
 	{
-		this->checkOverflow(block);
+		checkOverflow(block);
 
-		this->stash.insert({block, data});
+		stash.insert({block, data});
 	}
 
 	void InMemoryStashAdapter::update(number block, bytes data)
 	{
-		this->checkOverflow(block);
+		checkOverflow(block);
 
-		this->stash[block] = data;
+		stash[block] = data;
 	}
 
 	bytes InMemoryStashAdapter::get(number block)
 	{
-		return this->stash[block];
+		return stash[block];
 	}
 
 	void InMemoryStashAdapter::remove(number block)
 	{
-		this->stash.erase(block);
+		stash.erase(block);
 	}
 
 	void InMemoryStashAdapter::checkOverflow(number block)
 	{
-		if (this->stash.size() == this->capacity && this->stash.count(block) == 0)
+		if (stash.size() == capacity && stash.count(block) == 0)
 		{
-			throw boost::str(boost::format("trying to insert over capacity (capacity %1%)") % this->capacity);
+			throw boost::str(boost::format("trying to insert over capacity (capacity %1%)") % capacity);
 		}
 	}
 
 	bool InMemoryStashAdapter::exists(number block)
 	{
-		return this->stash.count(block);
+		return stash.count(block);
 	}
 }

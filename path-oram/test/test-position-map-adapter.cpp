@@ -23,7 +23,7 @@ namespace PathORAM
 		public:
 		inline static const number CAPACITY = 10;
 
-		inline static const number Z			 = 3;
+		inline static const number Z		  = 3;
 		inline static const number BLOCK_SIZE = 2 * AES_BLOCK_SIZE;
 
 		protected:
@@ -47,9 +47,9 @@ namespace PathORAM
 				logCapacity,
 				BLOCK_SIZE,
 				Z,
-				this->storage,
-				this->map,
-				this->stash);
+				storage,
+				map,
+				stash);
 
 			auto type = GetParam();
 			switch (type)
@@ -58,7 +58,7 @@ namespace PathORAM
 					this->adapter = new InMemoryPositionMapAdapter(CAPACITY);
 					break;
 				case PositionMapAdapterTypeORAM:
-					this->adapter = new ORAMPositionMapAdapter(this->oram);
+					this->adapter = new ORAMPositionMapAdapter(oram);
 					break;
 				default:
 					throw boost::str(boost::format("TestingPositionMapAdapterType %2% is not implemented") % type);

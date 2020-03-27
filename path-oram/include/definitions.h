@@ -10,8 +10,8 @@
 namespace PathORAM
 {
 	using number = unsigned long long;
-	using uchar = unsigned char;
-	using bytes = std::vector<uchar>;
+	using uchar  = unsigned char;
+	using bytes  = std::vector<uchar>;
 
 	enum EncryptionMode
 	{

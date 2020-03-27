@@ -20,7 +20,7 @@ namespace PathORAM
 		public:
 		inline static const number CAPACITY   = 1 << 17;
 		inline static const number BLOCK_SIZE = 32;
-		inline static const string FILE_NAME = "storage.bin";
+		inline static const string FILE_NAME  = "storage.bin";
 
 		protected:
 		AbsStorageAdapter* adapter;
