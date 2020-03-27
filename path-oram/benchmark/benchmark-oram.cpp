@@ -87,16 +87,20 @@ namespace PathORAM
 	}
 
 	BENCHMARK_REGISTER_F(ORAMBenchmark, Payload)
+		// base case
 		->Args({5, 3, 32})
 
+		// change Log(N)
 		->Args({7, 3, 32})
 		->Args({9, 3, 32})
 		->Args({11, 3, 32})
 
+		// change Z
 		->Args({5, 4, 32})
 		->Args({5, 5, 32})
 		->Args({5, 6, 32})
 
+		// change block size
 		->Args({5, 3, 1024})
 		->Args({5, 3, 2048})
 		->Args({5, 3, 4096})

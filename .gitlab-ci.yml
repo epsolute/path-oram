@@ -1,6 +1,7 @@
 stages:
   - build
   - test
+  - release
 
 build-binaries:
   image: dbogatov/docker-images:pbc-latest
@@ -73,3 +74,37 @@ shared-library:
   dependencies: []
   tags:
     - docker
+
+docs-website:
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  script:
+    - docker build -t $CI_REGISTRY/$CI_PROJECT_PATH:$CI_BUILD_REF_NAME .
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
+    - docker push $CI_REGISTRY/$CI_PROJECT_PATH:$CI_BUILD_REF_NAME
+  dependencies:
+    - build-docs
+  tags:
+    - shell
+  only:
+    - master
+
+pages:
+  image: dbogatov/docker-images:alpine-extras-latest
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  script:
+    - mv docs/html public/
+    - echo "Uploading files to pages"
+  artifacts:
+    expire_in: 30 min
+    paths:
+      - public
+  dependencies:
+    - build-docs
+  tags:
+    - docker
+  only:
+    - master

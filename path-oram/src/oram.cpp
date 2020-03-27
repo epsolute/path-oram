@@ -20,7 +20,7 @@ namespace PathORAM
 		this->buckets = (number)1 << height; // number of buckets is 2^height
 		this->blocks  = buckets * Z;		 // number of blocks is buckets / Z (Z blocks per bucket)
 
-		// fill all blocks with random bits
+		// fill all blocks with random bits, marks them as "empty"
 		for (number i = 0uLL; i < buckets; i++)
 		{
 			for (number j = 0uLL; j < Z; j++)
@@ -45,11 +45,13 @@ namespace PathORAM
 			 new InMemoryPositionMapAdapter(((1 << logCapacity) * Z) + Z),
 			 new InMemoryStashAdapter(3 * logCapacity * Z))
 	{
+		// we created the adapters, we will destroy them
 		ownDependencies = true;
 	}
 
 	ORAM::~ORAM()
 	{
+		// we created the adapters, we will destroy them
 		if (ownDependencies)
 		{
 			delete storage;
@@ -92,13 +94,16 @@ namespace PathORAM
 
 	void ORAM::readPath(number leaf)
 	{
+		// for levels from root to leaf
 		for (number level = 0; level < height; level++)
 		{
+			// get the bucket and iterate over blocks in the bucket
 			auto bucket = bucketForLevelLeaf(level, leaf);
 			for (number i = 0; i < Z; i++)
 			{
 				auto block		= bucket * Z + i;
 				auto [id, data] = storage->get(block);
+				// skip "empty" buckets
 				if (id != ULONG_MAX)
 				{
 					stash->add(id, data);
@@ -110,26 +115,30 @@ namespace PathORAM
 	void ORAM::writePath(number leaf)
 	{
 		auto currentStash = stash->getAll();
-		vector<int> toDelete;
+		vector<int> toDelete; // rember the records that will need to be deleted from stash
 
+		// following the path from leaf to root (greedy)
 		for (int level = height - 1; level >= 0; level--)
 		{
-			vector<pair<number, bytes>> toInsert;
-			vector<int> toDeleteLocal;
+			vector<pair<number, bytes>> toInsert; // block to be insterted in the bucket (up to Z)
+			vector<int> toDeleteLocal;			  // same blocks needs to be deleted from stash
 			for (auto entry : currentStash)
 			{
 				auto entryLeaf = map->get(entry.first);
+				// see if this block from stash fits in this bucket
 				if (canInclude(entryLeaf, leaf, level))
 				{
 					toInsert.push_back(entry);
 					toDelete.push_back(entry.first);
 					toDeleteLocal.push_back(entry.first);
+					// look up to Z
 					if (toInsert.size() == Z)
 					{
 						break;
 					}
 				}
 			}
+			// delete inserted blocks from local stash
 			for (auto removed : toDeleteLocal)
 			{
 				currentStash.erase(removed);
@@ -137,6 +146,7 @@ namespace PathORAM
 
 			auto bucket = bucketForLevelLeaf(level, leaf);
 
+			// write the bucket
 			for (number i = 0; i < Z; i++)
 			{
 				auto block = bucket * Z + i;
@@ -148,11 +158,13 @@ namespace PathORAM
 				}
 				else
 				{
+					// if nothing to insert, insert dummy (for security)
 					storage->set(block, {ULONG_MAX, getRandomBlock(dataSize)});
 				}
 			}
 		}
 
+		// update the stash adapter, remove newly inserted blocks
 		for (auto removed : toDelete)
 		{
 			stash->remove(removed);
@@ -166,6 +178,7 @@ namespace PathORAM
 
 	bool ORAM::canInclude(number pathLeaf, number blockPosition, number level)
 	{
+		// on this level, do these paths share the same bucket
 		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);
 	}
 }

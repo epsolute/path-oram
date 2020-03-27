@@ -14,7 +14,9 @@ namespace PathORAM
 
 #pragma region AbsStorageAdapter
 
-	AbsStorageAdapter::~AbsStorageAdapter(){};
+	AbsStorageAdapter::~AbsStorageAdapter()
+	{
+	}
 
 	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
@@ -26,11 +28,13 @@ namespace PathORAM
 
 		copy(raw.begin(), raw.end(), buffer);
 
+		// break up into ID, IV and payload
 		auto id   = ((number *)buffer)[0];
 		auto iv   = bytes(buffer + sizeof(number), buffer + sizeof(number) + AES_BLOCK_SIZE);
 		auto data = bytes(buffer + sizeof(number) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
 
 		// decryption
+		// TODO encrypt ID !!!
 		auto decrypted = encrypt(key, iv, data, DECRYPT);
 
 		return {id, decrypted};
@@ -41,6 +45,7 @@ namespace PathORAM
 		checkCapacity(location);
 		checkBlockSize(data.second.size());
 
+		// pad if necessary
 		if (data.second.size() < userBlockSize)
 		{
 			data.second.resize(userBlockSize, 0x00);
