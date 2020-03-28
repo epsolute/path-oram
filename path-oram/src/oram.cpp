@@ -121,16 +121,19 @@ namespace PathORAM
 		for (int level = height - 1; level >= 0; level--)
 		{
 			vector<pair<number, bytes>> toInsert; // block to be insterted in the bucket (up to Z)
-			vector<int> toDeleteLocal;			  // same blocks needs to be deleted from stash
-			for (auto entry : currentStash)
+			vector<number> toDeleteLocal;		  // same blocks needs to be deleted from stash (these hold indices of elements in currentStash)
+			for (number i = 0; i < currentStash.size(); i++)
 			{
+				auto entry	 = currentStash[i];
 				auto entryLeaf = map->get(entry.first);
 				// see if this block from stash fits in this bucket
 				if (canInclude(entryLeaf, leaf, level))
 				{
 					toInsert.push_back(entry);
 					toDelete.push_back(entry.first);
-					toDeleteLocal.push_back(entry.first);
+
+					toDeleteLocal.push_back(i);
+
 					// look up to Z
 					if (toInsert.size() == Z)
 					{
@@ -139,9 +142,11 @@ namespace PathORAM
 				}
 			}
 			// delete inserted blocks from local stash
+			// we remove elements by location, so after operation vector shrinks (nasty bug...)
+			sort(toDeleteLocal.begin(), toDeleteLocal.end(), greater<number>());
 			for (auto removed : toDeleteLocal)
 			{
-				currentStash.erase(removed);
+				currentStash.erase(currentStash.begin() + removed);
 			}
 
 			auto bucket = bucketForLevelLeaf(level, leaf);

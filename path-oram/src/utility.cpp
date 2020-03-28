@@ -39,6 +39,17 @@ namespace PathORAM
 		return material[0] % max;
 	}
 
+	uint getRandomUInt(uint max)
+	{
+#ifdef TESTING
+		return rand() % max;
+#else
+		uint material[1];
+		RAND_bytes((uchar *)material, sizeof(uint));
+		return material[0] % max;
+#endif
+	}
+
 	bytes encrypt(bytes key, bytes iv, bytes input, EncryptionMode mode)
 	{
 		auto size = input.size();

@@ -15,6 +15,7 @@ namespace PathORAM
 	// change (e.g. to unsigned int) if needed
 	using number = unsigned long long;
 	using uchar  = unsigned char;
+	using uint   = unsigned int;
 	using bytes  = std::vector<uchar>;
 
 	enum EncryptionMode

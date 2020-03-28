@@ -17,11 +17,11 @@ namespace PathORAM
 	{
 		public:
 		/**
-		 * @brief Get the all blocks (ID and data) from the stash in a form of unordered map.
+		 * @brief get the all blocks (ID and data) from the stash in a form of a pseudorandomly permuted vector.
 		 *
-		 * @return unordered_map<number, bytes> the map of objects (ID -> data)
+		 * @return  vector<pair<number, bytes>> the pseudorandomly permuted vector of objects { ID, data }
 		 */
-		virtual unordered_map<number, bytes> getAll() = 0;
+		virtual vector<pair<number, bytes>> getAll() = 0;
 
 		/**
 		 * @brief put an object in the stash
@@ -110,7 +110,7 @@ namespace PathORAM
 
 		~InMemoryStashAdapter() final;
 
-		unordered_map<number, bytes> getAll() final;
+		vector<pair<number, bytes>> getAll() final;
 		void add(number block, bytes data) final;
 		void update(number block, bytes data) final;
 		bytes get(number block) final;

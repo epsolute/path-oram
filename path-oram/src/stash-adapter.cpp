@@ -1,13 +1,17 @@
 #include "stash-adapter.hpp"
 
+#include "utility.hpp"
+
+#include <algorithm>
 #include <boost/format.hpp>
+#include <iterator>
 
 namespace PathORAM
 {
 	using namespace std;
 	using boost::format;
 
-	AbsStashAdapter::~AbsStashAdapter(){};
+	AbsStashAdapter::~AbsStashAdapter() {}
 
 	InMemoryStashAdapter::~InMemoryStashAdapter() {}
 
@@ -18,9 +22,21 @@ namespace PathORAM
 		stash.reserve(capacity);
 	}
 
-	unordered_map<number, bytes> InMemoryStashAdapter::getAll()
+	vector<pair<number, bytes>> InMemoryStashAdapter::getAll()
 	{
-		auto result = stash;
+		vector<pair<number, bytes>> result(stash.begin(), stash.end());
+
+		uint n = result.size();
+		if (n >= 2)
+		{
+			// Fisher-Yates shuffle
+			for (uint i = 0; i < n - 1; i++)
+			{
+				uint j = i + getRandomUInt(n - i);
+				swap(result[i], result[j]);
+			}
+		}
+
 		return result;
 	}
 

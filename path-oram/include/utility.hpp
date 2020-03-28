@@ -29,6 +29,16 @@ namespace PathORAM
 	number getRandomULong(number max);
 
 	/**
+	 * @brief returns a pseudorandom uint
+	 *
+	 * A faster and smaller scale version of getRandomULong
+	 *
+	 * @param max the non-inclusive max of the range (min is inclusive 0).
+	 * @return uint the resulting int
+	 */
+	uint getRandomUInt(uint max);
+
+	/**
 	 * @brief Encryption routine
 	 *
 	 * Does encryption or decryption using OpenSSL AES-CBC-256 (or whatver size key is provided, defined by KEYSIZE)

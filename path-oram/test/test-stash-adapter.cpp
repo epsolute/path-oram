@@ -36,6 +36,20 @@ namespace PathORAM
 		});
 	}
 
+	TEST_F(StashAdapterTest, GetAllShuffle)
+	{
+		for (number i = 0; i < CAPACITY; i++)
+		{
+			adapter->add(i, bytes());
+		}
+
+		auto fist   = adapter->getAll();
+		auto second = adapter->getAll();
+
+		EXPECT_EQ(fist.size(), second.size());
+		EXPECT_NE(fist, second);
+	}
+
 	TEST_F(StashAdapterTest, OverflowAdd)
 	{
 		for (number i = 0uLL; i < CAPACITY; i++)
