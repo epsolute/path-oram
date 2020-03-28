@@ -9,6 +9,10 @@ namespace PathORAM
 
 	/**
 	 * @brief An abstraction over storage adapter
+	 *
+	 * The format of the underlying block is the following.
+	 * AES block size (16) bytes of IV, the rest is ciphertext.
+	 * The ciphertext is AES block size (16) of ID (padded), the rest is user's payload.
 	 */
 	class AbsStorageAdapter
 	{

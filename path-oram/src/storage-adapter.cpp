@@ -18,26 +18,30 @@ namespace PathORAM
 	{
 	}
 
+	// TODO shuffle stash (possibly at getAll level)
 	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
 		checkCapacity(location);
 
 		auto raw = getInternal(location);
 
-		uchar buffer[raw.size()];
-
-		copy(raw.begin(), raw.end(), buffer);
-
-		// break up into ID, IV and payload
-		auto id   = ((number *)buffer)[0];
-		auto iv   = bytes(buffer + sizeof(number), buffer + sizeof(number) + AES_BLOCK_SIZE);
-		auto data = bytes(buffer + sizeof(number) + AES_BLOCK_SIZE, buffer + sizeof(buffer));
+		// decompose to ID and cipher
+		bytes iv(raw.begin(), raw.begin() + AES_BLOCK_SIZE);
+		bytes ciphertext(raw.begin() + AES_BLOCK_SIZE, raw.end());
 
 		// decryption
-		// TODO encrypt ID !!!
-		auto decrypted = encrypt(key, iv, data, DECRYPT);
+		auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
 
-		return {id, decrypted};
+		// decompose to ID and data
+		bytes idBytes(decrypted.begin(), decrypted.begin() + AES_BLOCK_SIZE);
+		bytes data(decrypted.begin() + AES_BLOCK_SIZE, decrypted.end());
+
+		// extract ID from bytes
+		uchar buffer[idBytes.size()];
+		copy(idBytes.begin(), idBytes.end(), buffer);
+		auto id = ((number *)buffer)[0];
+
+		return {id, data};
 	}
 
 	void AbsStorageAdapter::set(number location, pair<number, bytes> data)
@@ -51,16 +55,24 @@ namespace PathORAM
 			data.second.resize(userBlockSize, 0x00);
 		}
 
-		// encryption
-		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
-		auto encrypted = encrypt(key, iv, data.second, ENCRYPT);
-
+		// represent ID as a vector of bytes of length AES_BLOCK_SIZE
 		number buffer[1] = {data.first};
 		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
+		id.resize(AES_BLOCK_SIZE, 0x00);
 
+		// merge ID and data
+		bytes toEncrypt;
+		toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize);
+		toEncrypt.insert(toEncrypt.end(), id.begin(), id.end());
+		toEncrypt.insert(toEncrypt.end(), data.second.begin(), data.second.end());
+
+		// encryption
+		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
+		auto encrypted = encrypt(key, iv, toEncrypt, ENCRYPT);
+
+		// append IV
 		bytes raw;
-		raw.reserve(sizeof(number) + iv.size() + encrypted.size());
-		raw.insert(raw.end(), id.begin(), id.end());
+		raw.reserve(iv.size() + encrypted.size());
 		raw.insert(raw.end(), iv.begin(), iv.end());
 		raw.insert(raw.end(), encrypted.begin(), encrypted.end());
 
@@ -86,7 +98,7 @@ namespace PathORAM
 	AbsStorageAdapter::AbsStorageAdapter(number capacity, number userBlockSize, bytes key) :
 		key(key),
 		capacity(capacity),
-		blockSize(userBlockSize + sizeof(number) + AES_BLOCK_SIZE),
+		blockSize(userBlockSize + 2 * AES_BLOCK_SIZE), // one block for ID, one for IV
 		userBlockSize(userBlockSize)
 	{
 		if (key.size() != KEYSIZE)
@@ -96,7 +108,7 @@ namespace PathORAM
 
 		if (userBlockSize < 2 * AES_BLOCK_SIZE)
 		{
-			throw boost::str(boost::format("block size %1% is too small, need ata least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE));
+			throw boost::str(boost::format("block size %1% is too small, need at least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE));
 		}
 
 		if (userBlockSize % AES_BLOCK_SIZE != 0)
