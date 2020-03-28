@@ -18,7 +18,6 @@ namespace PathORAM
 	{
 	}
 
-	// TODO shuffle stash (possibly at getAll level)
 	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
 		checkCapacity(location);
