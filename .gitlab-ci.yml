@@ -43,6 +43,8 @@ unit-test:
     expire_in: 1 day
     paths:
       - ./path-oram/coverage-html/
+    reports:
+      junit: ./path-oram/junit-*.xml
   tags:
     - docker
 
