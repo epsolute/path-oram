@@ -9,7 +9,7 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash, bool initialize) :
 		storage(storage),
 		map(map),
 		stash(stash),
@@ -20,20 +20,23 @@ namespace PathORAM
 		this->buckets = (number)1 << height; // number of buckets is 2^height
 		this->blocks  = buckets * Z;		 // number of blocks is buckets / Z (Z blocks per bucket)
 
-		// fill all blocks with random bits, marks them as "empty"
-		for (number i = 0uLL; i < buckets; i++)
+		if (initialize)
 		{
-			for (number j = 0uLL; j < Z; j++)
+			// fill all blocks with random bits, marks them as "empty"
+			for (number i = 0uLL; i < buckets; i++)
 			{
-				auto block = getRandomBlock(dataSize);
-				storage->set(i * Z + j, {ULONG_MAX, block});
+				for (number j = 0uLL; j < Z; j++)
+				{
+					auto block = getRandomBlock(dataSize);
+					storage->set(i * Z + j, {ULONG_MAX, block});
+				}
 			}
-		}
 
-		// generate random position map
-		for (number i = 0; i < blocks; ++i)
-		{
-			map->set(i, getRandomULong(1 << (height - 1)));
+			// generate random position map
+			for (number i = 0; i < blocks; ++i)
+			{
+				map->set(i, getRandomULong(1 << (height - 1)));
+			}
 		}
 	}
 
@@ -124,7 +127,7 @@ namespace PathORAM
 			vector<number> toDeleteLocal;		  // same blocks needs to be deleted from stash (these hold indices of elements in currentStash)
 			for (number i = 0; i < currentStash.size(); i++)
 			{
-				auto entry	 = currentStash[i];
+				auto entry	   = currentStash[i];
 				auto entryLeaf = map->get(entry.first);
 				// see if this block from stash fits in this bucket
 				if (canInclude(entryLeaf, leaf, level))

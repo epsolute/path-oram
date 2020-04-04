@@ -31,9 +31,9 @@ namespace PathORAM
 		number dataSize; // size of the "usable" portion of the block in bytes
 		number Z;		 // number of blocks per bucket
 
-		number height;  // number of tree levels
+		number height;	// number of tree levels
 		number buckets; // total number of buckets
-		number blocks;  // total number of blocks
+		number blocks;	// total number of blocks
 
 		bool ownDependencies = false; // if true, will delete adapters in destructor
 
@@ -103,7 +103,7 @@ namespace PathORAM
 		 * @param map pointer to position map adapter to use
 		 * @param stash pointer to stash adapter to use
 		 */
-		ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash);
+		ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash, bool initialize = true);
 
 		/**
 		 * @brief Construct a new ORAM object with adapters created automatically

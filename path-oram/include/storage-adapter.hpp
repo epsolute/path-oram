@@ -3,6 +3,7 @@
 #include "definitions.h"
 
 #include <fstream>
+
 namespace PathORAM
 {
 	using namespace std;
@@ -67,7 +68,7 @@ namespace PathORAM
 
 		protected:
 		number capacity;	  // number of blocks
-		number blockSize;	 // whole block size (user portion + ID + IV)
+		number blockSize;	  // whole block size (user portion + ID + IV)
 		number userBlockSize; // number of bytes in payload portion of block
 
 		/**

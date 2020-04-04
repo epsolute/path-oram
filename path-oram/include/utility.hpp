@@ -68,4 +68,7 @@ namespace PathORAM
 	 * @return string the original string supplied to fromText
 	 */
 	string toText(bytes data, number BLOCK_SIZE);
+
+	void storeKey(bytes key, string filename);
+	bytes loadKey(string filename);
 }

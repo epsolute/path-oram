@@ -2,6 +2,7 @@
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/format.hpp>
+#include <fstream>
 #include <iomanip>
 #include <openssl/aes.h>
 #include <openssl/rand.h>
@@ -31,8 +32,8 @@ namespace PathORAM
 		number material[1];
 #ifdef TESTING
 		auto intMaterial = (int *)material;
-		intMaterial[0]   = rand();
-		intMaterial[1]   = rand();
+		intMaterial[0]	 = rand();
+		intMaterial[1]	 = rand();
 #else
 		RAND_bytes((uchar *)material, sizeof(number));
 #endif
@@ -113,5 +114,38 @@ namespace PathORAM
 		auto text			   = string(buffer);
 		boost::algorithm::trim_right(text);
 		return text;
+	}
+
+	void storeKey(bytes key, string filename)
+	{
+		fstream file;
+		file.open(filename, fstream::out | fstream::binary | fstream::trunc);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+
+		uchar material[KEYSIZE];
+		copy(key.begin(), key.end(), material);
+		file.seekg(0, file.beg);
+		file.write((const char *)material, KEYSIZE);
+		file.close();
+	}
+
+	bytes loadKey(string filename)
+	{
+		fstream file;
+		file.open(filename, fstream::in | fstream::binary);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+
+		uchar material[KEYSIZE];
+		file.seekg(0, file.beg);
+		file.read((char *)material, KEYSIZE);
+		file.close();
+
+		return bytes(material, material + KEYSIZE);
 	}
 }

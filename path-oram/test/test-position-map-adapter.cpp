@@ -37,11 +37,11 @@ namespace PathORAM
 		PositionMapAdapterTest()
 		{
 			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
-			auto capacity	= (1 << logCapacity) * Z;
+			auto capacity	 = (1 << logCapacity) * Z;
 
 			this->storage = new InMemoryStorageAdapter(capacity + Z, BLOCK_SIZE, bytes());
-			this->map	 = new InMemoryPositionMapAdapter(capacity + Z);
-			this->stash   = new InMemoryStashAdapter(3 * logCapacity * Z);
+			this->map	  = new InMemoryPositionMapAdapter(capacity + Z);
+			this->stash	  = new InMemoryStashAdapter(3 * logCapacity * Z);
 
 			this->oram = new ORAM(
 				logCapacity,
@@ -87,6 +87,47 @@ namespace PathORAM
 			adapter->set(CAPACITY - 1, 56uLL);
 			adapter->get(CAPACITY - 2);
 		});
+	}
+
+	TEST_P(PositionMapAdapterTest, LoadStore)
+	{
+		if (GetParam() == PositionMapAdapterTypeInMemory)
+		{
+			const auto filename = "position-map.bin";
+			const auto expected = 56uLL;
+
+			auto map = new InMemoryPositionMapAdapter(CAPACITY);
+			map->set(CAPACITY - 1, expected);
+			map->storeToFile(filename);
+			delete map;
+
+			map = new InMemoryPositionMapAdapter(CAPACITY);
+			map->loadFromFile(filename);
+			auto read = map->get(CAPACITY - 1);
+			EXPECT_EQ(expected, read);
+			delete map;
+
+			remove(filename);
+		}
+		else
+		{
+			SUCCEED();
+		}
+	}
+
+	TEST_P(PositionMapAdapterTest, LoadStoreFileError)
+	{
+		if (GetParam() == PositionMapAdapterTypeInMemory)
+		{
+			auto map = new InMemoryPositionMapAdapter(CAPACITY);
+			ASSERT_ANY_THROW(map->storeToFile("/error/path/should/not/exist"));
+			ASSERT_ANY_THROW(map->loadFromFile("/error/path/should/not/exist"));
+			delete map;
+		}
+		else
+		{
+			SUCCEED();
+		}
 	}
 
 	TEST_P(PositionMapAdapterTest, BlockOutOfBounds)

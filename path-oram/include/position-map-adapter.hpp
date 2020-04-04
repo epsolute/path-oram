@@ -63,6 +63,9 @@ namespace PathORAM
 		~InMemoryPositionMapAdapter() final;
 		number get(number block) final;
 		void set(number block, number leaf) final;
+
+		void storeToFile(string filename);
+		void loadFromFile(string filename);
 	};
 
 	class ORAM;

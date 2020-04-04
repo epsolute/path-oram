@@ -115,5 +115,8 @@ namespace PathORAM
 		void update(number block, bytes data) final;
 		bytes get(number block) final;
 		void remove(number block) final;
+
+		void storeToFile(string filename);
+		void loadFromFile(string filename, int blockSize);
 	};
 }

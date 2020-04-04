@@ -3,7 +3,7 @@
 	"tasks": [{
 		"label": "build",
 		"type": "shell",
-		"command": "make cleandebug",
+		"command": "make debug",
 		"args": [],
 		"options": {
 			"cwd": "${workspaceFolder}/path-oram"
