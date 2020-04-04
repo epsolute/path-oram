@@ -61,7 +61,7 @@ namespace PathORAM
 					this->adapter = new ORAMPositionMapAdapter(oram);
 					break;
 				default:
-					throw boost::str(boost::format("TestingPositionMapAdapterType %2% is not implemented") % type);
+					throw Exception(boost::format("TestingPositionMapAdapterType %2% is not implemented") % type);
 			}
 		}
 
@@ -126,7 +126,7 @@ namespace PathORAM
 			case PositionMapAdapterTypeORAM:
 				return "ORAM";
 			default:
-				throw boost::str(boost::format("TestingPositionMapAdapterType %2% is not implemented") % input.param);
+				throw Exception(boost::format("TestingPositionMapAdapterType %2% is not implemented") % input.param);
 		}
 	}
 

@@ -68,7 +68,7 @@ namespace PathORAM
 	{
 		if (stash.size() == capacity && stash.count(block) == 0)
 		{
-			throw boost::str(boost::format("trying to insert over capacity (capacity %1%)") % capacity);
+			throw Exception(boost::format("trying to insert over capacity (capacity %1%)") % capacity);
 		}
 	}
 

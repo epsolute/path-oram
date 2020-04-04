@@ -39,7 +39,7 @@ namespace PathORAM
 					adapter = new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
 					break;
 				default:
-					throw boost::str(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
+					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
 		}
 
@@ -162,7 +162,7 @@ namespace PathORAM
 		for (number i = 0; i < CAPACITY; i++)
 		{
 			auto expected = bytes();
-			expected.resize(BLOCK_SIZE, 0x00);
+			expected.resize(BLOCK_SIZE);
 			ASSERT_EQ(ULONG_MAX, adapter->get(i).first);
 			ASSERT_EQ(expected, adapter->get(i).second);
 		}
@@ -177,7 +177,7 @@ namespace PathORAM
 			case StorageAdapterTypeFileSystem:
 				return "FileSystem";
 			default:
-				throw boost::str(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
+				throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
 		}
 	}
 
