@@ -45,6 +45,7 @@ unit-test:
       - ./path-oram/coverage-html/
     reports:
       junit: ./path-oram/junit-*.xml
+      cobertura: ./path-oram/cobertura.xml
   tags:
     - docker
 

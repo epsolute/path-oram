@@ -6,6 +6,8 @@
 *.gcno
 *.tmp
 *.bin
+junit-*.xml
+cobertura.xml
 coverage-html/
 docs/
 ipch

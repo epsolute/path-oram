@@ -110,6 +110,7 @@ coverage: profile
 	gcovr -r . $(addprefix -f $(SDIR)/, $(addsuffix .cpp, $(ENTITIES))) --exclude-unreachable-branches
 	mkdir -p coverage-html/
 	gcovr -r . --html --html-details -o coverage-html/index.html
+	gcovr -r . -x -o cobertura.xml
 
 docs: clean-docs
 	doxygen ../Doxyfile
