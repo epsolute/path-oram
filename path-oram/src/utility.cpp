@@ -17,7 +17,7 @@ namespace PathORAM
 	{
 		uchar material[blockSize];
 #ifdef TESTING
-		for (int i = 0; i < blockSize; i++)
+		for (number i = 0; i < blockSize; i++)
 		{
 			material[i] = (uchar)rand();
 		}

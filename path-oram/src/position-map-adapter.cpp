@@ -1,6 +1,7 @@
 #include "position-map-adapter.hpp"
 
 #include <boost/format.hpp>
+#include <cstring>
 #include <fstream>
 
 namespace PathORAM
