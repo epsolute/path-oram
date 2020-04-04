@@ -78,6 +78,12 @@ namespace PathORAM
 			delete stash;
 		}
 
+		/**
+		 * @brief emulate controlled crash
+		 *
+		 * Write all components to binary files and recreate them fro the files.
+		 * Will do so only if storage is FS and others are InMemory.
+		 */
 		void disaster()
 		{
 			// if using FS storage and in-memory position map and stash

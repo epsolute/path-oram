@@ -116,7 +116,19 @@ namespace PathORAM
 		bytes get(number block) final;
 		void remove(number block) final;
 
+		/**
+		 * @brief write state to a binary file
+		 *
+		 * @param filename the name of the file to write to
+		 */
 		void storeToFile(string filename);
+
+		/**
+		 * @brief read state from a binary file
+		 *
+		 * @param filename filename the name of the file to read from
+		 * @param blockSize the size of the block in the stash (same as when storeToFile was used)
+		 */
 		void loadFromFile(string filename, int blockSize);
 	};
 }

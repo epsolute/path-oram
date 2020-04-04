@@ -69,6 +69,19 @@ namespace PathORAM
 	 */
 	string toText(bytes data, number BLOCK_SIZE);
 
+	/**
+	 * @brief write key to a binary file
+	 *
+	 * @param key the key to write
+	 * @param filename the name of the file to write to
+	 */
 	void storeKey(bytes key, string filename);
+
+	/**
+	 * @brief read key from a binary file
+	 *
+	 * @param filename the name of the file to read from
+	 * @return bytes the key read (KEYSIZE length)
+	 */
 	bytes loadKey(string filename);
 }

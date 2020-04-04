@@ -102,6 +102,7 @@ namespace PathORAM
 		 * @param storage pointer to storage adapter to use
 		 * @param map pointer to position map adapter to use
 		 * @param stash pointer to stash adapter to use
+		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
 		 */
 		ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash, bool initialize = true);
 

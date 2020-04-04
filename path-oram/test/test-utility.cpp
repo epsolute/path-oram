@@ -88,6 +88,12 @@ namespace PathORAM
 		EXPECT_EQ(key, loaded);
 		remove("key.bin");
 	}
+
+	TEST_F(UtilityTest, LoadStoreKeyFileErrors)
+	{
+		ASSERT_ANY_THROW(storeKey(bytes(), "/error/path/should/not/exist"));
+		ASSERT_ANY_THROW(loadKey("/error/path/should/not/exist"));
+	}
 }
 
 int main(int argc, char** argv)

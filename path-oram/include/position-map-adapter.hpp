@@ -64,7 +64,18 @@ namespace PathORAM
 		number get(number block) final;
 		void set(number block, number leaf) final;
 
+		/**
+		 * @brief write state to a binary file
+		 *
+		 * @param filename the name of the file to write to
+		 */
 		void storeToFile(string filename);
+
+		/**
+		 * @brief read state from a binary file
+		 *
+		 * @param filename the name of the file to read from
+		 */
 		void loadFromFile(string filename);
 	};
 
