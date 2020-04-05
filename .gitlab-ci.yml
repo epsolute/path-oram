@@ -4,16 +4,21 @@ stages:
   - release
   - deploy
 
+variables:
+  PROJECT_DIR: "path-oram"
+  CI_REF: &ref 85f8a6f6305719f3c234b5368fa8f7e5ce5d099c
+
 build-binaries:
   image: dbogatov/docker-images:pbc-latest
   stage: build
   script:
-    - cd ./path-oram
-    - make binaries
+    - cd ./$PROJECT_DIR
+    - make binaries shared
   artifacts:
     expire_in: 30 min
     paths:
-      - ./path-oram/bin
+      - ./$PROJECT_DIR/bin/*.so
+      - ./$PROJECT_DIR/include/
   tags:
     - docker
 
@@ -21,7 +26,7 @@ build-docs:
   image: dbogatov/docker-images:doxygen-latest
   stage: build
   script:
-    - cd ./path-oram
+    - cd ./$PROJECT_DIR
     - doxygen ../Doxyfile
   artifacts:
     expire_in: 30 min
@@ -32,52 +37,72 @@ build-docs:
   tags:
     - docker
 
-unit-test:
-  image: dbogatov/docker-images:pbc-latest
-  stage: test
+# unit-test:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   script:
+#     - cd ./$PROJECT_DIR/
+#     - make coverage
+#   dependencies: []
+#   coverage: /^TOTAL.*\s+(\d+\%)$/
+#   artifacts:
+#     expire_in: 1 day
+#     paths:
+#       - ./$PROJECT_DIR/coverage-html/
+#     reports:
+#       junit: ./$PROJECT_DIR/junit-*.xml
+#       cobertura: ./$PROJECT_DIR/cobertura.xml
+#   tags:
+#     - docker
+
+# integration-test:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   script:
+#     - cd ./$PROJECT_DIR/
+#     - make run-integration
+#   dependencies: []
+#   tags:
+#     - docker
+
+# benchmarks:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   script:
+#     - cd ./$PROJECT_DIR/
+#     - make run-benchmarks
+#   dependencies: []
+#   tags:
+#     - docker
+
+# shared-library:
+#   image: dbogatov/docker-images:pbc-latest
+#   stage: test
+#   script:
+#     - cd ./$PROJECT_DIR/
+#     - make shared ldconfig run-shared-lib
+#   dependencies: []
+#   tags:
+#     - docker
+
+release-library:
+  image: dbogatov/docker-images:alpine-extras-latest
+  variables:
+    GIT_STRATEGY: none
+  stage: release
   script:
-    - cd ./path-oram/
-    - make coverage
-  dependencies: []
+    - echo "re-upload artifacts"
   artifacts:
-    expire_in: 1 day
+    expire_in: 30 days
     paths:
-      - ./path-oram/coverage-html/
-    reports:
-      junit: ./path-oram/junit-*.xml
-      cobertura: ./path-oram/cobertura.xml
+      - ./$PROJECT_DIR/bin/*.so
+      - ./$PROJECT_DIR/include/
+  dependencies:
+    - build-binaries
   tags:
     - docker
-
-integration-test:
-  image: dbogatov/docker-images:pbc-latest
-  stage: test
-  script:
-    - cd ./path-oram/
-    - make run-integration
-  dependencies: []
-  tags:
-    - docker
-
-benchmarks:
-  image: dbogatov/docker-images:pbc-latest
-  stage: test
-  script:
-    - cd ./path-oram/
-    - make run-benchmarks
-  dependencies: []
-  tags:
-    - docker
-
-shared-library:
-  image: dbogatov/docker-images:pbc-latest
-  stage: test
-  script:
-    - cd ./path-oram/
-    - make shared ldconfig run-shared-lib
-  dependencies: []
-  tags:
-    - docker
+  only:
+    - master
 
 docs-website:
   variables:
@@ -112,9 +137,6 @@ pages:
     - docker
   only:
     - master
-
-variables:
-  CI_REF: &ref 85f8a6f6305719f3c234b5368fa8f7e5ce5d099c
 
 include:
   # DEPLOY
