@@ -37,53 +37,53 @@ build-docs:
   tags:
     - docker
 
-# unit-test:
-#   image: dbogatov/docker-images:pbc-latest
-#   stage: test
-#   script:
-#     - cd ./$PROJECT_DIR/
-#     - make coverage
-#   dependencies: []
-#   coverage: /^TOTAL.*\s+(\d+\%)$/
-#   artifacts:
-#     expire_in: 1 day
-#     paths:
-#       - ./$PROJECT_DIR/coverage-html/
-#     reports:
-#       junit: ./$PROJECT_DIR/junit-*.xml
-#       cobertura: ./$PROJECT_DIR/cobertura.xml
-#   tags:
-#     - docker
+unit-test:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./$PROJECT_DIR/
+    - make coverage
+  dependencies: []
+  coverage: /^TOTAL.*\s+(\d+\%)$/
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - ./$PROJECT_DIR/coverage-html/
+    reports:
+      junit: ./$PROJECT_DIR/junit-*.xml
+      cobertura: ./$PROJECT_DIR/cobertura.xml
+  tags:
+    - docker
 
-# integration-test:
-#   image: dbogatov/docker-images:pbc-latest
-#   stage: test
-#   script:
-#     - cd ./$PROJECT_DIR/
-#     - make run-integration
-#   dependencies: []
-#   tags:
-#     - docker
+integration-test:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./$PROJECT_DIR/
+    - make run-integration
+  dependencies: []
+  tags:
+    - docker
 
-# benchmarks:
-#   image: dbogatov/docker-images:pbc-latest
-#   stage: test
-#   script:
-#     - cd ./$PROJECT_DIR/
-#     - make run-benchmarks
-#   dependencies: []
-#   tags:
-#     - docker
+benchmarks:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./$PROJECT_DIR/
+    - make run-benchmarks
+  dependencies: []
+  tags:
+    - docker
 
-# shared-library:
-#   image: dbogatov/docker-images:pbc-latest
-#   stage: test
-#   script:
-#     - cd ./$PROJECT_DIR/
-#     - make shared ldconfig run-shared-lib
-#   dependencies: []
-#   tags:
-#     - docker
+shared-library:
+  image: dbogatov/docker-images:pbc-latest
+  stage: test
+  script:
+    - cd ./$PROJECT_DIR/
+    - make shared ldconfig run-shared-lib
+  dependencies: []
+  tags:
+    - docker
 
 release-library:
   image: dbogatov/docker-images:alpine-extras-latest
