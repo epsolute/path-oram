@@ -199,7 +199,7 @@ namespace PathORAM
 	TEST_F(ORAMTest, BulkLoadTooMany)
 	{
 		vector<pair<number, bytes>> batch;
-		for (number id = 0; id < CAPACITY + 5; id++)
+		for (number id = 0; id < CAPACITY; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
 		}
