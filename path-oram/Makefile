@@ -116,7 +116,7 @@ docs: clean-docs
 	doxygen ../Doxyfile
 
 clean: clean-docs clean-binaries
-	$(RM) $(ODIR)/* *~ *.dSYM *.gcov *.gcda *.gcno *.bin coverage-html junit-*.xml
+	$(RM) $(ODIR)/* *~ *.dSYM *.gcov *.gcda *.gcno *.bin coverage-html junit-*.xml cobertura.xml
 
 clean-docs:
 	$(RM) ../docs

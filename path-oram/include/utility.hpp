@@ -11,7 +11,7 @@ namespace PathORAM
 	/**
 	 * @brief generate an array of bytes pseudorandomly
 	 *
-	 * /note
+	 * \note
 	 * It uses OpenSSL PRG unless TESTING macro is defined.
 	 * If it is, C++ standard rand() is used (easy for testing and debugging).
 	 *

@@ -146,5 +146,23 @@ namespace PathORAM
 		 * @param data the (plaintext) data to put in the block
 		 */
 		void put(number block, bytes data);
+
+		/**
+		 * @brief bulk loads the data bypassing ORAM access
+		 *
+		 * Loads the data straight to the storage preserving ORAM invariant.
+		 * Shuffles the data before inserting (to hide the original order).
+		 * For each record, chooses random leaf and greedily fills the path from the leaf to the root.
+		 * Tries random leaves until the record can be inserted in the path.
+		 * Throws exception is ORAM is full (cannot insert in any path).
+		 *
+		 * \note
+		 * Should only be used for off-line storage generation.
+		 * For example, a client generates sotrage file on its machine and upload this file to the untrusted server.
+		 * After that the usual ORAM accesses ocur.
+		 *
+		 * @param data the data to bulk load
+		 */
+		void load(vector<pair<number, bytes>> data);
 	};
 }

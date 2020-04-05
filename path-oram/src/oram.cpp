@@ -73,6 +73,52 @@ namespace PathORAM
 		access(false, block, data);
 	}
 
+	void ORAM::load(vector<pair<number, bytes>> data)
+	{
+		// shuffle (such bulk load may leak in part the original order)
+		uint n = data.size();
+		if (n >= 2)
+		{
+			// Fisher-Yates shuffle
+			for (uint i = 0; i < n - 1; i++)
+			{
+				uint j = i + getRandomUInt(n - i);
+				swap(data[i], data[j]);
+			}
+		}
+
+		for (auto record : data)
+		{
+			auto safeGuard = 0;
+			while (true)
+			{
+				auto leaf = getRandomULong(1 << (height - 1));
+
+				for (int level = height - 1; level >= 0; level--)
+				{
+					auto bucket = bucketForLevelLeaf(level, leaf);
+					for (number i = 0; i < Z; i++)
+					{
+						auto block = bucket * Z + i;
+						auto id	   = storage->get(block).first;
+						if (id == ULONG_MAX)
+						{
+							storage->set(block, record);
+							map->set(record.first, leaf);
+							goto found;
+						}
+					}
+				}
+				if (safeGuard++ == (1 << (height - 1)))
+				{
+					throw Exception("no space left in ORAM for bulk load");
+				}
+			}
+		found:
+			continue;
+		}
+	}
+
 	bytes ORAM::access(bool read, number block, bytes data)
 	{
 		// step 1 from paper: remap block

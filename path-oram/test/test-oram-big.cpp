@@ -11,7 +11,7 @@ using namespace std;
 
 namespace PathORAM
 {
-	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, bool, bool>>
+	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, bool, bool, bool>>
 	{
 		protected:
 		ORAM* oram;
@@ -24,6 +24,7 @@ namespace PathORAM
 		inline static number ELEMENTS;
 		inline static number LOG_CAPACITY;
 		inline static number Z;
+		inline static number BULK_LOAD;
 		inline static string FILENAME = "storage.bin";
 		inline static bytes KEY;
 
@@ -31,12 +32,13 @@ namespace PathORAM
 		{
 			KEY = getRandomBlock(KEYSIZE);
 
-			auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap] = GetParam();
-			this->BLOCK_SIZE														 = BLOCK_SIZE;
-			this->LOG_CAPACITY														 = LOG_CAPACITY;
-			this->Z																	 = Z;
-			this->CAPACITY															 = (1 << LOG_CAPACITY) * Z;
-			this->ELEMENTS															 = (CAPACITY / 4) * 3;
+			auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap, BULK_LOAD] = GetParam();
+			this->BLOCK_SIZE																	= BLOCK_SIZE;
+			this->BULK_LOAD																		= BULK_LOAD;
+			this->LOG_CAPACITY																	= LOG_CAPACITY;
+			this->Z																				= Z;
+			this->CAPACITY																		= (1 << LOG_CAPACITY) * Z;
+			this->ELEMENTS																		= (CAPACITY / 4) * 3;
 
 			this->storage = !externalStorage ?
 								(AbsStorageAdapter*)new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY) :
@@ -112,21 +114,22 @@ namespace PathORAM
 		}
 	};
 
-	string printTestName(testing::TestParamInfo<tuple<number, number, number, bool, bool>> input)
+	string printTestName(testing::TestParamInfo<tuple<number, number, number, bool, bool, bool>> input)
 	{
-		auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap] = input.param;
-		auto CAPACITY															 = (1 << LOG_CAPACITY) * Z;
+		auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap, bulkLoad] = input.param;
+		auto CAPACITY																	   = (1 << LOG_CAPACITY) * Z;
 
-		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % externalStorage % externalPositionMap);
+		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % externalStorage % externalPositionMap % bulkLoad);
 	}
 
-	tuple<number, number, number, bool, bool> cases[] = {
-		{5, 3, 32, false, false},
-		{10, 4, 64, false, false},
-		{10, 5, 64, false, false},
-		{10, 5, 256, false, false},
-		{7, 4, 64, true, false},
-		{7, 4, 64, true, true},
+	tuple<number, number, number, bool, bool, bool> cases[] = {
+		{5, 3, 32, false, false, false},
+		{10, 4, 64, false, false, false},
+		{10, 5, 64, false, false, false},
+		{10, 5, 256, false, false, false},
+		{7, 4, 64, true, false, false},
+		{7, 4, 64, true, true, false},
+		{7, 4, 64, false, false, true},
 	};
 
 	INSTANTIATE_TEST_SUITE_P(BigORAMSuite, ORAMBigTest, testing::ValuesIn(cases), printTestName);
@@ -136,12 +139,24 @@ namespace PathORAM
 		unordered_map<number, bytes> local;
 		local.reserve(ELEMENTS);
 
-		// put all
+		// generate data
 		for (number id = 0; id < ELEMENTS; id++)
 		{
 			auto data = fromText(to_string(id), BLOCK_SIZE);
 			local[id] = data;
-			oram->put(id, data);
+		}
+
+		// put / load all
+		if (get<5>(GetParam()))
+		{
+			oram->load(vector<pair<number, bytes>>(local.begin(), local.end()));
+		}
+		else
+		{
+			for (auto record : local)
+			{
+				oram->put(record.first, record.second);
+			}
 		}
 
 		disaster();
