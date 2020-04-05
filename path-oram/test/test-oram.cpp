@@ -13,7 +13,7 @@ namespace PathORAM
 		public:
 		inline static const number LOG_CAPACITY = 5;
 		inline static const number Z			= 3;
-		inline static const number BLOCK_SIZE   = 32;
+		inline static const number BLOCK_SIZE	= 32;
 
 		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
 
@@ -21,7 +21,7 @@ namespace PathORAM
 		ORAM* oram;
 		AbsStorageAdapter* storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
 		AbsPositionMapAdapter* map = new InMemoryPositionMapAdapter(CAPACITY + Z);
-		AbsStashAdapter* stash	 = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
+		AbsStashAdapter* stash	   = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
 
 		ORAMTest()
 		{
@@ -177,6 +177,34 @@ namespace PathORAM
 			auto returned = oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
+	}
+
+	TEST_F(ORAMTest, BulkLoad)
+	{
+		vector<pair<number, bytes>> batch;
+		for (number id = 0; id < 3 * CAPACITY / 4; id++)
+		{
+			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
+		}
+
+		oram->load(batch);
+
+		for (number id = 0; id < 3 * CAPACITY / 4; id++)
+		{
+			auto returned = oram->get(id);
+			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
+		}
+	}
+
+	TEST_F(ORAMTest, BulkLoadTooMany)
+	{
+		vector<pair<number, bytes>> batch;
+		for (number id = 0; id < CAPACITY; id++)
+		{
+			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
+		}
+
+		ASSERT_ANY_THROW(oram->load(batch));
 	}
 
 	TEST_F(ORAMTest, StashUsage)

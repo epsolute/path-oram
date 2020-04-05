@@ -9,7 +9,7 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash, bool initialize) :
 		storage(storage),
 		map(map),
 		stash(stash),
@@ -20,20 +20,23 @@ namespace PathORAM
 		this->buckets = (number)1 << height; // number of buckets is 2^height
 		this->blocks  = buckets * Z;		 // number of blocks is buckets / Z (Z blocks per bucket)
 
-		// fill all blocks with random bits, marks them as "empty"
-		for (number i = 0uLL; i < buckets; i++)
+		if (initialize)
 		{
-			for (number j = 0uLL; j < Z; j++)
+			// fill all blocks with random bits, marks them as "empty"
+			for (number i = 0uLL; i < buckets; i++)
 			{
-				auto block = getRandomBlock(dataSize);
-				storage->set(i * Z + j, {ULONG_MAX, block});
+				for (number j = 0uLL; j < Z; j++)
+				{
+					auto block = getRandomBlock(dataSize);
+					storage->set(i * Z + j, {ULONG_MAX, block});
+				}
 			}
-		}
 
-		// generate random position map
-		for (number i = 0; i < blocks; ++i)
-		{
-			map->set(i, getRandomULong(1 << (height - 1)));
+			// generate random position map
+			for (number i = 0; i < blocks; ++i)
+			{
+				map->set(i, getRandomULong(1 << (height - 1)));
+			}
 		}
 	}
 
@@ -68,6 +71,52 @@ namespace PathORAM
 	void ORAM::put(number block, bytes data)
 	{
 		access(false, block, data);
+	}
+
+	void ORAM::load(vector<pair<number, bytes>> data)
+	{
+		// shuffle (such bulk load may leak in part the original order)
+		uint n = data.size();
+		if (n >= 2)
+		{
+			// Fisher-Yates shuffle
+			for (uint i = 0; i < n - 1; i++)
+			{
+				uint j = i + getRandomUInt(n - i);
+				swap(data[i], data[j]);
+			}
+		}
+
+		for (auto record : data)
+		{
+			auto safeGuard = 0;
+			while (true)
+			{
+				auto leaf = getRandomULong(1 << (height - 1));
+
+				for (int level = height - 1; level >= 0; level--)
+				{
+					auto bucket = bucketForLevelLeaf(level, leaf);
+					for (number i = 0; i < Z; i++)
+					{
+						auto block = bucket * Z + i;
+						auto id	   = storage->get(block).first;
+						if (id == ULONG_MAX)
+						{
+							storage->set(block, record);
+							map->set(record.first, leaf);
+							goto found;
+						}
+					}
+				}
+				if (safeGuard++ == (1 << (height - 1)))
+				{
+					throw Exception("no space left in ORAM for bulk load");
+				}
+			}
+		found:
+			continue;
+		}
 	}
 
 	bytes ORAM::access(bool read, number block, bytes data)
@@ -124,7 +173,7 @@ namespace PathORAM
 			vector<number> toDeleteLocal;		  // same blocks needs to be deleted from stash (these hold indices of elements in currentStash)
 			for (number i = 0; i < currentStash.size(); i++)
 			{
-				auto entry	 = currentStash[i];
+				auto entry	   = currentStash[i];
 				auto entryLeaf = map->get(entry.first);
 				// see if this block from stash fits in this bucket
 				if (canInclude(entryLeaf, leaf, level))

@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <boost/format.hpp>
+#include <cstring>
+#include <fstream>
 #include <iterator>
 
 namespace PathORAM
@@ -75,5 +77,72 @@ namespace PathORAM
 	bool InMemoryStashAdapter::exists(number block)
 	{
 		return stash.count(block);
+	}
+
+	void InMemoryStashAdapter::storeToFile(string filename)
+	{
+		auto flags = fstream::out | fstream::binary | fstream::trunc;
+		fstream file;
+
+		file.open(filename, flags);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+
+		if (stash.size() > 0)
+		{
+			auto blockSize	= stash.begin()->second.size();
+			auto recordSize = sizeof(number) + blockSize;
+			unsigned char buffer[stash.size() * recordSize];
+
+			auto i = 0;
+			for (auto record : stash)
+			{
+				number numberBuffer[1] = {record.first};
+				copy((unsigned char *)numberBuffer, (unsigned char *)numberBuffer + sizeof(number), buffer + recordSize * i);
+				copy(record.second.begin(), record.second.begin() + record.second.size(), buffer + recordSize * i + sizeof(number));
+				i++;
+			}
+
+			file.seekg(0, file.beg);
+			file.write((const char *)buffer, stash.size() * recordSize);
+			file.close();
+		}
+	}
+
+	void InMemoryStashAdapter::loadFromFile(string filename, int blockSize)
+	{
+		auto flags = fstream::in | fstream::binary | fstream::ate;
+		fstream file;
+
+		file.open(filename, flags);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+		auto size = (int)file.tellg();
+		file.seekg(0, file.beg);
+
+		if (size > 0)
+		{
+			unsigned char buffer[size];
+			file.read((char *)buffer, size);
+			file.close();
+
+			auto recordSize = sizeof(number) + blockSize;
+			for (int i = 0; i < size; i += recordSize)
+			{
+				unsigned char numberBuffer[sizeof(number)];
+				copy(buffer + i, buffer + i + sizeof(number), numberBuffer);
+				number block = ((number *)numberBuffer)[0];
+
+				bytes data;
+				data.resize(blockSize);
+				copy(buffer + i + sizeof(number), buffer + i + sizeof(number) + blockSize, data.begin());
+
+				stash.insert({block, data});
+			}
+		}
 	}
 }

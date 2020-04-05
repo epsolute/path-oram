@@ -11,7 +11,7 @@ namespace PathORAM
 	/**
 	 * @brief generate an array of bytes pseudorandomly
 	 *
-	 * /note
+	 * \note
 	 * It uses OpenSSL PRG unless TESTING macro is defined.
 	 * If it is, C++ standard rand() is used (easy for testing and debugging).
 	 *
@@ -68,4 +68,20 @@ namespace PathORAM
 	 * @return string the original string supplied to fromText
 	 */
 	string toText(bytes data, number BLOCK_SIZE);
+
+	/**
+	 * @brief write key to a binary file
+	 *
+	 * @param key the key to write
+	 * @param filename the name of the file to write to
+	 */
+	void storeKey(bytes key, string filename);
+
+	/**
+	 * @brief read key from a binary file
+	 *
+	 * @param filename the name of the file to read from
+	 * @return bytes the key read (KEYSIZE length)
+	 */
+	bytes loadKey(string filename);
 }

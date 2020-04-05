@@ -1,6 +1,8 @@
 #include "position-map-adapter.hpp"
 
 #include <boost/format.hpp>
+#include <cstring>
+#include <fstream>
 
 namespace PathORAM
 {
@@ -32,6 +34,36 @@ namespace PathORAM
 		checkCapacity(block);
 
 		map[block] = leaf;
+	}
+
+	void InMemoryPositionMapAdapter::storeToFile(string filename)
+	{
+		fstream file;
+
+		file.open(filename, fstream::out | fstream::binary | fstream::trunc);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+
+		file.seekg(0, file.beg);
+		file.write((const char *)map, capacity * sizeof(number));
+		file.close();
+	}
+
+	void InMemoryPositionMapAdapter::loadFromFile(string filename)
+	{
+		fstream file;
+
+		file.open(filename, fstream::in | fstream::binary);
+		if (!file)
+		{
+			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
+		}
+
+		file.seekg(0, file.beg);
+		file.read((char *)map, capacity * sizeof(number));
+		file.close();
 	}
 
 	void InMemoryPositionMapAdapter::checkCapacity(number block)

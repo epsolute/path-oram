@@ -36,6 +36,34 @@ namespace PathORAM
 		});
 	}
 
+	TEST_F(StashAdapterTest, LoadStore)
+	{
+		const auto blockSize = 64;
+		const auto filename	 = "stash.bin";
+		const auto expected	 = fromText("hello", blockSize);
+
+		auto stash = new InMemoryStashAdapter(CAPACITY);
+		stash->add(5, expected);
+		stash->storeToFile(filename);
+		delete stash;
+
+		stash = new InMemoryStashAdapter(CAPACITY);
+		stash->loadFromFile(filename, blockSize);
+		auto read = stash->get(5);
+		EXPECT_EQ(expected, read);
+		delete stash;
+
+		remove(filename);
+	}
+
+	TEST_F(StashAdapterTest, LoadStoreFileError)
+	{
+		auto stash = new InMemoryStashAdapter(CAPACITY);
+		ASSERT_ANY_THROW(stash->storeToFile("/error/path/should/not/exist"));
+		ASSERT_ANY_THROW(stash->loadFromFile("/error/path/should/not/exist", 0));
+		delete stash;
+	}
+
 	TEST_F(StashAdapterTest, GetAllShuffle)
 	{
 		for (number i = 0; i < CAPACITY; i++)
@@ -43,7 +71,7 @@ namespace PathORAM
 			adapter->add(i, bytes());
 		}
 
-		auto fist   = adapter->getAll();
+		auto fist	= adapter->getAll();
 		auto second = adapter->getAll();
 
 		EXPECT_EQ(fist.size(), second.size());

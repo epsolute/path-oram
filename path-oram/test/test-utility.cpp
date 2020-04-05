@@ -17,7 +17,7 @@ namespace PathORAM
 		const auto n = 20uLL;
 		for (number i = 0; i < 100; i++)
 		{
-			auto first  = getRandomBlock(n);
+			auto first	= getRandomBlock(n);
 			auto second = getRandomBlock(n);
 
 			ASSERT_NE(first, second);
@@ -53,7 +53,7 @@ namespace PathORAM
 	TEST_F(UtilityTest, EncryptDecryptSingle)
 	{
 		auto key = getRandomBlock(KEYSIZE);
-		auto iv  = getRandomBlock(AES_BLOCK_SIZE);
+		auto iv	 = getRandomBlock(AES_BLOCK_SIZE);
 
 		auto input = fromText("Hello, world!", 64);
 
@@ -69,7 +69,7 @@ namespace PathORAM
 		for (number i = 0; i < 100; i++)
 		{
 			auto key   = getRandomBlock(KEYSIZE);
-			auto iv	= getRandomBlock(AES_BLOCK_SIZE);
+			auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
 			auto input = getRandomBlock(AES_BLOCK_SIZE * 3);
 
 			auto ciphertext = encrypt(key, iv, input, ENCRYPT);
@@ -78,6 +78,21 @@ namespace PathORAM
 
 			ASSERT_EQ(input, plaintext);
 		}
+	}
+
+	TEST_F(UtilityTest, LoadStoreKey)
+	{
+		auto key = getRandomBlock(KEYSIZE);
+		storeKey(key, "key.bin");
+		auto loaded = loadKey("key.bin");
+		EXPECT_EQ(key, loaded);
+		remove("key.bin");
+	}
+
+	TEST_F(UtilityTest, LoadStoreKeyFileErrors)
+	{
+		ASSERT_ANY_THROW(storeKey(bytes(), "/error/path/should/not/exist"));
+		ASSERT_ANY_THROW(loadKey("/error/path/should/not/exist"));
 	}
 }
 
