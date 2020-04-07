@@ -11,7 +11,7 @@ int main()
 	cout << "Running random small simulation using compiled shared library..." << endl;
 
 	const auto LOG_CAPACITY = 5;
-	const auto BLOCK_SIZE   = 32;
+	const auto BLOCK_SIZE	= 32;
 	const auto Z			= 3;
 	const auto CAPACITY		= (1 << LOG_CAPACITY) * Z;
 	const auto ELEMENTS		= (CAPACITY / 4) * 3;
@@ -22,7 +22,7 @@ int main()
 	cout << "CAPACITY: " << CAPACITY << endl;
 	cout << "ELEMENTS: " << ELEMENTS << endl;
 
-	auto oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z);
+	auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z);
 
 	// put all
 	for (number id = 0; id < ELEMENTS; id++)
@@ -40,7 +40,7 @@ int main()
 	// random operations
 	for (number i = 0; i < 2 * ELEMENTS; i++)
 	{
-		auto id   = getRandomULong(ELEMENTS);
+		auto id	  = getRandomULong(ELEMENTS);
 		auto read = getRandomULong(2) == 0;
 		if (read)
 		{
@@ -53,8 +53,6 @@ int main()
 			oram->put(id, data);
 		}
 	}
-
-	delete oram;
 
 	cout << "Successful!" << endl;
 

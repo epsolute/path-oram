@@ -20,12 +20,12 @@ namespace PathORAM
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
 	{
 		public:
-		inline static const number CAPACITY   = 10;
+		inline static const number CAPACITY	  = 10;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
 
 		protected:
-		AbsStorageAdapter* adapter;
+		unique_ptr<AbsStorageAdapter> adapter;
 
 		StorageAdapterTest()
 		{
@@ -33,10 +33,10 @@ namespace PathORAM
 			switch (type)
 			{
 				case StorageAdapterTypeInMemory:
-					adapter = new InMemoryStorageAdapter(CAPACITY, BLOCK_SIZE, bytes());
+					adapter = make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes());
 					break;
 				case StorageAdapterTypeFileSystem:
-					adapter = new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
+					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
@@ -45,7 +45,6 @@ namespace PathORAM
 
 		~StorageAdapterTest() override
 		{
-			delete adapter;
 			remove(FILE_NAME.c_str());
 		}
 	};
@@ -63,14 +62,12 @@ namespace PathORAM
 			auto key		= getRandomBlock(KEYSIZE);
 			string filename = "tmp.bin";
 
-			auto storage = new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, key, filename, true);
+			auto storage = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, true);
 			storage->set(CAPACITY - 1, {5, data});
-
 			ASSERT_EQ(data, storage->get(CAPACITY - 1).second);
+			storage.reset();
 
-			delete storage;
-
-			storage = new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, key, filename, false);
+			storage = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, false);
 
 			ASSERT_EQ(data, storage->get(CAPACITY - 1).second);
 
@@ -86,7 +83,7 @@ namespace PathORAM
 	{
 		if (GetParam() == StorageAdapterTypeFileSystem)
 		{
-			ASSERT_ANY_THROW(new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false));
+			ASSERT_ANY_THROW(make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false));
 		}
 		else
 		{
@@ -96,8 +93,8 @@ namespace PathORAM
 
 	TEST_P(StorageAdapterTest, InputsCheck)
 	{
-		ASSERT_ANY_THROW(new InMemoryStorageAdapter(CAPACITY, AES_BLOCK_SIZE, bytes()));
-		ASSERT_ANY_THROW(new InMemoryStorageAdapter(CAPACITY, AES_BLOCK_SIZE * 3 - 1, bytes()));
+		ASSERT_ANY_THROW(make_unique<InMemoryStorageAdapter>(CAPACITY, AES_BLOCK_SIZE, bytes()));
+		ASSERT_ANY_THROW(make_unique<InMemoryStorageAdapter>(CAPACITY, AES_BLOCK_SIZE * 3 - 1, bytes()));
 	}
 
 	TEST_P(StorageAdapterTest, ReadWriteNoCrash)
@@ -128,7 +125,7 @@ namespace PathORAM
 	TEST_P(StorageAdapterTest, ReadWhatWasWritten)
 	{
 		auto data = bytes{0xa8};
-		auto id   = 5uLL;
+		auto id	  = 5uLL;
 
 		adapter->set(CAPACITY - 1, {id, data});
 		auto [returnedId, returnedData] = adapter->get(CAPACITY - 1);
@@ -141,7 +138,7 @@ namespace PathORAM
 
 	TEST_P(StorageAdapterTest, OverrideData)
 	{
-		auto id   = 5;
+		auto id	  = 5;
 		auto data = bytes{0xa8};
 		data.resize(BLOCK_SIZE, 0x00);
 

@@ -89,7 +89,7 @@ namespace PathORAM
 	class ORAMPositionMapAdapter : public AbsPositionMapAdapter
 	{
 		private:
-		ORAM *oram;
+		shared_ptr<ORAM> oram;
 
 		friend class ORAMBigTest;
 
@@ -99,7 +99,7 @@ namespace PathORAM
 		 *
 		 * @param oram the intialized (with proper capacities) ORAM that will be used as a position map storage
 		 */
-		ORAMPositionMapAdapter(ORAM *oram);
+		ORAMPositionMapAdapter(shared_ptr<ORAM> oram);
 		~ORAMPositionMapAdapter() final;
 		number get(number block) final;
 		void set(number block, number leaf) final;

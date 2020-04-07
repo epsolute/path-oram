@@ -14,10 +14,10 @@ namespace PathORAM
 	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, bool, bool, bool>>
 	{
 		protected:
-		ORAM* oram;
-		AbsStorageAdapter* storage;
-		AbsPositionMapAdapter* map;
-		AbsStashAdapter* stash;
+		unique_ptr<ORAM> oram;
+		shared_ptr<AbsStorageAdapter> storage;
+		shared_ptr<AbsPositionMapAdapter> map;
+		shared_ptr<AbsStashAdapter> stash;
 
 		inline static number BLOCK_SIZE;
 		inline static number CAPACITY;
@@ -41,43 +41,26 @@ namespace PathORAM
 			this->ELEMENTS																		= (CAPACITY / 4) * 3;
 
 			this->storage = !externalStorage ?
-								(AbsStorageAdapter*)new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY) :
-								(AbsStorageAdapter*)new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true);
+								shared_ptr<AbsStorageAdapter>(new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY)) :
+								shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true));
 
 			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
 			auto z			 = 3uLL;
 			auto capacity	 = (1 << logCapacity) * z;
 			auto blockSize	 = 2 * AES_BLOCK_SIZE;
 			this->map		 = !externalPositionMap ?
-							(AbsPositionMapAdapter*)new InMemoryPositionMapAdapter(CAPACITY + Z) :
-							(AbsPositionMapAdapter*)new ORAMPositionMapAdapter(
-								new ORAM(
+							shared_ptr<AbsPositionMapAdapter>(new InMemoryPositionMapAdapter(CAPACITY + Z)) :
+							shared_ptr<AbsPositionMapAdapter>(new ORAMPositionMapAdapter(
+								make_unique<ORAM>(
 									logCapacity,
 									blockSize,
 									z,
-									new InMemoryStorageAdapter(capacity + z, blockSize, bytes()),
-									new InMemoryPositionMapAdapter(capacity + z),
-									new InMemoryStashAdapter(3 * logCapacity * z)));
-			this->stash = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
+									make_unique<InMemoryStorageAdapter>(capacity + z, blockSize, bytes()),
+									make_unique<InMemoryPositionMapAdapter>(capacity + z),
+									make_unique<InMemoryStashAdapter>(3 * logCapacity * z))));
+			this->stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
 
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
-		}
-
-		~ORAMBigTest() override
-		{
-			auto externalPositionMap = get<4>(GetParam());
-
-			if (externalPositionMap)
-			{
-				delete ((ORAMPositionMapAdapter*)map)->oram->map;
-				delete ((ORAMPositionMapAdapter*)map)->oram->storage;
-				delete ((ORAMPositionMapAdapter*)map)->oram->stash;
-			}
-
-			delete oram;
-			delete storage;
-			delete map;
-			delete stash;
+			this->oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
 		}
 
 		/**
@@ -93,23 +76,23 @@ namespace PathORAM
 			if (get<3>(GetParam()) && !get<4>(GetParam()))
 			{
 				storeKey(KEY, "key.bin");
-				delete storage;
+				storage.reset();
 				KEY		= loadKey("key.bin");
-				storage = new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, false);
+				storage = make_shared<FileSystemStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, false);
 
-				((InMemoryPositionMapAdapter*)map)->storeToFile("position-map.bin");
-				delete map;
-				map = new InMemoryPositionMapAdapter(CAPACITY + Z);
-				((InMemoryPositionMapAdapter*)map)->loadFromFile("position-map.bin");
+				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->storeToFile("position-map.bin");
+				map.reset();
+				map = make_shared<InMemoryPositionMapAdapter>(CAPACITY + Z);
+				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->loadFromFile("position-map.bin");
 
-				((InMemoryStashAdapter*)stash)->storeToFile("stash.bin");
+				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->storeToFile("stash.bin");
 				auto blockSize = stash->getAll().size() > 0 ? stash->getAll()[0].second.size() : 0;
-				delete stash;
-				stash = new InMemoryStashAdapter(2 * LOG_CAPACITY * Z);
-				((InMemoryStashAdapter*)stash)->loadFromFile("stash.bin", blockSize);
+				stash.reset();
+				stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
+				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->loadFromFile("stash.bin", blockSize);
 
-				delete oram;
-				oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash, false);
+				oram.reset();
+				oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash, false);
 			}
 		}
 	};

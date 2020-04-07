@@ -9,7 +9,7 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter* storage, AbsPositionMapAdapter* map, AbsStashAdapter* stash, bool initialize) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize) :
 		storage(storage),
 		map(map),
 		stash(stash),
@@ -44,24 +44,13 @@ namespace PathORAM
 		ORAM(logCapacity,
 			 blockSize,
 			 Z,
-			 new InMemoryStorageAdapter(((1 << logCapacity) * Z) + Z, blockSize, bytes()),
-			 new InMemoryPositionMapAdapter(((1 << logCapacity) * Z) + Z),
-			 new InMemoryStashAdapter(3 * logCapacity * Z))
+			 make_shared<InMemoryStorageAdapter>(((1 << logCapacity) * Z) + Z, blockSize, bytes()),
+			 make_shared<InMemoryPositionMapAdapter>(((1 << logCapacity) * Z) + Z),
+			 make_shared<InMemoryStashAdapter>(3 * logCapacity * Z))
 	{
-		// we created the adapters, we will destroy them
-		ownDependencies = true;
 	}
 
-	ORAM::~ORAM()
-	{
-		// we created the adapters, we will destroy them
-		if (ownDependencies)
-		{
-			delete storage;
-			delete map;
-			delete stash;
-		}
-	}
+	ORAM::~ORAM() {}
 
 	bytes ORAM::get(number block)
 	{

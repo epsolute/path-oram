@@ -18,22 +18,19 @@ namespace PathORAM
 		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
 
 		protected:
-		ORAM* oram;
-		AbsStorageAdapter* storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
-		AbsPositionMapAdapter* map = new InMemoryPositionMapAdapter(CAPACITY + Z);
-		AbsStashAdapter* stash	   = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
+		unique_ptr<ORAM> oram;
+		shared_ptr<AbsStorageAdapter> storage = make_shared<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes());
+		shared_ptr<AbsStashAdapter> stash	  = make_shared<InMemoryStashAdapter>(3 * LOG_CAPACITY * Z);
 
 		ORAMTest()
 		{
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
-		}
-
-		~ORAMTest() override
-		{
-			delete oram;
-			delete storage;
-			delete map;
-			delete stash;
+			this->oram = make_unique<ORAM>(
+				LOG_CAPACITY,
+				BLOCK_SIZE,
+				Z,
+				storage,
+				make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z),
+				stash);
 		}
 
 		void populateStorage()
@@ -58,10 +55,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, InitializationShorthand)
 	{
-		ASSERT_NO_THROW({
-			auto oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z);
-			delete oram;
-		});
+		ASSERT_NO_THROW(auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z));
 	}
 
 	TEST_F(ORAMTest, BucketFromLevelLeaf)

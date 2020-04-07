@@ -37,7 +37,7 @@ namespace PathORAM
 	BENCHMARK_DEFINE_F(UtilityBenchmark, Decrypt)
 	(benchmark::State& state)
 	{
-		auto palintext  = getRandomBlock(64);
+		auto palintext	= getRandomBlock(64);
 		auto key		= getRandomBlock(KEYSIZE);
 		auto iv			= getRandomBlock(AES_BLOCK_SIZE);
 		auto ciphertext = encrypt(key, iv, palintext, ENCRYPT);

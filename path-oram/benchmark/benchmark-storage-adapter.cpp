@@ -18,16 +18,15 @@ namespace PathORAM
 	class StorageAdapterBenchmark : public ::benchmark::Fixture
 	{
 		public:
-		inline static const number CAPACITY   = 1 << 17;
+		inline static const number CAPACITY	  = 1 << 17;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
 
 		protected:
-		AbsStorageAdapter* adapter;
+		unique_ptr<AbsStorageAdapter> adapter;
 
 		~StorageAdapterBenchmark() override
 		{
-			delete adapter;
 			remove(FILE_NAME.c_str());
 		}
 
@@ -36,10 +35,10 @@ namespace PathORAM
 			switch (type)
 			{
 				case StorageAdapterTypeInMemory:
-					adapter = new InMemoryStorageAdapter(CAPACITY, BLOCK_SIZE, bytes());
+					adapter = make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes());
 					break;
 				case StorageAdapterTypeFileSystem:
-					adapter = new FileSystemStorageAdapter(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
+					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);

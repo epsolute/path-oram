@@ -78,7 +78,7 @@ namespace PathORAM
 	{
 	}
 
-	ORAMPositionMapAdapter::ORAMPositionMapAdapter(ORAM *oram) :
+	ORAMPositionMapAdapter::ORAMPositionMapAdapter(shared_ptr<ORAM> oram) :
 		oram(oram)
 	{
 	}

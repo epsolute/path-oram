@@ -14,12 +14,7 @@ namespace PathORAM
 		inline static const number CAPACITY = 10;
 
 		protected:
-		InMemoryStashAdapter* adapter = new InMemoryStashAdapter(CAPACITY);
-
-		~StashAdapterTest() override
-		{
-			delete adapter;
-		}
+		unique_ptr<InMemoryStashAdapter> adapter = make_unique<InMemoryStashAdapter>(CAPACITY);
 	};
 
 	TEST_F(StashAdapterTest, Initialization)
@@ -42,16 +37,15 @@ namespace PathORAM
 		const auto filename	 = "stash.bin";
 		const auto expected	 = fromText("hello", blockSize);
 
-		auto stash = new InMemoryStashAdapter(CAPACITY);
+		auto stash = make_unique<InMemoryStashAdapter>(CAPACITY);
 		stash->add(5, expected);
 		stash->storeToFile(filename);
-		delete stash;
+		stash.reset();
 
-		stash = new InMemoryStashAdapter(CAPACITY);
+		stash = make_unique<InMemoryStashAdapter>(CAPACITY);
 		stash->loadFromFile(filename, blockSize);
 		auto read = stash->get(5);
 		EXPECT_EQ(expected, read);
-		delete stash;
 
 		remove(filename);
 	}

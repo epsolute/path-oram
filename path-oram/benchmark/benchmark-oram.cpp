@@ -21,32 +21,23 @@ namespace PathORAM
 		inline static number ELEMENTS;
 
 		protected:
-		ORAM* oram;
-		AbsStorageAdapter* storage;
-		AbsPositionMapAdapter* map;
-		AbsStashAdapter* stash;
+		unique_ptr<ORAM> oram;
 
 		void Configure(number LOG_CAPACITY, number Z, number BLOCK_SIZE)
 		{
 			this->LOG_CAPACITY = LOG_CAPACITY;
 			this->Z			   = Z;
 			this->BLOCK_SIZE   = BLOCK_SIZE;
-			this->CAPACITY	 = (1 << LOG_CAPACITY) * Z;
-			this->ELEMENTS	 = (CAPACITY / 4) * 3;
+			this->CAPACITY	   = (1 << LOG_CAPACITY) * Z;
+			this->ELEMENTS	   = (CAPACITY / 4) * 3;
 
-			this->storage = new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, bytes());
-			this->map	 = new InMemoryPositionMapAdapter(CAPACITY + Z);
-			this->stash   = new InMemoryStashAdapter(3 * LOG_CAPACITY * Z);
-
-			this->oram = new ORAM(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
-		}
-
-		~ORAMBenchmark() override
-		{
-			delete oram;
-			delete storage;
-			delete map;
-			delete stash;
+			this->oram = make_unique<ORAM>(
+				LOG_CAPACITY,
+				BLOCK_SIZE,
+				Z,
+				make_unique<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes()),
+				make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z),
+				make_unique<InMemoryStashAdapter>(3 * LOG_CAPACITY * Z));
 		}
 	};
 
@@ -71,7 +62,7 @@ namespace PathORAM
 		// random operations
 		for (auto _ : state)
 		{
-			auto id   = getRandomULong(ELEMENTS);
+			auto id	  = getRandomULong(ELEMENTS);
 			auto read = getRandomULong(2) == 0;
 			if (read)
 			{

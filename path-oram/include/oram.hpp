@@ -24,9 +24,9 @@ namespace PathORAM
 	class ORAM
 	{
 		private:
-		AbsStorageAdapter *storage;
-		AbsPositionMapAdapter *map;
-		AbsStashAdapter *stash;
+		shared_ptr<AbsStorageAdapter> storage;
+		shared_ptr<AbsPositionMapAdapter> map;
+		shared_ptr<AbsStashAdapter> stash;
 
 		number dataSize; // size of the "usable" portion of the block in bytes
 		number Z;		 // number of blocks per bucket
@@ -34,8 +34,6 @@ namespace PathORAM
 		number height;	// number of tree levels
 		number buckets; // total number of buckets
 		number blocks;	// total number of blocks
-
-		bool ownDependencies = false; // if true, will delete adapters in destructor
 
 		/**
 		 * @brief performs a single access, read or write
@@ -104,7 +102,7 @@ namespace PathORAM
 		 * @param stash pointer to stash adapter to use
 		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
 		 */
-		ORAM(number logCapacity, number blockSize, number Z, AbsStorageAdapter *storage, AbsPositionMapAdapter *map, AbsStashAdapter *stash, bool initialize = true);
+		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true);
 
 		/**
 		 * @brief Construct a new ORAM object with adapters created automatically
