@@ -55,12 +55,26 @@ namespace PathORAM
 	(benchmark::State& state)
 	{
 		Configure((TestingStorageAdapterType)state.range(0));
-		auto random = state.range(1);
+		auto batch = state.range(1);
 
 		number location = 0;
 		for (auto _ : state)
 		{
-			adapter->set((location * (random ? (1 << 10) : 1)) % CAPACITY, {5uLL, bytes()});
+			if (batch == 1)
+			{
+				adapter->set((location * (1 << 10)) % CAPACITY, {5uLL, bytes()});
+			}
+			else
+			{
+				vector<pair<number, pair<number, bytes>>> writes;
+				writes.resize(batch);
+				for (auto i = 0; i < batch; i++)
+				{
+					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, {5uLL, bytes()}};
+				}
+				adapter->set(writes);
+			}
+
 			location++;
 		}
 	}
@@ -69,7 +83,7 @@ namespace PathORAM
 	(benchmark::State& state)
 	{
 		Configure((TestingStorageAdapterType)state.range(0));
-		auto random = state.range(1);
+		auto batch = state.range(1);
 
 		for (number i = 0; i < CAPACITY; i++)
 		{
@@ -79,15 +93,30 @@ namespace PathORAM
 		number location = 0;
 		for (auto _ : state)
 		{
-			benchmark::DoNotOptimize(adapter->get((location * (random ? (1 << 10) : 1)) % CAPACITY));
+			if (batch == 1)
+			{
+				benchmark::DoNotOptimize(adapter->get((location * (1 << 10)) % CAPACITY));
+			}
+			else
+			{
+				vector<number> reads;
+				reads.resize(batch);
+				for (auto i = 0; i < batch; i++)
+				{
+					reads[i] = ((location + i) * (1 << 10)) % CAPACITY;
+				}
+				benchmark::DoNotOptimize(adapter->get(reads));
+			}
 		}
 	}
 
 	static void arguments(benchmark::internal::Benchmark* b)
 	{
 		b
-			->Args({StorageAdapterTypeInMemory, true})
-			->Args({StorageAdapterTypeFileSystem, true});
+			->Args({StorageAdapterTypeInMemory, 1})
+			->Args({StorageAdapterTypeInMemory, 16})
+			->Args({StorageAdapterTypeFileSystem, 1})
+			->Args({StorageAdapterTypeFileSystem, 16});
 
 		auto iterations = 1 << 15;
 
@@ -95,7 +124,9 @@ namespace PathORAM
 		{
 			// test if Redis is availbale
 			make_unique<sw::redis::Redis>(PathORAM::StorageAdapterBenchmark::REDIS_HOST)->ping();
-			b->Args({StorageAdapterTypeRedis, true});
+			b
+				->Args({StorageAdapterTypeRedis, 1})
+				->Args({StorageAdapterTypeRedis, 16});
 			iterations = 1 << 10;
 		}
 		catch (...)

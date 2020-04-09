@@ -297,5 +297,29 @@ namespace PathORAM
 		redis->set(to_string(location), string(raw.begin(), raw.end()));
 	}
 
+	void RedisStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
+	{
+		vector<pair<string, string>> input;
+		input.resize(requests.size());
+		transform(requests.begin(), requests.end(), input.begin(), [](pair<number, bytes> val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
+		redis->mset(input.begin(), input.end());
+	}
+
+	vector<bytes> RedisStorageAdapter::getInternal(vector<number> locations)
+	{
+		vector<string> input;
+		input.resize(locations.size());
+		transform(locations.begin(), locations.end(), input.begin(), [](number val) { return to_string(val); });
+
+		vector<optional<string>> returned;
+		redis->mget(input.begin(), input.end(), back_inserter(returned));
+
+		vector<bytes> results;
+		results.resize(returned.size());
+		transform(returned.begin(), returned.end(), results.begin(), [](optional<string> val) { return bytes(val.value().begin(), val.value().end()); });
+
+		return results;
+	}
+
 #pragma endregion RedisStorageAdapter
 }

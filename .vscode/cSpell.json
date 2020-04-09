@@ -3,6 +3,8 @@
     "language": "en",
     "words": [
         "Dmytro",
+        "mget",
+        "mset",
         "oram",
         "pphkeys"
     ],
