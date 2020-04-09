@@ -112,6 +112,21 @@ namespace PathORAM
 		 * @return bytes the retrieved bytes
 		 */
 		virtual bytes getInternal(number location) = 0;
+
+		/**
+		 * @brief batch version of setInternal
+		 *
+		 * @param requests sequency of blocks to write (location, raw bytes)
+		 */
+		virtual void setInternal(vector<pair<number, bytes>> requests);
+
+		/**
+		 * @brief batch version of getInternal
+		 *
+		 * @param locations sequence (ordered) of locations to read from
+		 * @return vector<bytes> blocks of bytes in the order defined by locations
+		 */
+		virtual vector<bytes> getInternal(vector<number> locations);
 	};
 
 	/**

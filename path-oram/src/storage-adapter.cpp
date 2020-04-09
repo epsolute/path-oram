@@ -18,83 +18,111 @@ namespace PathORAM
 	{
 	}
 
+	vector<pair<number, bytes>> AbsStorageAdapter::get(vector<number> locations)
+	{
+		for (auto location : locations)
+		{
+			checkCapacity(location);
+		}
+
+		auto raws = getInternal(locations);
+
+		vector<pair<number, bytes>> results;
+		results.resize(raws.size());
+
+		for (auto i = 0; i < raws.size(); i++)
+		{
+			// decompose to ID and cipher
+			bytes iv(raws[i].begin(), raws[i].begin() + AES_BLOCK_SIZE);
+			bytes ciphertext(raws[i].begin() + AES_BLOCK_SIZE, raws[i].end());
+
+			// decryption
+			auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
+
+			// decompose to ID and data
+			bytes idBytes(decrypted.begin(), decrypted.begin() + AES_BLOCK_SIZE);
+			bytes data(decrypted.begin() + AES_BLOCK_SIZE, decrypted.end());
+
+			// extract ID from bytes
+			uchar buffer[idBytes.size()];
+			copy(idBytes.begin(), idBytes.end(), buffer);
+			auto id = ((number *)buffer)[0];
+
+			results[i] = {id, data};
+		}
+
+		return results;
+	}
+
+	void AbsStorageAdapter::set(vector<pair<number, pair<number, bytes>>> requests)
+	{
+		vector<pair<number, bytes>> writes;
+
+		for (auto [location, data] : requests)
+		{
+			checkCapacity(location);
+			checkBlockSize(data.second.size());
+
+			// pad if necessary
+			if (data.second.size() < userBlockSize)
+			{
+				data.second.resize(userBlockSize, 0x00);
+			}
+
+			// represent ID as a vector of bytes of length AES_BLOCK_SIZE
+			number buffer[1] = {data.first};
+			bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
+			id.resize(AES_BLOCK_SIZE, 0x00);
+
+			// merge ID and data
+			bytes toEncrypt;
+			toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize);
+			toEncrypt.insert(toEncrypt.end(), id.begin(), id.end());
+			toEncrypt.insert(toEncrypt.end(), data.second.begin(), data.second.end());
+
+			// encryption
+			auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
+			auto encrypted = encrypt(key, iv, toEncrypt, ENCRYPT);
+
+			// append IV
+			bytes raw;
+			raw.reserve(iv.size() + encrypted.size());
+			raw.insert(raw.end(), iv.begin(), iv.end());
+			raw.insert(raw.end(), encrypted.begin(), encrypted.end());
+
+			writes.push_back({location, raw});
+		}
+
+		setInternal(writes);
+	}
+
 	pair<number, bytes> AbsStorageAdapter::get(number location)
 	{
-		checkCapacity(location);
-
-		auto raw = getInternal(location);
-
-		// decompose to ID and cipher
-		bytes iv(raw.begin(), raw.begin() + AES_BLOCK_SIZE);
-		bytes ciphertext(raw.begin() + AES_BLOCK_SIZE, raw.end());
-
-		// decryption
-		auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
-
-		// decompose to ID and data
-		bytes idBytes(decrypted.begin(), decrypted.begin() + AES_BLOCK_SIZE);
-		bytes data(decrypted.begin() + AES_BLOCK_SIZE, decrypted.end());
-
-		// extract ID from bytes
-		uchar buffer[idBytes.size()];
-		copy(idBytes.begin(), idBytes.end(), buffer);
-		auto id = ((number *)buffer)[0];
-
-		return {id, data};
+		return get(vector<number>{location})[0];
 	}
 
 	void AbsStorageAdapter::set(number location, pair<number, bytes> data)
 	{
-		checkCapacity(location);
-		checkBlockSize(data.second.size());
-
-		// pad if necessary
-		if (data.second.size() < userBlockSize)
-		{
-			data.second.resize(userBlockSize, 0x00);
-		}
-
-		// represent ID as a vector of bytes of length AES_BLOCK_SIZE
-		number buffer[1] = {data.first};
-		bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
-		id.resize(AES_BLOCK_SIZE, 0x00);
-
-		// merge ID and data
-		bytes toEncrypt;
-		toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize);
-		toEncrypt.insert(toEncrypt.end(), id.begin(), id.end());
-		toEncrypt.insert(toEncrypt.end(), data.second.begin(), data.second.end());
-
-		// encryption
-		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
-		auto encrypted = encrypt(key, iv, toEncrypt, ENCRYPT);
-
-		// append IV
-		bytes raw;
-		raw.reserve(iv.size() + encrypted.size());
-		raw.insert(raw.end(), iv.begin(), iv.end());
-		raw.insert(raw.end(), encrypted.begin(), encrypted.end());
-
-		setInternal(location, raw);
+		set(vector<pair<number, pair<number, bytes>>>{{location, data}});
 	}
 
-	vector<pair<number, bytes>> AbsStorageAdapter::get(vector<number> locations)
+	vector<bytes> AbsStorageAdapter::getInternal(vector<number> locations)
 	{
-		vector<pair<number, bytes>> result;
+		vector<bytes> result;
 		result.resize(locations.size());
 		for (auto i = 0; i < locations.size(); i++)
 		{
-			result[i] = get(locations[i]);
+			result[i] = getInternal(locations[i]);
 		}
 
 		return result;
 	}
 
-	void AbsStorageAdapter::set(vector<pair<number, pair<number, bytes>>> requests)
+	void AbsStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
 	{
 		for (auto request : requests)
 		{
-			set(request.first, request.second);
+			setInternal(request.first, request.second);
 		}
 	}
 
