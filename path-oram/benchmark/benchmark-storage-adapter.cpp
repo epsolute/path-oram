@@ -22,7 +22,7 @@ namespace PathORAM
 		inline static const number CAPACITY	  = 1 << 17;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
-		inline static const string REDIS_HOST = "tcp://127.0.0.1:6379";
+		inline static string REDIS_HOST		  = "tcp://127.0.0.1:6379";
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -120,17 +120,26 @@ namespace PathORAM
 
 		auto iterations = 1 << 15;
 
-		try
+		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
-			// test if Redis is availbale
-			make_unique<sw::redis::Redis>(PathORAM::StorageAdapterBenchmark::REDIS_HOST)->ping();
-			b
-				->Args({StorageAdapterTypeRedis, 1})
-				->Args({StorageAdapterTypeRedis, 16});
-			iterations = 1 << 10;
-		}
-		catch (...)
-		{
+			try
+			{
+				// test if Redis is availbale
+				auto connection = "tcp://" + host + ":6379";
+				make_unique<sw::redis::Redis>(connection)->ping();
+				PathORAM::StorageAdapterBenchmark::REDIS_HOST = connection;
+
+				make_unique<sw::redis::Redis>(PathORAM::StorageAdapterBenchmark::REDIS_HOST)->ping();
+				b
+					->Args({StorageAdapterTypeRedis, 1})
+					->Args({StorageAdapterTypeRedis, 16});
+				iterations = 1 << 10;
+
+				break;
+			}
+			catch (...)
+			{
+			}
 		}
 
 		b->Iterations(iterations);

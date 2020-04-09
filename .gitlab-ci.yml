@@ -39,6 +39,8 @@ build-docs:
 
 unit-test:
   image: dbogatov/docker-images:pbc-latest
+  services:
+  - redis:5
   stage: test
   script:
     - cd ./$PROJECT_DIR/
@@ -57,6 +59,8 @@ unit-test:
 
 integration-test:
   image: dbogatov/docker-images:pbc-latest
+  services:
+  - redis:5
   stage: test
   script:
     - cd ./$PROJECT_DIR/
@@ -67,6 +71,8 @@ integration-test:
 
 benchmarks:
   image: dbogatov/docker-images:pbc-latest
+  services:
+  - redis:5
   stage: test
   script:
     - cd ./$PROJECT_DIR/

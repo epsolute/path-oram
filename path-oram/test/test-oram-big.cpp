@@ -148,14 +148,20 @@ namespace PathORAM
 			{7, 4, 64, StorageAdapterTypeFileSystem, false, true},
 		};
 
-		try
+		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
-			// test if Redis is availbale
-			make_unique<sw::redis::Redis>(PathORAM::ORAMBigTest::REDIS_HOST)->ping();
-			result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false});
-		}
-		catch (...)
-		{
+			try
+			{
+				// test if Redis is availbale
+				auto connection = "tcp://" + host + ":6379";
+				make_unique<sw::redis::Redis>(connection)->ping();
+				result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false});
+				PathORAM::ORAMBigTest::REDIS_HOST = connection;
+				break;
+			}
+			catch (...)
+			{
+			}
 		}
 
 		return result;

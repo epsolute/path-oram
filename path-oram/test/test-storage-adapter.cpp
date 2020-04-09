@@ -9,8 +9,6 @@
 
 using namespace std;
 
-inline auto useRedis = false;
-
 namespace PathORAM
 {
 	enum TestingStorageAdapterType
@@ -26,7 +24,7 @@ namespace PathORAM
 		inline static const number CAPACITY	  = 10;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
-		inline static const string REDIS_HOST = "tcp://127.0.0.1:6379";
+		inline static string REDIS_HOST		  = "tcp://127.0.0.1:6379";
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -233,14 +231,20 @@ namespace PathORAM
 	vector<TestingStorageAdapterType> cases()
 	{
 		vector<TestingStorageAdapterType> result = {StorageAdapterTypeFileSystem, StorageAdapterTypeInMemory};
-		try
+		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
-			// test if Redis is availbale
-			make_unique<sw::redis::Redis>(PathORAM::StorageAdapterTest::REDIS_HOST)->ping();
-			result.push_back(StorageAdapterTypeRedis);
-		}
-		catch (...)
-		{
+			try
+			{
+				// test if Redis is availbale
+				auto connection = "tcp://" + host + ":6379";
+				make_unique<sw::redis::Redis>(connection)->ping();
+				result.push_back(StorageAdapterTypeRedis);
+				PathORAM::StorageAdapterTest::REDIS_HOST = connection;
+				break;
+			}
+			catch (...)
+			{
+			}
 		}
 
 		return result;
