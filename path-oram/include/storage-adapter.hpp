@@ -3,6 +3,7 @@
 #include "definitions.h"
 
 #include <fstream>
+#include <sw/redis++/redis++.h>
 
 namespace PathORAM
 {
@@ -134,6 +135,37 @@ namespace PathORAM
 		 */
 		FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override);
 		~FileSystemStorageAdapter() final;
+
+		protected:
+		void setInternal(number location, bytes raw) final;
+		bytes getInternal(number location) final;
+	};
+
+	/**
+	 * @brief Redis implementation of the storage adapter.
+	 *
+	 * Uses a Redis cluster as the underlying storage.
+	 */
+	class RedisStorageAdapter : public AbsStorageAdapter
+	{
+		private:
+		unique_ptr<sw::redis::Redis> redis;
+
+		public:
+		/**
+		 * @brief Construct a new Redis Storage Adapter object
+		 *
+		 * It is possible to persist the data.
+		 * If the file exists, instantiate with override = false, and the key equal to the one used before.
+		 *
+		 * @param capacity the max number of blocks
+		 * @param userBlockSize the size of the user's portion of the block in bytes
+		 * @param key the AES key to use (may be empty to generate new random one)
+		 * @param host the URL to the Redis cluster (will throw exception if ping on the URL fails)
+		 * @param override if true, the cluster will be flushed and filled with random blocks first
+		 */
+		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override);
+		~RedisStorageAdapter() final;
 
 		protected:
 		void setInternal(number location, bytes raw) final;

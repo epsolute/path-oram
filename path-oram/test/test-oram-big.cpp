@@ -11,8 +11,18 @@ using namespace std;
 
 namespace PathORAM
 {
-	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, bool, bool, bool>>
+	enum TestingStorageAdapterType
 	{
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem,
+		StorageAdapterTypeRedis
+	};
+
+	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, TestingStorageAdapterType, bool, bool>>
+	{
+		public:
+		inline static string REDIS_HOST = "tcp://127.0.0.1:6379";
+
 		protected:
 		unique_ptr<ORAM> oram;
 		shared_ptr<AbsStorageAdapter> storage;
@@ -32,17 +42,28 @@ namespace PathORAM
 		{
 			KEY = getRandomBlock(KEYSIZE);
 
-			auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap, BULK_LOAD] = GetParam();
-			this->BLOCK_SIZE																	= BLOCK_SIZE;
-			this->BULK_LOAD																		= BULK_LOAD;
-			this->LOG_CAPACITY																	= LOG_CAPACITY;
-			this->Z																				= Z;
-			this->CAPACITY																		= (1 << LOG_CAPACITY) * Z;
-			this->ELEMENTS																		= (CAPACITY / 4) * 3;
+			auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, BULK_LOAD] = GetParam();
+			this->BLOCK_SIZE																= BLOCK_SIZE;
+			this->BULK_LOAD																	= BULK_LOAD;
+			this->LOG_CAPACITY																= LOG_CAPACITY;
+			this->Z																			= Z;
+			this->CAPACITY																	= (1 << LOG_CAPACITY) * Z;
+			this->ELEMENTS																	= (CAPACITY / 4) * 3;
 
-			this->storage = !externalStorage ?
-								shared_ptr<AbsStorageAdapter>(new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY)) :
-								shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true));
+			switch (storageType)
+			{
+				case StorageAdapterTypeInMemory:
+					this->storage = shared_ptr<AbsStorageAdapter>(new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY));
+					break;
+				case StorageAdapterTypeFileSystem:
+					this->storage = shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true));
+					break;
+				case StorageAdapterTypeRedis:
+					this->storage = shared_ptr<AbsStorageAdapter>(new RedisStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, REDIS_HOST, true));
+					break;
+				default:
+					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % storageType);
+			}
 
 			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
 			auto z			 = 3uLL;
@@ -63,6 +84,16 @@ namespace PathORAM
 			this->oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
 		}
 
+		~ORAMBigTest()
+		{
+			remove(FILENAME.c_str());
+			storage.reset();
+			if (get<3>(GetParam()) == StorageAdapterTypeRedis)
+			{
+				make_unique<sw::redis::Redis>(REDIS_HOST)->flushall();
+			}
+		}
+
 		/**
 		 * @brief emulate controlled crash
 		 *
@@ -73,7 +104,7 @@ namespace PathORAM
 		{
 			// if using FS storage and in-memory position map and stash
 			// simulate disaster
-			if (get<3>(GetParam()) && !get<4>(GetParam()))
+			if (get<3>(GetParam()) != StorageAdapterTypeInMemory && !get<4>(GetParam()))
 			{
 				storeKey(KEY, "key.bin");
 				storage.reset();
@@ -97,25 +128,40 @@ namespace PathORAM
 		}
 	};
 
-	string printTestName(testing::TestParamInfo<tuple<number, number, number, bool, bool, bool>> input)
+	string printTestName(testing::TestParamInfo<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> input)
 	{
-		auto [LOG_CAPACITY, Z, BLOCK_SIZE, externalStorage, externalPositionMap, bulkLoad] = input.param;
-		auto CAPACITY																	   = (1 << LOG_CAPACITY) * Z;
+		auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, bulkLoad] = input.param;
+		auto CAPACITY																   = (1 << LOG_CAPACITY) * Z;
 
-		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % externalStorage % externalPositionMap % bulkLoad);
+		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % storageType % externalPositionMap % bulkLoad);
 	}
 
-	tuple<number, number, number, bool, bool, bool> cases[] = {
-		{5, 3, 32, false, false, false},
-		{10, 4, 64, false, false, false},
-		{10, 5, 64, false, false, false},
-		{10, 5, 256, false, false, false},
-		{7, 4, 64, true, false, false},
-		{7, 4, 64, true, true, false},
-		{7, 4, 64, false, false, true},
+	vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> cases()
+	{
+		vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> result = {
+			{5, 3, 32, StorageAdapterTypeInMemory, false, false},
+			{10, 4, 64, StorageAdapterTypeInMemory, false, false},
+			{10, 5, 64, StorageAdapterTypeInMemory, false, false},
+			{10, 5, 256, StorageAdapterTypeInMemory, false, false},
+			{7, 4, 64, StorageAdapterTypeFileSystem, false, false},
+			{7, 4, 64, StorageAdapterTypeFileSystem, true, false},
+			{7, 4, 64, StorageAdapterTypeFileSystem, false, true},
+		};
+
+		try
+		{
+			// test if Redis is availbale
+			make_unique<sw::redis::Redis>(PathORAM::ORAMBigTest::REDIS_HOST)->ping();
+			result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false});
+		}
+		catch (...)
+		{
+		}
+
+		return result;
 	};
 
-	INSTANTIATE_TEST_SUITE_P(BigORAMSuite, ORAMBigTest, testing::ValuesIn(cases), printTestName);
+	INSTANTIATE_TEST_SUITE_P(BigORAMSuite, ORAMBigTest, testing::ValuesIn(cases()), printTestName);
 
 	TEST_P(ORAMBigTest, Simulation)
 	{

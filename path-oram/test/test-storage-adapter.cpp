@@ -9,12 +9,15 @@
 
 using namespace std;
 
+inline auto useRedis = false;
+
 namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
 		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem
+		StorageAdapterTypeFileSystem,
+		StorageAdapterTypeRedis
 	};
 
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
@@ -23,6 +26,7 @@ namespace PathORAM
 		inline static const number CAPACITY	  = 10;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
+		inline static const string REDIS_HOST = "tcp://127.0.0.1:6379";
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -38,6 +42,9 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
 					break;
+				case StorageAdapterTypeRedis:
+					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true);
+					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
@@ -46,6 +53,11 @@ namespace PathORAM
 		~StorageAdapterTest() override
 		{
 			remove(FILE_NAME.c_str());
+			adapter.reset();
+			if (GetParam() == StorageAdapterTypeRedis)
+			{
+				make_unique<sw::redis::Redis>(REDIS_HOST)->flushall();
+			}
 		}
 	};
 
@@ -54,20 +66,34 @@ namespace PathORAM
 		SUCCEED();
 	}
 
-	TEST_P(StorageAdapterTest, NoOverrideFile)
+	TEST_P(StorageAdapterTest, RecoverAfterCrash)
 	{
-		if (GetParam() == StorageAdapterTypeFileSystem)
-		{
-			auto data		= fromText("hello", BLOCK_SIZE);
-			auto key		= getRandomBlock(KEYSIZE);
-			string filename = "tmp.bin";
+		auto param		   = GetParam();
+		auto createAdapter = [param](string filename, bool override, bytes key) -> unique_ptr<AbsStorageAdapter> {
+			switch (param)
+			{
+				case StorageAdapterTypeFileSystem:
+					return make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, override);
+				case StorageAdapterTypeRedis:
+					return make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, key, REDIS_HOST, override);
+				default:
+					throw Exception(boost::format("TestingStorageAdapterType %1% is not persistent") % param);
+			}
+		};
 
-			auto storage = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, true);
+		if (GetParam() != StorageAdapterTypeInMemory)
+		{
+			auto data = fromText("hello", BLOCK_SIZE);
+			auto key  = getRandomBlock(KEYSIZE);
+
+			string filename = "tmp.bin";
+			auto storage	= createAdapter(filename, true, key);
+
 			storage->set(CAPACITY - 1, {5, data});
 			ASSERT_EQ(data, storage->get(CAPACITY - 1).second);
 			storage.reset();
 
-			storage = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, false);
+			storage = createAdapter(filename, false, key);
 
 			ASSERT_EQ(data, storage->get(CAPACITY - 1).second);
 
@@ -173,12 +199,30 @@ namespace PathORAM
 				return "InMemory";
 			case StorageAdapterTypeFileSystem:
 				return "FileSystem";
+			case StorageAdapterTypeRedis:
+				return "Redis";
 			default:
 				throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
 		}
 	}
 
-	INSTANTIATE_TEST_SUITE_P(StorageAdapterSuite, StorageAdapterTest, testing::Values(StorageAdapterTypeInMemory, StorageAdapterTypeFileSystem), printTestName);
+	vector<TestingStorageAdapterType> cases()
+	{
+		vector<TestingStorageAdapterType> result = {StorageAdapterTypeFileSystem, StorageAdapterTypeInMemory};
+		try
+		{
+			// test if Redis is availbale
+			make_unique<sw::redis::Redis>(PathORAM::StorageAdapterTest::REDIS_HOST)->ping();
+			result.push_back(StorageAdapterTypeRedis);
+		}
+		catch (...)
+		{
+		}
+
+		return result;
+	};
+
+	INSTANTIATE_TEST_SUITE_P(StorageAdapterSuite, StorageAdapterTest, testing::ValuesIn(cases()), printTestName);
 }
 
 int main(int argc, char** argv)

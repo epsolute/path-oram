@@ -12,7 +12,8 @@ namespace PathORAM
 	enum TestingStorageAdapterType
 	{
 		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem
+		StorageAdapterTypeFileSystem,
+		StorageAdapterTypeRedis
 	};
 
 	class StorageAdapterBenchmark : public ::benchmark::Fixture
@@ -21,6 +22,7 @@ namespace PathORAM
 		inline static const number CAPACITY	  = 1 << 17;
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
+		inline static const string REDIS_HOST = "tcp://127.0.0.1:6379";
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -39,6 +41,9 @@ namespace PathORAM
 					break;
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
+					break;
+				case StorageAdapterTypeRedis:
+					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true);
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
@@ -78,20 +83,34 @@ namespace PathORAM
 		}
 	}
 
+	static void arguments(benchmark::internal::Benchmark* b)
+	{
+		b
+			->Args({StorageAdapterTypeInMemory, true})
+			->Args({StorageAdapterTypeFileSystem, true});
+
+		auto iterations = 1 << 15;
+
+		try
+		{
+			// test if Redis is availbale
+			make_unique<sw::redis::Redis>(PathORAM::StorageAdapterBenchmark::REDIS_HOST)->ping();
+			b->Args({StorageAdapterTypeRedis, true});
+			iterations = 1 << 10;
+		}
+		catch (...)
+		{
+		}
+
+		b->Iterations(iterations);
+	}
+
 	BENCHMARK_REGISTER_F(StorageAdapterBenchmark, Write)
-		->Args({StorageAdapterTypeInMemory, false})
-		->Args({StorageAdapterTypeInMemory, true})
-		->Args({StorageAdapterTypeFileSystem, false})
-		->Args({StorageAdapterTypeFileSystem, true})
-		->Iterations(1 << 15)
+		->Apply(arguments)
 		->Unit(benchmark::kMicrosecond);
 
 	BENCHMARK_REGISTER_F(StorageAdapterBenchmark, Read)
-		->Args({StorageAdapterTypeInMemory, false})
-		->Args({StorageAdapterTypeInMemory, true})
-		->Args({StorageAdapterTypeFileSystem, false})
-		->Args({StorageAdapterTypeFileSystem, true})
-		->Iterations(1 << 15)
+		->Apply(arguments)
 		->Unit(benchmark::kMicrosecond);
 }
 

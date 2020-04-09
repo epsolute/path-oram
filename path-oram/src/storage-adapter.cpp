@@ -214,4 +214,40 @@ namespace PathORAM
 	}
 
 #pragma endregion FileSystemStorageAdapter
+
+#pragma region RedisStorageAdapter
+
+	RedisStorageAdapter::~RedisStorageAdapter()
+	{
+	}
+
+	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override) :
+		AbsStorageAdapter(capacity, userBlockSize, key)
+	{
+		redis = make_unique<sw::redis::Redis>(host);
+		redis->ping();
+
+		if (override)
+		{
+			redis->flushall();
+
+			for (number i = 0; i < capacity; i++)
+			{
+				set(i, {ULONG_MAX, bytes()});
+			}
+		}
+	}
+
+	bytes RedisStorageAdapter::getInternal(number location)
+	{
+		auto rawStr = redis->get(to_string(location));
+		return bytes(rawStr.value().begin(), rawStr.value().end());
+	}
+
+	void RedisStorageAdapter::setInternal(number location, bytes raw)
+	{
+		redis->set(to_string(location), string(raw.begin(), raw.end()));
+	}
+
+#pragma endregion RedisStorageAdapter
 }
