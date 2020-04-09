@@ -70,6 +70,9 @@ $(BENCHMARKSBIN): $(OBJ) $$(subst $$(BDIR), $(HDIR), $$@).cpp
 $(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
+shared-debug: CPPFLAGS += -g
+shared-debug: shared
+
 shared: CPPFLAGS += -DSHARED
 shared: $(OBJ)
 	$(CC) -shared $(LDLIBS) $(LDFLAGS) -o $(BDIR)/lib$(LIBNAME).so $(OBJ)

@@ -188,7 +188,6 @@ namespace PathORAM
 	{
 		private:
 		unique_ptr<sw::redis::Redis> redis;
-		string prefix;
 
 		public:
 		/**
