@@ -191,6 +191,30 @@ namespace PathORAM
 		}
 	}
 
+	TEST_P(StorageAdapterTest, BatchReadWrite)
+	{
+		const auto runs = 3;
+
+		vector<pair<number, pair<number, bytes>>> writes;
+		vector<number> reads;
+		for (auto i = 0; i < runs; i++)
+		{
+			writes.push_back({CAPACITY - 4 + i, {i, bytes{(uchar)(0x05 + i)}}});
+			reads.push_back(CAPACITY - 4 + i);
+		}
+		adapter->set(writes);
+
+		auto read = adapter->get(reads);
+
+		for (auto i = 0; i < runs; i++)
+		{
+			ASSERT_EQ(i, read[i].first);
+			auto expected = bytes{(uchar)(0x05 + i)};
+			expected.resize(BLOCK_SIZE);
+			ASSERT_EQ(expected, read[i].second);
+		}
+	}
+
 	string printTestName(testing::TestParamInfo<TestingStorageAdapterType> input)
 	{
 		switch (input.param)

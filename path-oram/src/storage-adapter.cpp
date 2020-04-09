@@ -78,6 +78,26 @@ namespace PathORAM
 		setInternal(location, raw);
 	}
 
+	vector<pair<number, bytes>> AbsStorageAdapter::get(vector<number> locations)
+	{
+		vector<pair<number, bytes>> result;
+		result.resize(locations.size());
+		for (auto i = 0; i < locations.size(); i++)
+		{
+			result[i] = get(locations[i]);
+		}
+
+		return result;
+	}
+
+	void AbsStorageAdapter::set(vector<pair<number, pair<number, bytes>>> requests)
+	{
+		for (auto request : requests)
+		{
+			set(request.first, request.second);
+		}
+	}
+
 	void AbsStorageAdapter::checkCapacity(number location)
 	{
 		if (location >= capacity)

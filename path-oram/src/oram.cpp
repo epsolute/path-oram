@@ -132,6 +132,8 @@ namespace PathORAM
 
 	void ORAM::readPath(number leaf)
 	{
+		vector<number> requests;
+
 		// for levels from root to leaf
 		for (number level = 0; level < height; level++)
 		{
@@ -139,13 +141,19 @@ namespace PathORAM
 			auto bucket = bucketForLevelLeaf(level, leaf);
 			for (number i = 0; i < Z; i++)
 			{
-				auto block		= bucket * Z + i;
-				auto [id, data] = storage->get(block);
-				// skip "empty" buckets
-				if (id != ULONG_MAX)
-				{
-					stash->add(id, data);
-				}
+				auto block = bucket * Z + i;
+				requests.push_back(block);
+			}
+		}
+
+		auto blocks = storage->get(requests);
+
+		for (auto [id, data] : blocks)
+		{
+			// skip "empty" buckets
+			if (id != ULONG_MAX)
+			{
+				stash->add(id, data);
 			}
 		}
 	}
@@ -153,7 +161,8 @@ namespace PathORAM
 	void ORAM::writePath(number leaf)
 	{
 		auto currentStash = stash->getAll();
-		vector<int> toDelete; // rember the records that will need to be deleted from stash
+		vector<int> toDelete;								// rember the records that will need to be deleted from stash
+		vector<pair<number, pair<number, bytes>>> requests; // storage SET requests (batching)
 
 		// following the path from leaf to root (greedy)
 		for (int level = height - 1; level >= 0; level--)
@@ -197,15 +206,17 @@ namespace PathORAM
 				{
 					auto data = toInsert.back();
 					toInsert.pop_back();
-					storage->set(block, data);
+					requests.push_back({block, data});
 				}
 				else
 				{
 					// if nothing to insert, insert dummy (for security)
-					storage->set(block, {ULONG_MAX, getRandomBlock(dataSize)});
+					requests.push_back({block, {ULONG_MAX, getRandomBlock(dataSize)}});
 				}
 			}
 		}
+
+		storage->set(requests);
 
 		// update the stash adapter, remove newly inserted blocks
 		for (auto removed : toDelete)

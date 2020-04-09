@@ -55,6 +55,29 @@ namespace PathORAM
 		void set(number location, pair<number, bytes> data);
 
 		/**
+		 * @brief retrives the data in batch
+		 *
+		 * \note
+		 * Particular storage provider may or may not support batching.
+		 * If it does not, batch will be executed sequentially.
+		 *
+		 * @param locations the locations from which to read
+		 * @return vector<pair<number, bytes>> retrived data broken up into IDs and decrypted payloads
+		 */
+		virtual vector<pair<number, bytes>> get(vector<number> locations);
+
+		/**
+		 * @brief writes the data in batch
+		 *
+		 * \note
+		 * Particular storage provider may or may not support batching.
+		 * If it does not, batch will be executed sequentially.
+		 *
+		 * @param requests locations and data requests (IDs and payloads) to write
+		 */
+		virtual void set(vector<pair<number, pair<number, bytes>>> requests);
+
+		/**
 		 * @brief Construct a new Abs Storage Adapter object
 		 *
 		 * @param capacity the maximum number of block to store
