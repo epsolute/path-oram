@@ -188,6 +188,7 @@ namespace PathORAM
 	{
 		private:
 		unique_ptr<sw::redis::Redis> redis;
+		string prefix;
 
 		public:
 		/**
@@ -202,7 +203,7 @@ namespace PathORAM
 		 * @param host the URL to the Redis cluster (will throw exception if ping on the URL fails)
 		 * @param override if true, the cluster will be flushed and filled with random blocks first
 		 */
-		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override);
+		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string prefix = "oram_");
 		~RedisStorageAdapter() final;
 
 		protected:
