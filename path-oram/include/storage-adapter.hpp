@@ -224,7 +224,7 @@ namespace PathORAM
 	class AerospikeStorageAdapter : public AbsStorageAdapter
 	{
 		private:
-		aerospike aerospike;
+		aerospike as;
 		string asset;
 
 		/**

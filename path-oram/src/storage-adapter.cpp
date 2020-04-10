@@ -33,7 +33,7 @@ namespace PathORAM
 		vector<pair<number, bytes>> results;
 		results.resize(raws.size());
 
-		for (auto i = 0; i < raws.size(); i++)
+		for (unsigned int i = 0; i < raws.size(); i++)
 		{
 			// decompose to ID and cipher
 			bytes iv(raws[i].begin(), raws[i].begin() + AES_BLOCK_SIZE);
@@ -113,7 +113,7 @@ namespace PathORAM
 	{
 		vector<bytes> result;
 		result.resize(locations.size());
-		for (auto i = 0; i < locations.size(); i++)
+		for (unsigned int i = 0; i < locations.size(); i++)
 		{
 			result[i] = getInternal(locations[i]);
 		}
@@ -332,8 +332,8 @@ namespace PathORAM
 	{
 		as_error err;
 
-		aerospike_close(&aerospike, &err);
-		aerospike_destroy(&aerospike);
+		aerospike_close(&as, &err);
+		aerospike_destroy(&as);
 	}
 
 	AerospikeStorageAdapter::AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string asset) :
@@ -343,11 +343,11 @@ namespace PathORAM
 		as_config_init(&config);
 		as_config_add_host(&config, host.c_str(), 3000);
 
-		aerospike_init(&aerospike, &config);
+		aerospike_init(&as, &config);
 
 		as_error err;
 
-		aerospike_connect(&aerospike, &err);
+		aerospike_connect(&as, &err);
 
 		if (err.code != AEROSPIKE_OK)
 		{
@@ -373,7 +373,7 @@ namespace PathORAM
 		as_error err;
 		as_record *p_rec = NULL;
 
-		aerospike_key_get(&aerospike, &err, NULL, &asKey, &p_rec);
+		aerospike_key_get(&as, &err, NULL, &asKey, &p_rec);
 
 		as_bytes *rawBytes = as_record_get_bytes(p_rec, "value");
 
@@ -403,7 +403,7 @@ namespace PathORAM
 
 		as_error err;
 
-		aerospike_key_put(&aerospike, &err, NULL, &asKey, &rec);
+		aerospike_key_put(&as, &err, NULL, &asKey, &rec);
 	}
 
 	// void AerospikeStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
@@ -417,7 +417,7 @@ namespace PathORAM
 	void AerospikeStorageAdapter::deleteAll()
 	{
 		as_error err;
-		aerospike_truncate(&aerospike, &err, NULL, "test", asset.c_str(), 0);
+		aerospike_truncate(&as, &err, NULL, "test", asset.c_str(), 0);
 	}
 
 #pragma endregion AerospikeStorageAdapter
