@@ -191,7 +191,7 @@ namespace PathORAM
 				if (err.code == AEROSPIKE_OK)
 				{
 					result.push_back({5, 3, 32, StorageAdapterTypeAerospike, true, false});
-					PathORAM::ORAMBigTest::REDIS_HOST = host;
+					PathORAM::ORAMBigTest::AEROSPIKE_HOST = host;
 					break;
 				}
 			}

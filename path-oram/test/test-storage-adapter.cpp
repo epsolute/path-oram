@@ -110,15 +110,22 @@ namespace PathORAM
 		}
 	}
 
-	TEST_P(StorageAdapterTest, CannotOpenFile)
+	TEST_P(StorageAdapterTest, CrashAtInitialization)
 	{
-		if (GetParam() == StorageAdapterTypeFileSystem)
+		switch (GetParam())
 		{
-			ASSERT_ANY_THROW(make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false));
-		}
-		else
-		{
-			SUCCEED();
+			case StorageAdapterTypeFileSystem:
+				ASSERT_ANY_THROW(make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false));
+				break;
+			case StorageAdapterTypeRedis:
+				ASSERT_ANY_THROW(make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false));
+				break;
+			case StorageAdapterTypeAerospike:
+				ASSERT_ANY_THROW(make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false));
+				break;
+			default:
+				SUCCEED();
+				break;
 		}
 	}
 
