@@ -1,5 +1,8 @@
 #include "storage-adapter.hpp"
 
+#include "aerospike/aerospike_key.h"
+#include "aerospike/as_key.h"
+#include "aerospike/as_record.h"
 #include "utility.hpp"
 
 #include <boost/format.hpp>
@@ -269,7 +272,7 @@ namespace PathORAM
 	{
 	}
 
-	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string prefix) :
+	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override) :
 		AbsStorageAdapter(capacity, userBlockSize, key)
 	{
 		redis = make_unique<sw::redis::Redis>(host);
@@ -322,4 +325,100 @@ namespace PathORAM
 	}
 
 #pragma endregion RedisStorageAdapter
+
+#pragma region AerospikeStorageAdapter
+
+	AerospikeStorageAdapter::~AerospikeStorageAdapter()
+	{
+		as_error err;
+
+		aerospike_close(&aerospike, &err);
+		aerospike_destroy(&aerospike);
+	}
+
+	AerospikeStorageAdapter::AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string asset) :
+		AbsStorageAdapter(capacity, userBlockSize, key), asset(asset)
+	{
+		as_config config;
+		as_config_init(&config);
+		as_config_add_host(&config, host.c_str(), 3000);
+
+		aerospike_init(&aerospike, &config);
+
+		as_error err;
+
+		aerospike_connect(&aerospike, &err);
+
+		if (err.code != AEROSPIKE_OK)
+		{
+			throw Exception(boost::format("connection to Aerospike failed with host: %1% (message: %2%") % host % err.message);
+		}
+
+		if (override)
+		{
+			deleteAll();
+
+			for (number i = 0; i < capacity; i++)
+			{
+				set(i, {ULONG_MAX, bytes()});
+			}
+		}
+	}
+
+	bytes AerospikeStorageAdapter::getInternal(number location)
+	{
+		as_key asKey;
+		as_key_init(&asKey, "test", asset.c_str(), to_string(location).c_str());
+
+		as_error err;
+		as_record *p_rec = NULL;
+
+		aerospike_key_get(&aerospike, &err, NULL, &asKey, &p_rec);
+
+		as_bytes *rawBytes = as_record_get_bytes(p_rec, "value");
+
+		uint8_t *rawChars = as_bytes_get(rawBytes);
+
+		auto t = bytes(rawChars, rawChars + blockSize);
+
+		as_record_destroy(p_rec);
+		p_rec = NULL;
+
+		return t;
+	}
+
+	void AerospikeStorageAdapter::setInternal(number location, bytes raw)
+	{
+		as_key asKey;
+		as_key_init(&asKey, "test", asset.c_str(), to_string(location).c_str());
+
+		uint8_t rawChars[raw.size()];
+		copy(raw.begin(), raw.end(), rawChars);
+		as_bytes rawBytes;
+		as_bytes_init_wrap(&rawBytes, rawChars, raw.size(), false);
+
+		as_record rec;
+		as_record_inita(&rec, 1);
+		as_record_set_bytes(&rec, "value", &rawBytes);
+
+		as_error err;
+
+		aerospike_key_put(&aerospike, &err, NULL, &asKey, &rec);
+	}
+
+	// void AerospikeStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
+	// {
+	// }
+
+	// vector<bytes> AerospikeStorageAdapter::getInternal(vector<number> locations)
+	// {
+	// }
+
+	void AerospikeStorageAdapter::deleteAll()
+	{
+		as_error err;
+		aerospike_truncate(&aerospike, &err, NULL, "test", asset.c_str(), 0);
+	}
+
+#pragma endregion AerospikeStorageAdapter
 }

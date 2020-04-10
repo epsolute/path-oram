@@ -2,6 +2,7 @@
 
 #include "definitions.h"
 
+#include <aerospike/aerospike.h>
 #include <fstream>
 #include <sw/redis++/redis++.h>
 
@@ -204,7 +205,7 @@ namespace PathORAM
 		 * @param host the URL to the Redis cluster (will throw exception if ping on the URL fails)
 		 * @param override if true, the cluster will be flushed and filled with random blocks first
 		 */
-		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string prefix = "oram_");
+		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override);
 		~RedisStorageAdapter() final;
 
 		protected:
@@ -213,5 +214,49 @@ namespace PathORAM
 
 		void setInternal(vector<pair<number, bytes>> requests) final;
 		vector<bytes> getInternal(vector<number> locations) final;
+	};
+
+	/**
+	 * @brief Aerospike implementation of the storage adapter.
+	 *
+	 * Uses an Aerospike cluster as the underlying storage.
+	 */
+	class AerospikeStorageAdapter : public AbsStorageAdapter
+	{
+		private:
+		aerospike aerospike;
+		string asset;
+
+		/**
+		 * @brief remove all records from the own set
+		 *
+		 */
+		void deleteAll();
+
+		friend class ORAMBigTest;
+
+		public:
+		/**
+		 * @brief Construct a new Aerospike Storage Adapter object
+		 *
+		 * It is possible to persist the data.
+		 * If the file exists, instantiate with override = false, and the key equal to the one used before.
+		 *
+		 * @param capacity the max number of blocks
+		 * @param userBlockSize the size of the user's portion of the block in bytes
+		 * @param key the AES key to use (may be empty to generate new random one)
+		 * @param host the URL to the Aerospike cluster (will throw exception if ping on the URL fails)
+		 * @param override if true, the cluster will be flushed and filled with random blocks first
+		 * @param ns specifies the namespece to use for all operations
+		 */
+		AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string set = "default");
+		~AerospikeStorageAdapter() final;
+
+		protected:
+		void setInternal(number location, bytes raw) final;
+		bytes getInternal(number location) final;
+
+		// void setInternal(vector<pair<number, bytes>> requests) final;
+		// vector<bytes> getInternal(vector<number> locations) final;
 	};
 }

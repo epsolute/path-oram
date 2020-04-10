@@ -15,7 +15,8 @@ namespace PathORAM
 	{
 		StorageAdapterTypeInMemory,
 		StorageAdapterTypeFileSystem,
-		StorageAdapterTypeRedis
+		StorageAdapterTypeRedis,
+		StorageAdapterTypeAerospike,
 	};
 
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
@@ -25,6 +26,7 @@ namespace PathORAM
 		inline static const number BLOCK_SIZE = 32;
 		inline static const string FILE_NAME  = "storage.bin";
 		inline static string REDIS_HOST		  = "tcp://127.0.0.1:6379";
+		inline static string AEROSPIKE_HOST	  = "127.0.0.1";
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -42,6 +44,9 @@ namespace PathORAM
 					break;
 				case StorageAdapterTypeRedis:
 					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true);
+					break;
+				case StorageAdapterTypeAerospike:
+					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, true);
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
@@ -74,6 +79,8 @@ namespace PathORAM
 					return make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, override);
 				case StorageAdapterTypeRedis:
 					return make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, key, REDIS_HOST, override);
+				case StorageAdapterTypeAerospike:
+					return make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, key, AEROSPIKE_HOST, override);
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not persistent") % param);
 			}
@@ -236,6 +243,8 @@ namespace PathORAM
 				return "FileSystem";
 			case StorageAdapterTypeRedis:
 				return "Redis";
+			case StorageAdapterTypeAerospike:
+				return "Aerospike";
 			default:
 				throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
 		}
@@ -254,6 +263,33 @@ namespace PathORAM
 				result.push_back(StorageAdapterTypeRedis);
 				PathORAM::StorageAdapterTest::REDIS_HOST = connection;
 				break;
+			}
+			catch (...)
+			{
+			}
+		}
+
+		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
+		{
+			try
+			{
+				// test if Aerospike is availbale
+				as_config config;
+				as_config_init(&config);
+				as_config_add_host(&config, host.c_str(), 3000);
+
+				aerospike aerospike;
+				aerospike_init(&aerospike, &config);
+
+				as_error err;
+				aerospike_connect(&aerospike, &err);
+
+				if (err.code == AEROSPIKE_OK)
+				{
+					result.push_back(StorageAdapterTypeAerospike);
+					PathORAM::StorageAdapterTest::AEROSPIKE_HOST = host;
+					break;
+				}
 			}
 			catch (...)
 			{

@@ -15,13 +15,15 @@ namespace PathORAM
 	{
 		StorageAdapterTypeInMemory,
 		StorageAdapterTypeFileSystem,
-		StorageAdapterTypeRedis
+		StorageAdapterTypeRedis,
+		StorageAdapterTypeAerospike
 	};
 
 	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, TestingStorageAdapterType, bool, bool>>
 	{
 		public:
-		inline static string REDIS_HOST = "tcp://127.0.0.1:6379";
+		inline static string REDIS_HOST		= "tcp://127.0.0.1:6379";
+		inline static string AEROSPIKE_HOST = "127.0.0.1";
 
 		protected:
 		unique_ptr<ORAM> oram;
@@ -61,6 +63,9 @@ namespace PathORAM
 				case StorageAdapterTypeRedis:
 					this->storage = shared_ptr<AbsStorageAdapter>(new RedisStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, REDIS_HOST, true));
 					break;
+				case StorageAdapterTypeAerospike:
+					this->storage = shared_ptr<AbsStorageAdapter>(new AerospikeStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, AEROSPIKE_HOST, true));
+					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % storageType);
 			}
@@ -87,6 +92,10 @@ namespace PathORAM
 		~ORAMBigTest()
 		{
 			remove(FILENAME.c_str());
+			if (get<3>(GetParam()) == StorageAdapterTypeAerospike)
+			{
+				static_pointer_cast<AerospikeStorageAdapter>(storage)->deleteAll();
+			}
 			storage.reset();
 			if (get<3>(GetParam()) == StorageAdapterTypeRedis)
 			{
@@ -104,7 +113,7 @@ namespace PathORAM
 		{
 			// if using FS storage and in-memory position map and stash
 			// simulate disaster
-			if (get<3>(GetParam()) != StorageAdapterTypeInMemory && !get<4>(GetParam()))
+			if (get<3>(GetParam()) == StorageAdapterTypeFileSystem && !get<4>(GetParam()))
 			{
 				storeKey(KEY, "key.bin");
 				storage.reset();
@@ -158,6 +167,33 @@ namespace PathORAM
 				result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false});
 				PathORAM::ORAMBigTest::REDIS_HOST = connection;
 				break;
+			}
+			catch (...)
+			{
+			}
+		}
+
+		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
+		{
+			try
+			{
+				// test if Aerospike is availbale
+				as_config config;
+				as_config_init(&config);
+				as_config_add_host(&config, host.c_str(), 3000);
+
+				aerospike aerospike;
+				aerospike_init(&aerospike, &config);
+
+				as_error err;
+				aerospike_connect(&aerospike, &err);
+
+				if (err.code == AEROSPIKE_OK)
+				{
+					result.push_back({5, 3, 32, StorageAdapterTypeAerospike, true, false});
+					PathORAM::ORAMBigTest::REDIS_HOST = host;
+					break;
+				}
 			}
 			catch (...)
 			{
