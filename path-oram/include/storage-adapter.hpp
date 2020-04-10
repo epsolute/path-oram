@@ -35,6 +35,8 @@ namespace PathORAM
 
 		bytes key; // AES key for encryption operations
 
+		friend class StorageAdapterTest_GetSetInternal_Test;
+
 		public:
 		/**
 		 * @brief retrieves the data from the location

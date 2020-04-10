@@ -160,6 +160,19 @@ namespace PathORAM
 		ASSERT_EQ(data, returnedData);
 	}
 
+	// if get/set internal for batching are implemented, they are used
+	// byt get/set internal single still has to work
+	TEST_P(StorageAdapterTest, GetSetInternal)
+	{
+		auto data = bytes{0xa8};
+		data.resize(BLOCK_SIZE + 2 * AES_BLOCK_SIZE);
+
+		adapter->setInternal(CAPACITY - 1, data);
+		auto returned = adapter->getInternal(CAPACITY - 1);
+
+		ASSERT_EQ(data, returned);
+	}
+
 	TEST_P(StorageAdapterTest, OverrideData)
 	{
 		auto id	  = 5;
