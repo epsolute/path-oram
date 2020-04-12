@@ -175,7 +175,7 @@ namespace PathORAM
 	}
 
 	// if get/set internal for batching are implemented, they are used
-	// byt get/set internal single still has to work
+	// but get/set internal single still has to work
 	TEST_P(StorageAdapterTest, GetSetInternal)
 	{
 		auto data = bytes{0xa8};

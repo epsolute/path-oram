@@ -247,7 +247,7 @@ namespace PathORAM
 		 * @param key the AES key to use (may be empty to generate new random one)
 		 * @param host the URL to the Aerospike cluster (will throw exception if ping on the URL fails)
 		 * @param override if true, the cluster will be flushed and filled with random blocks first
-		 * @param ns specifies the namespece to use for all operations
+		 * @param set specifies the set to use for all operations
 		 */
 		AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string set = "default");
 		~AerospikeStorageAdapter() final;
