@@ -1,13 +1,14 @@
 #include "storage-adapter.hpp"
 
-#include "aerospike/aerospike_key.h"
-#include "aerospike/as_key.h"
-#include "aerospike/as_record.h"
-#include "utility.hpp"
-
+#include <aerospike/aerospike_batch.h>
+#include <aerospike/aerospike_key.h>
+#include <aerospike/as_batch.h>
+#include <aerospike/as_key.h>
+#include <aerospike/as_record.h>
 #include <boost/format.hpp>
 #include <cstring>
 #include <openssl/aes.h>
+#include <utility.hpp>
 #include <vector>
 
 namespace PathORAM
@@ -379,12 +380,12 @@ namespace PathORAM
 
 		uint8_t *rawChars = as_bytes_get(rawBytes);
 
-		auto t = bytes(rawChars, rawChars + blockSize);
+		auto result = bytes(rawChars, rawChars + blockSize);
 
 		as_record_destroy(p_rec);
 		p_rec = NULL;
 
-		return t;
+		return result;
 	}
 
 	void AerospikeStorageAdapter::setInternal(number location, bytes raw)
@@ -410,9 +411,57 @@ namespace PathORAM
 	// {
 	// }
 
-	// vector<bytes> AerospikeStorageAdapter::getInternal(vector<number> locations)
-	// {
-	// }
+	vector<bytes> AerospikeStorageAdapter::getInternal(vector<number> locations)
+	{
+		as_batch batch;
+		as_batch_inita(&batch, locations.size());
+
+		char *strs[locations.size()];
+
+		for (uint i = 0; i < locations.size(); i++)
+		{
+			strs[i] = new char[to_string(locations[i]).length() + 1];
+			strcpy(strs[i], to_string(locations[i]).c_str());
+			as_key_init(as_batch_keyat(&batch, i), "test", asset.c_str(), strs[i]);
+		}
+
+		struct UData
+		{
+			vector<bytes> result;
+			number blockSize;
+		};
+
+		auto callback = [](const as_batch_read *results, uint32_t n, void *udata) -> bool {
+			for (uint i = 0; i < n; i++)
+			{
+				as_bytes *rawBytes = as_record_get_bytes(&results[i].record, "value");
+
+				uint8_t *rawChars = as_bytes_get(rawBytes);
+
+				auto t						= bytes(rawChars, rawChars + ((UData *)udata)->blockSize);
+				((UData *)udata)->result[i] = t;
+			}
+
+			return true;
+		};
+
+		UData udata{
+			.result	   = vector<bytes>(),
+			.blockSize = blockSize};
+		udata.result.resize(locations.size());
+
+		as_error err;
+		aerospike_batch_get(&as, &err, NULL, &batch, callback, &udata);
+
+		as_batch_destroy(&batch);
+
+		for (uint i = 0; i < locations.size(); i++)
+		{
+			delete[] strs[i];
+		}
+
+		return udata.result;
+	}
 
 	void AerospikeStorageAdapter::deleteAll()
 	{

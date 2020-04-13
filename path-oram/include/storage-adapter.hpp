@@ -257,6 +257,6 @@ namespace PathORAM
 		bytes getInternal(number location) final;
 
 		// void setInternal(vector<pair<number, bytes>> requests) final;
-		// vector<bytes> getInternal(vector<number> locations) final;
+		vector<bytes> getInternal(vector<number> locations) final;
 	};
 }
