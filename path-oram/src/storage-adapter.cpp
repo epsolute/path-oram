@@ -29,7 +29,16 @@ namespace PathORAM
 			checkCapacity(location);
 		}
 
-		auto raws = getInternal(locations);
+		// optimize for single operation
+		vector<bytes> raws;
+		if (locations.size() == 1)
+		{
+			raws.push_back(getInternal(locations[0]));
+		}
+		else
+		{
+			raws = getInternal(locations);
+		}
 
 		vector<pair<number, bytes>> results;
 		results.resize(raws.size());
@@ -97,7 +106,15 @@ namespace PathORAM
 			writes.push_back({location, raw});
 		}
 
-		setInternal(writes);
+		// optimize for single operation
+		if (writes.size() == 1)
+		{
+			setInternal(writes[0].first, writes[0].second);
+		}
+		else
+		{
+			setInternal(writes);
+		}
 	}
 
 	pair<number, bytes> AbsStorageAdapter::get(number location)
@@ -406,10 +423,6 @@ namespace PathORAM
 
 		aerospike_key_put(&as, &err, NULL, &asKey, &rec);
 	}
-
-	// void AerospikeStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
-	// {
-	// }
 
 	vector<bytes> AerospikeStorageAdapter::getInternal(vector<number> locations)
 	{
