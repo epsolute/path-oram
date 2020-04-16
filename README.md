@@ -4,9 +4,13 @@ This is an implementation of the PathORAM algorithm from the [original paper](ht
 This implementation has the following features:
 - it's written in C++ and is compilable into a standalone shared library (see [usage example](./path-oram/test/test-shared-lib.cpp))
 - all components (storage, position map and stash) are abstracted via interfaces
-- storage component can be either in-memory, or file system (binary file), one can extend it to use database or external storage
+- storage component can be
+	- `InMemory` (using a preallocated heap array)
+	- `FileSystem` (using a binary file)
+	- `Redis` (using external Redis server and [C++ client](https://github.com/sewenew/redis-plus-plus), supports batch read/write)
+	- `Aerospike` (using external Aerospike server and [official C client](https://www.aerospike.com/docs/client/c/), supports batch read, no batch write)
 - position map can be either in-memory, or using another PathORAM, thus enabling arbitrary-level recursive PathORAM
-- PRG and encryption are done with OpenSSL, encryption is AES-CBC-256
+- PRG and encryption are done with OpenSSL, encryption is AES-CBC-256, random IV every time
 - the solution is tested, the coverage is 100%
 - the solution is benchmarked
 - the solution is documented, the documentation is [online](https://pathoram.dbogatov.org/)
@@ -21,7 +25,7 @@ Dependencies:
 - for building a shared library
 	- `g++` that supports `--std=c++17`
 	- `make`
-	- these libs `-l boost_system -l ssl -l crypto` (OpenSSL and boost)
+	- these libs `-l boost_system -l ssl -l crypto  -l redis++ -l hiredis -l aerospike -l dl -l z` (OpenSSL, boost, Redis client, Aerospike client)
 - for testing and benchmarking
 	- all of the above
 	- these libs `-l gtest -l pthread -l benchmark` (Google Test and Google Benchmark with pthread)
