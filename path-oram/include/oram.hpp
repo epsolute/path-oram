@@ -35,6 +35,10 @@ namespace PathORAM
 		number buckets; // total number of buckets
 		number blocks;	// total number of blocks
 
+		number batchSize;
+
+		unordered_map<number, pair<number, bytes>> cache;
+
 		/**
 		 * @brief performs a single access, read or write
 		 *
@@ -81,6 +85,10 @@ namespace PathORAM
 		 */
 		number bucketForLevelLeaf(number level, number leaf);
 
+		vector<pair<number, bytes>> getCache(vector<number> locations);
+		void setCache(vector<pair<number, pair<number, bytes>>> requests);
+		void syncCache();
+
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;
@@ -102,7 +110,7 @@ namespace PathORAM
 		 * @param stash pointer to stash adapter to use
 		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
 		 */
-		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true);
+		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true, number batchSize = 1);
 
 		/**
 		 * @brief Construct a new ORAM object with adapters created automatically

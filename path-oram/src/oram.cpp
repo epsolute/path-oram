@@ -9,12 +9,13 @@ namespace PathORAM
 	using namespace std;
 	using boost::format;
 
-	ORAM::ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize) :
+	ORAM::ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize, number batchSize) :
 		storage(storage),
 		map(map),
 		stash(stash),
 		dataSize(blockSize),
-		Z(Z)
+		Z(Z),
+		batchSize(batchSize)
 	{
 		this->height  = logCapacity;		 // we are given a height
 		this->buckets = (number)1 << height; // number of buckets is 2^height
@@ -54,12 +55,15 @@ namespace PathORAM
 
 	bytes ORAM::get(number block)
 	{
-		return access(true, block, bytes());
+		auto result = access(true, block, bytes());
+		syncCache();
+		return result;
 	}
 
 	void ORAM::put(number block, bytes data)
 	{
 		access(false, block, data);
+		syncCache();
 	}
 
 	void ORAM::load(vector<pair<number, bytes>> data)
@@ -146,7 +150,7 @@ namespace PathORAM
 			}
 		}
 
-		auto blocks = storage->get(requests);
+		auto blocks = getCache(requests);
 
 		for (auto [id, data] : blocks)
 		{
@@ -216,7 +220,7 @@ namespace PathORAM
 			}
 		}
 
-		storage->set(requests);
+		setCache(requests);
 
 		// update the stash adapter, remove newly inserted blocks
 		for (auto removed : toDelete)
@@ -234,5 +238,38 @@ namespace PathORAM
 	{
 		// on this level, do these paths share the same bucket
 		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);
+	}
+
+	vector<pair<number, bytes>> ORAM::getCache(vector<number> locations)
+	{
+		vector<number> toGet;
+		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });
+
+		auto downloaded = storage->get(toGet);
+
+		transform(toGet.begin(), toGet.end(), downloaded.begin(), inserter(cache, cache.begin()), [](number location, pair<number, bytes> block) { return make_pair(location, block); });
+
+		vector<pair<number, bytes>> result;
+		transform(locations.begin(), locations.end(), back_inserter(result), [this](number location) { return cache[location]; });
+
+		return result;
+	}
+
+	void ORAM::setCache(vector<pair<number, pair<number, bytes>>> requests)
+	{
+		for (auto request : requests)
+		{
+			cache[request.first] = request.second;
+		}
+	}
+
+	void ORAM::syncCache()
+	{
+		vector<pair<number, pair<number, bytes>>> requests;
+		copy(cache.begin(), cache.end(), back_inserter(requests));
+
+		storage->set(requests);
+
+		cache.clear();
 	}
 }

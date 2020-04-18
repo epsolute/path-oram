@@ -76,7 +76,7 @@ namespace PathORAM
 
 	bool InMemoryStashAdapter::exists(number block)
 	{
-		return stash.count(block);
+		return stash.count(block) > 0;
 	}
 
 	void InMemoryStashAdapter::storeToFile(string filename)
