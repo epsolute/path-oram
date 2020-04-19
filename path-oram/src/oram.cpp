@@ -87,6 +87,7 @@ namespace PathORAM
 			back_inserter(results),
 			[this](pair<number, bytes> request) { return access(request.second.size() == 0, request.first, request.second); });
 
+		// upload resulting new data
 		syncCache();
 
 		return results;
@@ -178,6 +179,7 @@ namespace PathORAM
 
 		auto blocks = getCache(requests);
 
+		// we may only want to populate cache
 		if (putInStash)
 		{
 			for (auto [id, data] : blocks)
@@ -271,13 +273,17 @@ namespace PathORAM
 
 	vector<pair<number, bytes>> ORAM::getCache(vector<number> locations)
 	{
+		// get those locations not present in the cache
 		vector<number> toGet;
 		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });
 
+		// download those blocks
 		auto downloaded = storage->get(toGet);
 
+		// add them to the cache
 		transform(toGet.begin(), toGet.end(), downloaded.begin(), inserter(cache, cache.begin()), [](number location, pair<number, bytes> block) { return make_pair(location, block); });
 
+		// answer the query (now from cache only)
 		vector<pair<number, bytes>> result;
 		transform(locations.begin(), locations.end(), back_inserter(result), [this](number location) { return cache[location]; });
 
@@ -294,6 +300,7 @@ namespace PathORAM
 
 	void ORAM::syncCache()
 	{
+		// convert map to vector of pairs
 		vector<pair<number, pair<number, bytes>>> requests;
 		copy(cache.begin(), cache.end(), back_inserter(requests));
 

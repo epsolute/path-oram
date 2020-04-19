@@ -35,8 +35,10 @@ namespace PathORAM
 		number buckets; // total number of buckets
 		number blocks;	// total number of blocks
 
-		number batchSize;
+		number batchSize; // a max number of requests to process at a time (default 1)
 
+		// a layer between (expensive) storage and the protocol;
+		// holds items in memory and unencrypted
 		unordered_map<number, pair<number, bytes>> cache;
 
 		/**
@@ -54,6 +56,8 @@ namespace PathORAM
 		 *
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
+		 * @param putInStash if set, the read path will be put in stash.
+		 * Otherwise, only the cache will be populated.
 		 */
 		void readPath(number leaf, bool putInStash = true);
 
@@ -85,8 +89,27 @@ namespace PathORAM
 		 */
 		number bucketForLevelLeaf(number level, number leaf);
 
+		/**
+		 * @brief make GET requests to the storage through cache.
+		 * That is, upon the cache miss the item will be downloaded and stored in cache.
+		 *
+		 * @param locations the addresses of the blocks to read
+		 * @return vector<pair<number, bytes>> the read blocks split into ORAM id and payload
+		 */
 		vector<pair<number, bytes>> getCache(vector<number> locations);
+
+		/**
+		 * @brief make SET requests to the storage through cache.
+		 * This will NOT update the storage, only the cache (see syncCache).
+		 *
+		 * @param requests the set requests in a form of {address, {ORAM ID, payload}}
+		 */
 		void setCache(vector<pair<number, pair<number, bytes>>> requests);
+
+		/**
+		 * @brief upload all cache content to the storage and empty the cache
+		 *
+		 */
 		void syncCache();
 
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
@@ -110,6 +133,7 @@ namespace PathORAM
 		 * @param map pointer to position map adapter to use
 		 * @param stash pointer to stash adapter to use
 		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
+		 * @param batchSize controls the max number of requests in multiple(...)
 		 */
 		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true, number batchSize = 1);
 
@@ -154,10 +178,23 @@ namespace PathORAM
 		 */
 		void put(number block, bytes data);
 
+		/**
+		 * @brief processes multiple requests at a time
+		 *
+		 * @param requests the sequence of requests in a form of {ID, payload}
+		 * If payload is empty (zero size), the requests is treated as GET, otherwise PUT.
+		 * @return vector<bytes> the answer to the requests.
+		 * Matches the order of requests.
+		 * For a GET request the answer is a payload for ID.
+		 * For a PUT request the supplied payload is returned.
+		 *
+		 * \note
+		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
+		 */
 		vector<bytes> multiple(vector<pair<number, bytes>> requests);
 
 		/**
-		 * @brief bulk loads the data bypassing ORAM access
+		 * @brief bulk loads the data bypassing usual ORAM protocol
 		 *
 		 * Loads the data straight to the storage preserving ORAM invariant.
 		 * Shuffles the data before inserting (to hide the original order).

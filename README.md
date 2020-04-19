@@ -10,6 +10,7 @@ This implementation has the following features:
 	- `Redis` (using external Redis server and [C++ client](https://github.com/sewenew/redis-plus-plus), supports batch read/write)
 	- `Aerospike` (using external Aerospike server and [official C client](https://www.aerospike.com/docs/client/c/), supports batch read, no batch write)
 - position map can be either in-memory, or using another PathORAM, thus enabling arbitrary-level recursive PathORAM
+- an optimization for multiple requests at a time (mixed get and put)
 - PRG and encryption are done with OpenSSL, encryption is AES-CBC-256, random IV every time
 - the solution is tested, the coverage is 100%
 - the solution is benchmarked
@@ -28,7 +29,7 @@ Dependencies:
 	- these libs `-l boost_system -l ssl -l crypto  -l redis++ -l hiredis -l aerospike -l dl -l z` (OpenSSL, boost, Redis client, Aerospike client)
 - for testing and benchmarking
 	- all of the above
-	- these libs `-l gtest -l pthread -l benchmark` (Google Test and Google Benchmark with pthread)
+	- these libs `-l gtest -l pthread -l benchmark -l gmock` (Google Test + gMock and Google Benchmark with pthread)
 	- `gcovr` for coverage
 	- `doxygen` for generating docs
 - or, use this Docker image: `dbogatov/docker-images:pbc-latest`
