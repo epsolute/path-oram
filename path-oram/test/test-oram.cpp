@@ -2,18 +2,44 @@
 #include "oram.hpp"
 #include "utility.hpp"
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 using namespace std;
 
 namespace PathORAM
 {
+	class MockStorage : public AbsStorageAdapter
+	{
+		public:
+		MockStorage(number capacity, number userBlockSize, bytes key) :
+			AbsStorageAdapter(capacity, userBlockSize, key)
+		{
+			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key);
+
+			// by default, all calls are delegated to the real object
+			ON_CALL(*this, getInternal).WillByDefault([this](number location) {
+				return _real->getInternal(location);
+			});
+			ON_CALL(*this, setInternal).WillByDefault([this](number location, bytes raw) {
+				return _real->setInternal(location, raw);
+			});
+		}
+
+		MOCK_METHOD(bytes, getInternal, (number location), (override));
+		MOCK_METHOD(void, setInternal, (number location, bytes raw), (override));
+
+		private:
+		unique_ptr<InMemoryStorageAdapter> _real;
+	};
+
 	class ORAMTest : public ::testing::Test
 	{
 		public:
 		inline static const number LOG_CAPACITY = 5;
 		inline static const number Z			= 3;
 		inline static const number BLOCK_SIZE	= 32;
+		inline static const number BATCH_SIZE	= 10;
 
 		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
 
@@ -30,7 +56,9 @@ namespace PathORAM
 				Z,
 				storage,
 				make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z),
-				stash);
+				stash,
+				true,
+				BATCH_SIZE);
 		}
 
 		void populateStorage()
@@ -164,6 +192,98 @@ namespace PathORAM
 		for (number id = 0; id < CAPACITY; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+		}
+
+		for (number id = 0; id < CAPACITY; id++)
+		{
+			auto returned = oram->get(id);
+			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
+		}
+	}
+
+	TEST_F(ORAMTest, MultipleTooManyRequests)
+	{
+		vector<pair<number, bytes>> batch;
+		batch.resize(BATCH_SIZE + 1);
+		ASSERT_ANY_THROW(oram->multiple(batch));
+	}
+
+	TEST_F(ORAMTest, MultipleCheckCache)
+	{
+		using ::testing::_;
+		using ::testing::NiceMock;
+
+		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
+
+		// make sure main storage is not called
+		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z), stash, true, BATCH_SIZE);
+
+		vector<pair<number, bytes>> batch;
+		for (number id = 0; id < BATCH_SIZE; id++)
+		{
+			batch.push_back({id, bytes()});
+		}
+
+		// populate cache
+		for (auto request : batch)
+		{
+			oram->readPath(oram->map->get(request.first), false);
+		}
+
+		EXPECT_CALL(*storage, getInternal(_)).Times(0);
+
+		oram->multiple(batch);
+	}
+
+	TEST_F(ORAMTest, MultipleGet)
+	{
+		for (number id = 0; id < CAPACITY; id++)
+		{
+			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+		}
+
+		vector<pair<number, bytes>> batch;
+		for (number id = 0; id < CAPACITY; id++)
+		{
+			batch.push_back({id, bytes()});
+			if (id % BATCH_SIZE == 0 || id == CAPACITY - 1)
+			{
+				if (batch.size() > 0)
+				{
+					auto returned = oram->multiple(batch);
+					ASSERT_EQ(batch.size(), returned.size());
+
+					for (number i = 0; i < batch.size(); i++)
+					{
+						EXPECT_EQ(to_string(batch[i].first), toText(returned[i], BLOCK_SIZE));
+					}
+
+					batch.clear();
+				}
+			}
+		}
+	}
+
+	TEST_F(ORAMTest, MultiplePut)
+	{
+		vector<pair<number, bytes>> batch;
+		for (number id = 0; id < CAPACITY; id++)
+		{
+			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
+			if (id % BATCH_SIZE == 0 || id == CAPACITY - 1)
+			{
+				if (batch.size() > 0)
+				{
+					auto returned = oram->multiple(batch);
+					ASSERT_EQ(batch.size(), returned.size());
+					for (number i = 0; i < batch.size(); i++)
+					{
+						EXPECT_EQ(batch[i].second, returned[i]);
+					}
+				}
+
+				batch.clear();
+			}
 		}
 
 		for (number id = 0; id < CAPACITY; id++)

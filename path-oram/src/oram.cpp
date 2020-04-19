@@ -66,6 +66,32 @@ namespace PathORAM
 		syncCache();
 	}
 
+	vector<bytes> ORAM::multiple(vector<pair<number, bytes>> requests)
+	{
+		if (requests.size() > batchSize)
+		{
+			throw Exception(boost::format("Too many requests (%1%) for batch size %2%") % requests.size() % batchSize);
+		}
+
+		// populate cache
+		for (auto request : requests)
+		{
+			readPath(map->get(request.first), false);
+		}
+
+		// run ORAM protocol (will use cache)
+		vector<bytes> results;
+		transform(
+			requests.begin(),
+			requests.end(),
+			back_inserter(results),
+			[this](pair<number, bytes> request) { return access(request.second.size() == 0, request.first, request.second); });
+
+		syncCache();
+
+		return results;
+	}
+
 	void ORAM::load(vector<pair<number, bytes>> data)
 	{
 		// shuffle (such bulk load may leak in part the original order)
@@ -134,7 +160,7 @@ namespace PathORAM
 		return returned;
 	}
 
-	void ORAM::readPath(number leaf)
+	void ORAM::readPath(number leaf, bool putInStash)
 	{
 		vector<number> requests;
 
@@ -152,12 +178,15 @@ namespace PathORAM
 
 		auto blocks = getCache(requests);
 
-		for (auto [id, data] : blocks)
+		if (putInStash)
 		{
-			// skip "empty" buckets
-			if (id != ULONG_MAX)
+			for (auto [id, data] : blocks)
 			{
-				stash->add(id, data);
+				// skip "empty" buckets
+				if (id != ULONG_MAX)
+				{
+					stash->add(id, data);
+				}
 			}
 		}
 	}

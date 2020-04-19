@@ -149,6 +149,8 @@ namespace PathORAM
 		protected:
 		void setInternal(number location, bytes raw) final;
 		bytes getInternal(number location) final;
+
+		friend class MockStorage;
 	};
 
 	/**

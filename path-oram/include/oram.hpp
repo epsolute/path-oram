@@ -55,7 +55,7 @@ namespace PathORAM
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
 		 */
-		void readPath(number leaf);
+		void readPath(number leaf, bool putInStash = true);
 
 		/**
 		 * @brief write a path using the blocks from stash
@@ -93,6 +93,7 @@ namespace PathORAM
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_ConsistencyCheck_Test;
+		friend class ORAMTest_MultipleCheckCache_Test;
 		friend class ORAMBigTest;
 
 		public:
@@ -152,6 +153,8 @@ namespace PathORAM
 		 * @param data the (plaintext) data to put in the block
 		 */
 		void put(number block, bytes data);
+
+		vector<bytes> multiple(vector<pair<number, bytes>> requests);
 
 		/**
 		 * @brief bulk loads the data bypassing ORAM access

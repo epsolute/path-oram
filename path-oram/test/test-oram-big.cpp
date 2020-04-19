@@ -19,7 +19,7 @@ namespace PathORAM
 		StorageAdapterTypeAerospike
 	};
 
-	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, TestingStorageAdapterType, bool, bool>>
+	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>>
 	{
 		public:
 		inline static string REDIS_HOST		= "tcp://127.0.0.1:6379";
@@ -37,6 +37,7 @@ namespace PathORAM
 		inline static number LOG_CAPACITY;
 		inline static number Z;
 		inline static number BULK_LOAD;
+		inline static number BATCH_SIZE;
 		inline static string FILENAME = "storage.bin";
 		inline static bytes KEY;
 
@@ -44,13 +45,14 @@ namespace PathORAM
 		{
 			KEY = getRandomBlock(KEYSIZE);
 
-			auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, BULK_LOAD] = GetParam();
-			this->BLOCK_SIZE																= BLOCK_SIZE;
-			this->BULK_LOAD																	= BULK_LOAD;
-			this->LOG_CAPACITY																= LOG_CAPACITY;
-			this->Z																			= Z;
-			this->CAPACITY																	= (1 << LOG_CAPACITY) * Z;
-			this->ELEMENTS																	= (CAPACITY / 4) * 3;
+			auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, BULK_LOAD, BATCH_SIZE] = GetParam();
+			this->BLOCK_SIZE																			= BLOCK_SIZE;
+			this->BULK_LOAD																				= BULK_LOAD;
+			this->BATCH_SIZE																			= BATCH_SIZE;
+			this->LOG_CAPACITY																			= LOG_CAPACITY;
+			this->Z																						= Z;
+			this->CAPACITY																				= (1 << LOG_CAPACITY) * Z;
+			this->ELEMENTS																				= (CAPACITY / 4) * 3;
 
 			switch (storageType)
 			{
@@ -86,7 +88,7 @@ namespace PathORAM
 									make_unique<InMemoryStashAdapter>(3 * logCapacity * z))));
 			this->stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
 
-			this->oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash);
+			this->oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, map, stash, true, BATCH_SIZE);
 		}
 
 		~ORAMBigTest()
@@ -137,24 +139,25 @@ namespace PathORAM
 		}
 	};
 
-	string printTestName(testing::TestParamInfo<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> input)
+	string printTestName(testing::TestParamInfo<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>> input)
 	{
-		auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, bulkLoad] = input.param;
-		auto CAPACITY																   = (1 << LOG_CAPACITY) * Z;
+		auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, bulkLoad, batchSize] = input.param;
+		auto CAPACITY																			  = (1 << LOG_CAPACITY) * Z;
 
-		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % storageType % externalPositionMap % bulkLoad);
+		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%i%8%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % storageType % externalPositionMap % bulkLoad % batchSize);
 	}
 
-	vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> cases()
+	vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>> cases()
 	{
-		vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool>> result = {
-			{5, 3, 32, StorageAdapterTypeInMemory, false, false},
-			{10, 4, 64, StorageAdapterTypeInMemory, false, false},
-			{10, 5, 64, StorageAdapterTypeInMemory, false, false},
-			{10, 5, 256, StorageAdapterTypeInMemory, false, false},
-			{7, 4, 64, StorageAdapterTypeFileSystem, false, false},
-			{7, 4, 64, StorageAdapterTypeFileSystem, true, false},
-			{7, 4, 64, StorageAdapterTypeFileSystem, false, true},
+		vector<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>> result = {
+			{5, 3, 32, StorageAdapterTypeInMemory, false, false, 1},
+			{10, 4, 64, StorageAdapterTypeInMemory, false, false, 1},
+			{10, 5, 64, StorageAdapterTypeInMemory, false, false, 1},
+			{10, 5, 256, StorageAdapterTypeInMemory, false, false, 1},
+			{7, 4, 64, StorageAdapterTypeFileSystem, false, false, 1},
+			{7, 4, 64, StorageAdapterTypeFileSystem, true, false, 1},
+			{7, 4, 64, StorageAdapterTypeFileSystem, false, true, 1},
+			{7, 4, 64, StorageAdapterTypeInMemory, false, true, 10},
 		};
 
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
@@ -164,7 +167,7 @@ namespace PathORAM
 				// test if Redis is availbale
 				auto connection = "tcp://" + host + ":6379";
 				make_unique<sw::redis::Redis>(connection)->ping();
-				result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false});
+				result.push_back({5, 3, 32, StorageAdapterTypeRedis, true, false, 1});
 				PathORAM::ORAMBigTest::REDIS_HOST = connection;
 				break;
 			}
@@ -190,7 +193,7 @@ namespace PathORAM
 
 				if (err.code == AEROSPIKE_OK)
 				{
-					result.push_back({5, 3, 32, StorageAdapterTypeAerospike, true, false});
+					result.push_back({5, 3, 32, StorageAdapterTypeAerospike, true, false, 1});
 					PathORAM::ORAMBigTest::AEROSPIKE_HOST = host;
 					break;
 				}
@@ -242,21 +245,68 @@ namespace PathORAM
 		disaster();
 
 		// random operations
+		vector<pair<number, bytes>> batch;
 		for (number i = 0; i < ELEMENTS * 5; i++)
 		{
 			auto id	  = getRandomULong(ELEMENTS);
 			auto read = getRandomULong(2) == 0;
+
 			if (read)
 			{
 				// get
-				auto returned = oram->get(id);
-				EXPECT_EQ(local[id], returned);
+				batch.push_back({id, bytes()});
 			}
 			else
 			{
+				// put
 				auto data = fromText(to_string(ELEMENTS + getRandomULong(ELEMENTS)), BLOCK_SIZE);
-				local[id] = data;
-				oram->put(id, data);
+				batch.push_back({id, data});
+			}
+
+			if (i % BATCH_SIZE == 0 || i == ELEMENTS * 5 - 1)
+			{
+				if (batch.size() > 0)
+				{
+					if (batch.size() == 1)
+					{
+						// not using batch
+						if (batch[0].second.size() == 0)
+						{
+							// read
+							auto returned = oram->get(batch[0].first);
+							EXPECT_EQ(local[batch[0].first], returned);
+						}
+						else
+						{
+							// write
+							oram->put(batch[0].first, batch[0].second);
+							local[batch[0].first] = batch[0].second;
+						}
+					}
+					else
+					{
+						// batch enabled
+						auto returned = oram->multiple(batch);
+						ASSERT_EQ(batch.size(), returned.size());
+
+						for (number j = 0; j < batch.size(); j++)
+						{
+							if (batch[j].second.size() == 0)
+							{
+								// read
+								EXPECT_EQ(local[batch[j].first], returned[j]);
+							}
+							else
+							{
+								// write
+								EXPECT_EQ(batch[j].second, returned[j]);
+								local[batch[j].first] = batch[j].second;
+							}
+						}
+					}
+
+					batch.clear();
+				}
 			}
 		}
 	}
