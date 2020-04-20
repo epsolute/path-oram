@@ -277,11 +277,14 @@ namespace PathORAM
 		vector<number> toGet;
 		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });
 
-		// download those blocks
-		auto downloaded = storage->get(toGet);
+		if (toGet.size() > 0)
+		{
+			// download those blocks
+			auto downloaded = storage->get(toGet);
 
-		// add them to the cache
-		transform(toGet.begin(), toGet.end(), downloaded.begin(), inserter(cache, cache.begin()), [](number location, pair<number, bytes> block) { return make_pair(location, block); });
+			// add them to the cache
+			transform(toGet.begin(), toGet.end(), downloaded.begin(), inserter(cache, cache.begin()), [](number location, pair<number, bytes> block) { return make_pair(location, block); });
+		}
 
 		// answer the query (now from cache only)
 		vector<pair<number, bytes>> result;
