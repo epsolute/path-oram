@@ -3,6 +3,7 @@
 #include "utility.hpp"
 
 #include <boost/format.hpp>
+#include <unordered_set>
 
 namespace PathORAM
 {
@@ -74,12 +75,14 @@ namespace PathORAM
 		}
 
 		// populate cache
-		vector<number> locations;
+		unordered_set<number> locationsSet;
 		for (auto request : requests)
 		{
 			auto path = readPath(map->get(request.first), false);
-			locations.insert(locations.end(), path.begin(), path.end());
+			locationsSet.insert(path.begin(), path.end());
 		}
+
+		vector<number> locations(locationsSet.begin(), locationsSet.end());
 		getCache(locations);
 
 		// run ORAM protocol (will use cache)
@@ -278,10 +281,6 @@ namespace PathORAM
 
 	vector<pair<number, bytes>> ORAM::getCache(vector<number> locations)
 	{
-		// remove duplicates
-		sort(locations.begin(), locations.end());
-		locations.erase(unique(locations.begin(), locations.end()), locations.end());
-
 		// get those locations not present in the cache
 		vector<number> toGet;
 		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });

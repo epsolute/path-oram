@@ -224,6 +224,7 @@ namespace PathORAM
 	{
 		using ::testing::An;
 		using ::testing::NiceMock;
+		using ::testing::Truly;
 
 		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
 
@@ -236,31 +237,16 @@ namespace PathORAM
 			batch.push_back({id, bytes()});
 		}
 
-		EXPECT_CALL(*storage, getInternal(An<vector<number>>())).Times(1);
-		EXPECT_CALL(*storage, setInternal(An<vector<pair<number, bytes>>>())).Times(1);
-
-		oram->multiple(batch);
-	}
-
-	TEST_F(ORAMTest, MultipleGetNoDuplicates)
-	{
-		using ::testing::NiceMock;
-		using ::testing::Truly;
-
-		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
-
-		// make sure main storage is not called
-		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z), stash, true, BATCH_SIZE);
-
 		auto noDupsPredicate = [](vector<number> locations) -> bool {
 			sort(locations.begin(), locations.end());
 			auto it = unique(locations.begin(), locations.end());
 			return it == locations.end();
 		};
 
-		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate)));
+		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate))).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<vector<pair<number, bytes>>>())).Times(1);
 
-		oram->getCache({1, 2, 5, 5, 10});
+		oram->multiple(batch);
 	}
 
 	TEST_F(ORAMTest, MultipleGet)
