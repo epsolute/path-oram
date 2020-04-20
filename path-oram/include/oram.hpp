@@ -56,10 +56,11 @@ namespace PathORAM
 		 *
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
-		 * @param putInStash if set, the read path will be put in stash.
-		 * Otherwise, only the cache will be populated.
+		 * @param putInStash if set, the path will be read from storage and put in stash.
+		 * Otherwise, will only return the locations of blocks in the path.
+		 * @return vector<number> the locations of the blocks in the path
 		 */
-		void readPath(number leaf, bool putInStash = true);
+		vector<number> readPath(number leaf, bool putInStash = true);
 
 		/**
 		 * @brief write a path using the blocks from stash
@@ -117,6 +118,7 @@ namespace PathORAM
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_ConsistencyCheck_Test;
 		friend class ORAMTest_MultipleCheckCache_Test;
+		friend class ORAMTest_MultipleGetNoDuplicates_Test;
 		friend class ORAMBigTest;
 
 		public:

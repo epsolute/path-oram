@@ -74,10 +74,13 @@ namespace PathORAM
 		}
 
 		// populate cache
+		vector<number> locations;
 		for (auto request : requests)
 		{
-			readPath(map->get(request.first), false);
+			auto path = readPath(map->get(request.first), false);
+			locations.insert(locations.end(), path.begin(), path.end());
 		}
+		getCache(locations);
 
 		// run ORAM protocol (will use cache)
 		vector<bytes> results;
@@ -161,7 +164,7 @@ namespace PathORAM
 		return returned;
 	}
 
-	void ORAM::readPath(number leaf, bool putInStash)
+	vector<number> ORAM::readPath(number leaf, bool putInStash)
 	{
 		vector<number> requests;
 
@@ -177,11 +180,11 @@ namespace PathORAM
 			}
 		}
 
-		auto blocks = getCache(requests);
-
 		// we may only want to populate cache
 		if (putInStash)
 		{
+			auto blocks = getCache(requests);
+
 			for (auto [id, data] : blocks)
 			{
 				// skip "empty" buckets
@@ -191,6 +194,8 @@ namespace PathORAM
 				}
 			}
 		}
+
+		return requests;
 	}
 
 	void ORAM::writePath(number leaf)
@@ -273,6 +278,10 @@ namespace PathORAM
 
 	vector<pair<number, bytes>> ORAM::getCache(vector<number> locations)
 	{
+		// remove duplicates
+		sort(locations.begin(), locations.end());
+		locations.erase(unique(locations.begin(), locations.end()), locations.end());
+
 		// get those locations not present in the cache
 		vector<number> toGet;
 		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });

@@ -37,6 +37,7 @@ namespace PathORAM
 		bytes key; // AES key for encryption operations
 
 		friend class StorageAdapterTest_GetSetInternal_Test;
+		friend class MockStorage;
 
 		public:
 		/**

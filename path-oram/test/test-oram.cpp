@@ -18,16 +18,28 @@ namespace PathORAM
 			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key);
 
 			// by default, all calls are delegated to the real object
-			ON_CALL(*this, getInternal).WillByDefault([this](number location) {
-				return _real->getInternal(location);
+			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> locations) {
+				return ((AbsStorageAdapter*)_real.get())->getInternal(locations);
 			});
-			ON_CALL(*this, setInternal).WillByDefault([this](number location, bytes raw) {
-				return _real->setInternal(location, raw);
+			ON_CALL(*this, setInternal).WillByDefault([this](vector<pair<number, bytes>> requests) {
+				return ((AbsStorageAdapter*)_real.get())->setInternal(requests);
 			});
 		}
 
-		MOCK_METHOD(bytes, getInternal, (number location), (override));
-		MOCK_METHOD(void, setInternal, (number location, bytes raw), (override));
+		// these two do not need to be mocked, they just have to exist to make class concrete
+		virtual bytes getInternal(number location) override
+		{
+			return _real->getInternal(location);
+		}
+
+		virtual void setInternal(number location, bytes raw) override
+		{
+			_real->setInternal(location, raw);
+		}
+
+		// these two need to be mocked since we want tot rack how and when they are called (hence ON_CALL above)
+		MOCK_METHOD(vector<bytes>, getInternal, (vector<number> locations), (override));
+		MOCK_METHOD(void, setInternal, ((vector<pair<number, bytes>>)requests), (override));
 
 		private:
 		unique_ptr<InMemoryStorageAdapter> _real;
@@ -210,7 +222,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, MultipleCheckCache)
 	{
-		using ::testing::_;
+		using ::testing::An;
 		using ::testing::NiceMock;
 
 		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
@@ -224,15 +236,31 @@ namespace PathORAM
 			batch.push_back({id, bytes()});
 		}
 
-		// populate cache
-		for (auto request : batch)
-		{
-			oram->readPath(oram->map->get(request.first), false);
-		}
-
-		EXPECT_CALL(*storage, getInternal(_)).Times(0);
+		EXPECT_CALL(*storage, getInternal(An<vector<number>>())).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<vector<pair<number, bytes>>>())).Times(1);
 
 		oram->multiple(batch);
+	}
+
+	TEST_F(ORAMTest, MultipleGetNoDuplicates)
+	{
+		using ::testing::NiceMock;
+		using ::testing::Truly;
+
+		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
+
+		// make sure main storage is not called
+		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z), stash, true, BATCH_SIZE);
+
+		auto noDupsPredicate = [](vector<number> locations) -> bool {
+			sort(locations.begin(), locations.end());
+			auto it = unique(locations.begin(), locations.end());
+			return it == locations.end();
+		};
+
+		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate)));
+
+		oram->getCache({1, 2, 5, 5, 10});
 	}
 
 	TEST_F(ORAMTest, MultipleGet)
