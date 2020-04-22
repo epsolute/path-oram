@@ -39,7 +39,7 @@ namespace PathORAM
 				LOG_CAPACITY,
 				BLOCK_SIZE,
 				Z,
-				make_unique<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes()),
+				make_unique<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes(), Z),
 				make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z),
 				make_unique<InMemoryStashAdapter>(3 * LOG_CAPACITY * Z),
 				true,

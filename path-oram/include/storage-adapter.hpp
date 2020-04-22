@@ -35,6 +35,7 @@ namespace PathORAM
 		void checkBlockSize(number dataSize);
 
 		bytes key; // AES key for encryption operations
+		number Z;  // number of blocks in a bucket
 
 		friend class StorageAdapterTest_GetSetInternal_Test;
 		friend class MockStorage;
@@ -44,9 +45,9 @@ namespace PathORAM
 		 * @brief retrieves the data from the location
 		 *
 		 * @param location location in question
-		 * @return pair<number, bytes> retrived data broken up into ID and decrypted payload
+		 * @return vector<pair<number, bytes>> retrived data broken up into Z blocks {ID, decrypted payload}
 		 */
-		pair<number, bytes> get(number location);
+		vector<pair<number, bytes>> get(number location);
 
 		/**
 		 * @brief writes the data to the location
@@ -54,9 +55,9 @@ namespace PathORAM
 		 * It will encrypt the data before putting it to storage.
 		 *
 		 * @param location location in question
-		 * @param data composition of ID and plaintext payload
+		 * @param data composition of Z blocks {ID, plaintext payload}
 		 */
-		void set(number location, pair<number, bytes> data);
+		void set(number location, vector<pair<number, bytes>> data);
 
 		/**
 		 * @brief retrives the data in batch
@@ -79,24 +80,34 @@ namespace PathORAM
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
 		 */
-		virtual void set(vector<pair<number, pair<number, bytes>>> requests);
+		virtual void set(vector<pair<number, vector<pair<number, bytes>>>> requests);
+
+		/**
+		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.
+		 * On the storage these zeroes will appear randomized encrypted.
+		 *
+		 */
+		void fillWithZeroes();
 
 		/**
 		 * @brief Construct a new Abs Storage Adapter object
 		 *
-		 * @param capacity the maximum number of block to store
+		 * @param capacity the maximum number of buckets (not blocks) to store
 		 * @param userBlockSize the size of the user's potion (payload) of the block in bytes.
-		 * Has to be at least two AES blocks (32 bytes) and be multiple of AES block (16 bytes).
+		 * Has to be at least two AES blocks (32 bytes) and be a multiple of AES block (16 bytes).
 		 *
 		 * @param key AES key to use for encryption.
 		 * Has to be KEYSIZE bytes (32), otherwise will be generated randomly.
+		 *
+		 * @param Z the number of blocks in a bucket.
+		 * GET and SET will operate using Z.
 		 */
-		AbsStorageAdapter(number capacity, number userBlockSize, bytes key);
+		AbsStorageAdapter(number capacity, number userBlockSize, bytes key, number Z);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
-		number capacity;	  // number of blocks
-		number blockSize;	  // whole block size (user portion + ID + IV)
+		number capacity;	  // number of buckets
+		number blockSize;	  // whole bucket size (Z times (user portion + ID) + IV)
 		number userBlockSize; // number of bytes in payload portion of block
 
 		/**
@@ -144,7 +155,7 @@ namespace PathORAM
 		uchar **blocks;
 
 		public:
-		InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key);
+		InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key, number Z);
 		~InMemoryStorageAdapter() final;
 
 		protected:
@@ -176,8 +187,10 @@ namespace PathORAM
 		 * @param key the AES key to use (may be empty to generate new random one)
 		 * @param filename the file path to use
 		 * @param override if true, the file will be opened, otherwise it will be recreated
+		 * @param Z the number of blocks in a bucket.
+		 * GET and SET will operate using Z.
 		 */
-		FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override);
+		FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override, number Z);
 		~FileSystemStorageAdapter() final;
 
 		protected:
@@ -207,8 +220,10 @@ namespace PathORAM
 		 * @param key the AES key to use (may be empty to generate new random one)
 		 * @param host the URL to the Redis cluster (will throw exception if ping on the URL fails)
 		 * @param override if true, the cluster will be flushed and filled with random blocks first
+		 * @param Z the number of blocks in a bucket.
+		 * GET and SET will operate using Z.
 		 */
-		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override);
+		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z);
 		~RedisStorageAdapter() final;
 
 		protected:
@@ -251,8 +266,10 @@ namespace PathORAM
 		 * @param host the URL to the Aerospike cluster (will throw exception if ping on the URL fails)
 		 * @param override if true, the cluster will be flushed and filled with random blocks first
 		 * @param set specifies the set to use for all operations
+		 * @param Z the number of blocks in a bucket.
+		 * GET and SET will operate using Z.
 		 */
-		AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string set = "default");
+		AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z, string set = "default");
 		~AerospikeStorageAdapter() final;
 
 		protected:

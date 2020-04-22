@@ -12,10 +12,10 @@ namespace PathORAM
 	class MockStorage : public AbsStorageAdapter
 	{
 		public:
-		MockStorage(number capacity, number userBlockSize, bytes key) :
-			AbsStorageAdapter(capacity, userBlockSize, key)
+		MockStorage(number capacity, number userBlockSize, bytes key, number Z) :
+			AbsStorageAdapter(capacity, userBlockSize, key, Z)
 		{
-			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key);
+			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z);
 
 			// by default, all calls are delegated to the real object
 			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> locations) {
@@ -53,11 +53,11 @@ namespace PathORAM
 		inline static const number BLOCK_SIZE	= 32;
 		inline static const number BATCH_SIZE	= 10;
 
-		inline static const number CAPACITY = (1 << LOG_CAPACITY) * Z;
+		inline static const number CAPACITY = (1 << LOG_CAPACITY);
 
 		protected:
 		unique_ptr<ORAM> oram;
-		shared_ptr<AbsStorageAdapter> storage = make_shared<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes());
+		shared_ptr<AbsStorageAdapter> storage = make_shared<InMemoryStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, bytes(), Z);
 		shared_ptr<AbsStashAdapter> stash	  = make_shared<InMemoryStashAdapter>(3 * LOG_CAPACITY * Z);
 
 		ORAMTest()
@@ -67,7 +67,7 @@ namespace PathORAM
 				BLOCK_SIZE,
 				Z,
 				storage,
-				make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z),
+				make_unique<InMemoryPositionMapAdapter>(CAPACITY * Z + Z),
 				stash,
 				true,
 				BATCH_SIZE);
@@ -75,9 +75,14 @@ namespace PathORAM
 
 		void populateStorage()
 		{
-			for (number i = 0; i < CAPACITY + Z; i++)
+			for (number i = 0; i < CAPACITY; i++)
 			{
-				storage->set(i, {i, bytes()});
+				vector<pair<number, bytes>> bucket;
+				for (auto j = 0; j < Z; j++)
+				{
+					bucket.push_back({i * Z + j, bytes()});
+				}
+				storage->set(i, bucket);
 			}
 		}
 	};
@@ -139,7 +144,7 @@ namespace PathORAM
 
 		EXPECT_EQ(0, stash->getAll().size());
 
-		oram->readPath(10uLL);
+		auto path = oram->readPath(10uLL);
 
 		EXPECT_EQ(LOG_CAPACITY * Z, stash->getAll().size());
 
@@ -175,19 +180,27 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, PutMany)
 	{
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			auto found = false;
 			for (number location = 0; location < CAPACITY; location++)
 			{
-				if (storage->get(location).first == id)
+				auto bucket = storage->get(location);
+				for (auto block : bucket)
 				{
-					found = true;
+					if (block.first == id)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (found)
+				{
 					break;
 				}
 			}
@@ -201,12 +214,12 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, PutGetMany)
 	{
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			auto returned = oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
@@ -226,10 +239,10 @@ namespace PathORAM
 		using ::testing::NiceMock;
 		using ::testing::Truly;
 
-		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes());
+		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes(), Z);
 
 		// make sure main storage is not called
-		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY + Z), stash, true, BATCH_SIZE);
+		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY * Z + Z), stash, true, BATCH_SIZE);
 
 		vector<pair<number, bytes>> batch;
 		for (number id = 0; id < BATCH_SIZE; id++)
@@ -251,16 +264,16 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, MultipleGet)
 	{
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
 		vector<pair<number, bytes>> batch;
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			batch.push_back({id, bytes()});
-			if (id % BATCH_SIZE == 0 || id == CAPACITY - 1)
+			if (id % BATCH_SIZE == 0 || id == CAPACITY * Z - 6)
 			{
 				if (batch.size() > 0)
 				{
@@ -281,10 +294,10 @@ namespace PathORAM
 	TEST_F(ORAMTest, MultiplePut)
 	{
 		vector<pair<number, bytes>> batch;
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
-			if (id % BATCH_SIZE == 0 || id == CAPACITY - 1)
+			if (id % BATCH_SIZE == 0 || id == CAPACITY * Z - 6)
 			{
 				if (batch.size() > 0)
 				{
@@ -300,7 +313,7 @@ namespace PathORAM
 			}
 		}
 
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			auto returned = oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
@@ -310,14 +323,14 @@ namespace PathORAM
 	TEST_F(ORAMTest, BulkLoad)
 	{
 		vector<pair<number, bytes>> batch;
-		for (number id = 0; id < 3 * CAPACITY / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
 		}
 
 		oram->load(batch);
 
-		for (number id = 0; id < 3 * CAPACITY / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
 		{
 			auto returned = oram->get(id);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
@@ -327,7 +340,7 @@ namespace PathORAM
 	TEST_F(ORAMTest, BulkLoadTooMany)
 	{
 		vector<pair<number, bytes>> batch;
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z + 1; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
 		}
@@ -338,16 +351,16 @@ namespace PathORAM
 	TEST_F(ORAMTest, StashUsage)
 	{
 		vector<int> puts, gets;
-		puts.reserve(CAPACITY);
-		gets.reserve(CAPACITY);
+		puts.reserve(CAPACITY * Z);
+		gets.reserve(CAPACITY * Z - 5);
 
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 			puts.push_back(stash->getAll().size());
 		}
 
-		for (number id = 0; id < CAPACITY; id++)
+		for (number id = 0; id < CAPACITY * Z; id++)
 		{
 			oram->get(id);
 			gets.push_back(stash->getAll().size());

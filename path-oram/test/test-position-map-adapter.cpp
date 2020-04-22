@@ -31,7 +31,7 @@ namespace PathORAM
 
 		PositionMapAdapterTest()
 		{
-			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto logCapacity = max((number)ceil(log(CAPACITY * Z) / log(2)), 3uLL);
 			auto capacity	 = (1 << logCapacity) * Z;
 
 			auto type = GetParam();
@@ -46,8 +46,8 @@ namespace PathORAM
 							logCapacity,
 							BLOCK_SIZE,
 							Z,
-							make_unique<InMemoryStorageAdapter>(capacity + Z, BLOCK_SIZE, bytes()),
-							make_unique<InMemoryPositionMapAdapter>(capacity + Z),
+							make_unique<InMemoryStorageAdapter>(capacity * Z + Z, BLOCK_SIZE, bytes(), Z),
+							make_unique<InMemoryPositionMapAdapter>(capacity * Z + Z),
 							make_unique<InMemoryStashAdapter>(3 * logCapacity * Z)));
 					break;
 				default:
@@ -110,8 +110,8 @@ namespace PathORAM
 
 	TEST_P(PositionMapAdapterTest, BlockOutOfBounds)
 	{
-		ASSERT_ANY_THROW(adapter->get(CAPACITY * 10));
-		ASSERT_ANY_THROW(adapter->set(CAPACITY * 10, 56uLL));
+		ASSERT_ANY_THROW(adapter->get(CAPACITY * 100));
+		ASSERT_ANY_THROW(adapter->set(CAPACITY * 100, 56uLL));
 	}
 
 	TEST_P(PositionMapAdapterTest, ReadWhatWasWritten)

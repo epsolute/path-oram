@@ -5,6 +5,7 @@
 #include <boost/format.hpp>
 #include <unordered_set>
 
+// TODO use bucket type for vector<pair<number, bytes>>
 namespace PathORAM
 {
 	using namespace std;
@@ -25,14 +26,7 @@ namespace PathORAM
 		if (initialize)
 		{
 			// fill all blocks with random bits, marks them as "empty"
-			for (number i = 0uLL; i < buckets; i++)
-			{
-				for (number j = 0uLL; j < Z; j++)
-				{
-					auto block = getRandomBlock(dataSize);
-					storage->set(i * Z + j, {ULONG_MAX, block});
-				}
-			}
+			storage->fillWithZeroes();
 
 			// generate random position map
 			for (number i = 0; i < blocks; ++i)
@@ -46,7 +40,7 @@ namespace PathORAM
 		ORAM(logCapacity,
 			 blockSize,
 			 Z,
-			 make_shared<InMemoryStorageAdapter>(((1 << logCapacity) * Z) + Z, blockSize, bytes()),
+			 make_shared<InMemoryStorageAdapter>((1 << logCapacity), blockSize * Z, bytes(), Z),
 			 make_shared<InMemoryPositionMapAdapter>(((1 << logCapacity) * Z) + Z),
 			 make_shared<InMemoryStashAdapter>(3 * logCapacity * Z))
 	{
@@ -122,14 +116,16 @@ namespace PathORAM
 
 				for (int level = height - 1; level >= 0; level--)
 				{
-					auto bucket = bucketForLevelLeaf(level, leaf);
+					auto bucketId = bucketForLevelLeaf(level, leaf);
+					auto bucket	  = storage->get(bucketId);
+
 					for (number i = 0; i < Z; i++)
 					{
-						auto block = bucket * Z + i;
-						auto id	   = storage->get(block).first;
-						if (id == ULONG_MAX)
+						// if empty
+						if (bucket[i].first == ULONG_MAX)
 						{
-							storage->set(block, record);
+							bucket[i] = record;
+							storage->set(bucketId, bucket);
 							map->set(record.first, leaf);
 							goto found;
 						}
@@ -174,13 +170,8 @@ namespace PathORAM
 		// for levels from root to leaf
 		for (number level = 0; level < height; level++)
 		{
-			// get the bucket and iterate over blocks in the bucket
 			auto bucket = bucketForLevelLeaf(level, leaf);
-			for (number i = 0; i < Z; i++)
-			{
-				auto block = bucket * Z + i;
-				requests.push_back(block);
-			}
+			requests.push_back(bucket);
 		}
 
 		// we may only want to populate cache
@@ -204,8 +195,8 @@ namespace PathORAM
 	void ORAM::writePath(number leaf)
 	{
 		auto currentStash = stash->getAll();
-		vector<int> toDelete;								// rember the records that will need to be deleted from stash
-		vector<pair<number, pair<number, bytes>>> requests; // storage SET requests (batching)
+		vector<int> toDelete;										// rember the records that will need to be deleted from stash
+		vector<pair<number, vector<pair<number, bytes>>>> requests; // storage SET requests (batching)
 
 		// following the path from leaf to root (greedy)
 		for (int level = height - 1; level >= 0; level--)
@@ -239,24 +230,28 @@ namespace PathORAM
 				currentStash.erase(currentStash.begin() + removed);
 			}
 
-			auto bucket = bucketForLevelLeaf(level, leaf);
+			auto bucketId = bucketForLevelLeaf(level, leaf);
+			vector<pair<number, bytes>> bucket;
+			bucket.resize(Z);
 
 			// write the bucket
 			for (number i = 0; i < Z; i++)
 			{
-				auto block = bucket * Z + i;
+				// auto block = bucket * Z + i;
 				if (toInsert.size() != 0)
 				{
 					auto data = toInsert.back();
 					toInsert.pop_back();
-					requests.push_back({block, data});
+					bucket[i] = data;
 				}
 				else
 				{
 					// if nothing to insert, insert dummy (for security)
-					requests.push_back({block, {ULONG_MAX, getRandomBlock(dataSize)}});
+					bucket[i] = {ULONG_MAX, getRandomBlock(dataSize)};
 				}
 			}
+
+			requests.push_back({bucketId, bucket});
 		}
 
 		setCache(requests);
@@ -291,17 +286,30 @@ namespace PathORAM
 			auto downloaded = storage->get(toGet);
 
 			// add them to the cache
-			transform(toGet.begin(), toGet.end(), downloaded.begin(), inserter(cache, cache.begin()), [](number location, pair<number, bytes> block) { return make_pair(location, block); });
+			vector<pair<number, bytes>> bucket;
+			for (auto i = 0uLL; i < downloaded.size(); i++)
+			{
+				bucket.push_back(downloaded[i]);
+				if (i % Z == Z - 1)
+				{
+					cache[toGet[i / Z]] = bucket;
+					bucket.clear();
+				}
+			}
 		}
 
 		// answer the query (now from cache only)
 		vector<pair<number, bytes>> result;
-		transform(locations.begin(), locations.end(), back_inserter(result), [this](number location) { return cache[location]; });
+		for (auto location : locations)
+		{
+			auto bucket = cache[location];
+			result.insert(result.begin(), bucket.begin(), bucket.end());
+		}
 
 		return result;
 	}
 
-	void ORAM::setCache(vector<pair<number, pair<number, bytes>>> requests)
+	void ORAM::setCache(vector<pair<number, vector<pair<number, bytes>>>> requests)
 	{
 		for (auto request : requests)
 		{
@@ -312,7 +320,8 @@ namespace PathORAM
 	void ORAM::syncCache()
 	{
 		// convert map to vector of pairs
-		vector<pair<number, pair<number, bytes>>> requests;
+		vector<pair<number, vector<pair<number, bytes>>>> requests;
+
 		copy(cache.begin(), cache.end(), back_inserter(requests));
 
 		storage->set(requests);

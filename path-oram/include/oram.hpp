@@ -38,8 +38,8 @@ namespace PathORAM
 		number batchSize; // a max number of requests to process at a time (default 1)
 
 		// a layer between (expensive) storage and the protocol;
-		// holds items in memory and unencrypted
-		unordered_map<number, pair<number, bytes>> cache;
+		// holds items (buckets of blocks) in memory and unencrypted;
+		unordered_map<number, vector<pair<number, bytes>>> cache;
 
 		/**
 		 * @brief performs a single access, read or write
@@ -103,9 +103,9 @@ namespace PathORAM
 		 * @brief make SET requests to the storage through cache.
 		 * This will NOT update the storage, only the cache (see syncCache).
 		 *
-		 * @param requests the set requests in a form of {address, {ORAM ID, payload}}
+		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, pair<number, bytes>>> requests);
+		void setCache(vector<pair<number, vector<pair<number, bytes>>>> requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
