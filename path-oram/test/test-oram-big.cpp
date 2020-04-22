@@ -124,7 +124,7 @@ namespace PathORAM
 
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->storeToFile("position-map.bin");
 				map.reset();
-				map = make_shared<InMemoryPositionMapAdapter>(CAPACITY + Z);
+				map = make_shared<InMemoryPositionMapAdapter>(CAPACITY * Z + Z);
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->loadFromFile("position-map.bin");
 
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->storeToFile("stash.bin");
