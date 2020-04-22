@@ -39,16 +39,16 @@ namespace PathORAM
 			switch (type)
 			{
 				case StorageAdapterTypeInMemory:
-					adapter = make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes());
+					adapter = make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), 1);
 					break;
 				case StorageAdapterTypeFileSystem:
-					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true);
+					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, 1);
 					break;
 				case StorageAdapterTypeRedis:
-					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, false);
+					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, false, 1);
 					break;
 				case StorageAdapterTypeAerospike:
-					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, false);
+					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, false, 1);
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
@@ -67,15 +67,15 @@ namespace PathORAM
 		{
 			if (batch == 1)
 			{
-				adapter->set((location * (1 << 10)) % CAPACITY, {5uLL, bytes()});
+				adapter->set((location * (1 << 10)) % CAPACITY, {{5uLL, bytes()}});
 			}
 			else
 			{
-				vector<pair<number, pair<number, bytes>>> writes;
+				vector<pair<number, bucket>> writes;
 				writes.resize(batch);
 				for (auto i = 0; i < batch; i++)
 				{
-					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, {5uLL, bytes()}};
+					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, {{5uLL, bytes()}}};
 				}
 				adapter->set(writes);
 			}
@@ -92,7 +92,7 @@ namespace PathORAM
 
 		for (number i = 0; i < CAPACITY; i++)
 		{
-			adapter->set(i, {5uLL, bytes()});
+			adapter->set(i, {{5uLL, bytes()}});
 		}
 
 		number location = 0;

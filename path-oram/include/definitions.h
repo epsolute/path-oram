@@ -21,6 +21,8 @@ namespace PathORAM
 	using uchar	 = unsigned char;
 	using uint	 = unsigned int;
 	using bytes	 = vector<uchar>;
+	using block	 = pair<number, bytes>;
+	using bucket = vector<block>;
 
 	enum EncryptionMode
 	{

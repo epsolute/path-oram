@@ -22,7 +22,7 @@ namespace PathORAM
 	{
 	}
 
-	vector<pair<number, bytes>> AbsStorageAdapter::get(vector<number> locations)
+	vector<block> AbsStorageAdapter::get(vector<number> locations)
 	{
 		for (auto location : locations)
 		{
@@ -40,58 +40,72 @@ namespace PathORAM
 			raws = getInternal(locations);
 		}
 
-		vector<pair<number, bytes>> results;
-		results.resize(raws.size());
+		vector<block> results;
+		results.reserve(raws.size() * Z);
 
-		for (unsigned int i = 0; i < raws.size(); i++)
+		for (auto raw : raws)
 		{
 			// decompose to ID and cipher
-			bytes iv(raws[i].begin(), raws[i].begin() + AES_BLOCK_SIZE);
-			bytes ciphertext(raws[i].begin() + AES_BLOCK_SIZE, raws[i].end());
+			bytes iv(raw.begin(), raw.begin() + AES_BLOCK_SIZE);
+			bytes ciphertext(raw.begin() + AES_BLOCK_SIZE, raw.end());
 
 			// decryption
 			auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
+			auto length	   = decrypted.size() / Z;
 
-			// decompose to ID and data
-			bytes idBytes(decrypted.begin(), decrypted.begin() + AES_BLOCK_SIZE);
-			bytes data(decrypted.begin() + AES_BLOCK_SIZE, decrypted.end());
+			for (auto i = 0uLL; i < Z; i++)
+			{
+				// decompose to ID and data
+				bytes idBytes(decrypted.begin() + i * length, decrypted.begin() + i * length + AES_BLOCK_SIZE);
+				bytes data(decrypted.begin() + i * length + AES_BLOCK_SIZE, decrypted.begin() + (i + 1) * length);
 
-			// extract ID from bytes
-			uchar buffer[idBytes.size()];
-			copy(idBytes.begin(), idBytes.end(), buffer);
-			auto id = ((number *)buffer)[0];
+				// extract ID from bytes
+				uchar buffer[idBytes.size()];
+				copy(idBytes.begin(), idBytes.end(), buffer);
+				auto id = ((number *)buffer)[0];
 
-			results[i] = {id, data};
+				results.push_back({id, data});
+			}
 		}
 
 		return results;
 	}
 
-	void AbsStorageAdapter::set(vector<pair<number, pair<number, bytes>>> requests)
+	void AbsStorageAdapter::set(vector<pair<number, bucket>> requests)
 	{
-		vector<pair<number, bytes>> writes;
+		vector<block> writes;
 
-		for (auto [location, data] : requests)
+		for (auto [location, blocks] : requests)
 		{
 			checkCapacity(location);
-			checkBlockSize(data.second.size());
 
-			// pad if necessary
-			if (data.second.size() < userBlockSize)
+			if (blocks.size() != Z)
 			{
-				data.second.resize(userBlockSize, 0x00);
+				throw Exception(boost::format("each set request must contain exactly Z=%1% blocks (%2% given)") % Z % blocks.size());
 			}
 
-			// represent ID as a vector of bytes of length AES_BLOCK_SIZE
-			number buffer[1] = {data.first};
-			bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
-			id.resize(AES_BLOCK_SIZE, 0x00);
-
-			// merge ID and data
 			bytes toEncrypt;
-			toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize);
-			toEncrypt.insert(toEncrypt.end(), id.begin(), id.end());
-			toEncrypt.insert(toEncrypt.end(), data.second.begin(), data.second.end());
+			toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize * Z);
+
+			for (auto block : blocks)
+			{
+				checkBlockSize(block.second.size());
+
+				// pad if necessary
+				if (block.second.size() < userBlockSize)
+				{
+					block.second.resize(userBlockSize, 0x00);
+				}
+
+				// represent ID as a vector of bytes of length AES_BLOCK_SIZE
+				number buffer[1] = {block.first};
+				bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
+				id.resize(AES_BLOCK_SIZE, 0x00);
+
+				// merge ID and data
+				toEncrypt.insert(toEncrypt.end(), id.begin(), id.end());
+				toEncrypt.insert(toEncrypt.end(), block.second.begin(), block.second.end());
+			}
 
 			// encryption
 			auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
@@ -117,14 +131,14 @@ namespace PathORAM
 		}
 	}
 
-	pair<number, bytes> AbsStorageAdapter::get(number location)
+	bucket AbsStorageAdapter::get(number location)
 	{
-		return get(vector<number>{location})[0];
+		return get(vector<number>{location});
 	}
 
-	void AbsStorageAdapter::set(number location, pair<number, bytes> data)
+	void AbsStorageAdapter::set(number location, bucket data)
 	{
-		set(vector<pair<number, pair<number, bytes>>>{{location, data}});
+		set(vector<pair<number, vector<block>>>{{location, data}});
 	}
 
 	vector<bytes> AbsStorageAdapter::getInternal(vector<number> locations)
@@ -139,7 +153,7 @@ namespace PathORAM
 		return result;
 	}
 
-	void AbsStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
+	void AbsStorageAdapter::setInternal(vector<block> requests)
 	{
 		for (auto request : requests)
 		{
@@ -163,10 +177,11 @@ namespace PathORAM
 		}
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(number capacity, number userBlockSize, bytes key) :
+	AbsStorageAdapter::AbsStorageAdapter(number capacity, number userBlockSize, bytes key, number Z) :
 		key(key),
+		Z(Z),
 		capacity(capacity),
-		blockSize(userBlockSize + 2 * AES_BLOCK_SIZE), // one block for ID, one for IV
+		blockSize((userBlockSize + AES_BLOCK_SIZE) * Z + AES_BLOCK_SIZE), // IV + Z * (ID + PAYLOAD)
 		userBlockSize(userBlockSize)
 	{
 		if (key.size() != KEYSIZE)
@@ -183,6 +198,25 @@ namespace PathORAM
 		{
 			throw Exception(boost::format("block size must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % userBlockSize);
 		}
+
+		if (Z == 0)
+		{
+			throw Exception(boost::format("Z must be greater than zero (provided %1%)") % Z);
+		}
+	}
+
+	void AbsStorageAdapter::fillWithZeroes()
+	{
+		for (auto i = 0uLL; i < capacity; i++)
+		{
+			bucket bucket;
+			for (auto j = 0uLL; j < Z; j++)
+			{
+				bucket.push_back({ULONG_MAX, bytes()});
+			}
+
+			set(i, bucket);
+		}
 	}
 
 #pragma endregion AbsStorageAdapter
@@ -198,19 +232,16 @@ namespace PathORAM
 		delete[] blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key) :
-		AbsStorageAdapter(capacity, userBlockSize, key)
+	InMemoryStorageAdapter::InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key, number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z)
 	{
 		this->blocks = new uchar *[capacity];
-		for (number i = 0; i < capacity; i++)
+		for (auto i = 0uLL; i < capacity; i++)
 		{
 			blocks[i] = new uchar[blockSize];
 		}
 
-		for (number i = 0; i < capacity; i++)
-		{
-			set(i, {ULONG_MAX, bytes()});
-		}
+		fillWithZeroes();
 	}
 
 	bytes InMemoryStorageAdapter::getInternal(number location)
@@ -232,8 +263,8 @@ namespace PathORAM
 		file.close();
 	}
 
-	FileSystemStorageAdapter::FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override) :
-		AbsStorageAdapter(capacity, userBlockSize, key)
+	FileSystemStorageAdapter::FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override, number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z)
 	{
 		auto flags = fstream::in | fstream::out | fstream::binary;
 		if (override)
@@ -257,10 +288,7 @@ namespace PathORAM
 				file.write((const char *)placeholder, blockSize);
 			}
 
-			for (number i = 0; i < capacity; i++)
-			{
-				set(i, {ULONG_MAX, bytes()});
-			}
+			fillWithZeroes();
 		}
 	}
 
@@ -290,8 +318,8 @@ namespace PathORAM
 	{
 	}
 
-	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override) :
-		AbsStorageAdapter(capacity, userBlockSize, key)
+	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z)
 	{
 		redis = make_unique<sw::redis::Redis>(host);
 		redis->ping();
@@ -300,10 +328,7 @@ namespace PathORAM
 		{
 			redis->flushdb();
 
-			for (number i = 0; i < capacity; i++)
-			{
-				set(i, {ULONG_MAX, bytes()});
-			}
+			fillWithZeroes();
 		}
 	}
 
@@ -322,7 +347,7 @@ namespace PathORAM
 	{
 		vector<pair<string, string>> input;
 		input.resize(requests.size());
-		transform(requests.begin(), requests.end(), input.begin(), [](pair<number, bytes> val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
+		transform(requests.begin(), requests.end(), input.begin(), [](block val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
 		redis->mset(input.begin(), input.end());
 	}
 
@@ -354,8 +379,8 @@ namespace PathORAM
 		aerospike_destroy(&as);
 	}
 
-	AerospikeStorageAdapter::AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, string asset) :
-		AbsStorageAdapter(capacity, userBlockSize, key), asset(asset)
+	AerospikeStorageAdapter::AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z, string asset) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z), asset(asset)
 	{
 		as_config config;
 		as_config_init(&config);
@@ -376,10 +401,7 @@ namespace PathORAM
 		{
 			deleteAll();
 
-			for (number i = 0; i < capacity; i++)
-			{
-				set(i, {ULONG_MAX, bytes()});
-			}
+			fillWithZeroes();
 		}
 	}
 

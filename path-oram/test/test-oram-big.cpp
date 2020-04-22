@@ -51,40 +51,40 @@ namespace PathORAM
 			this->BATCH_SIZE																			= BATCH_SIZE;
 			this->LOG_CAPACITY																			= LOG_CAPACITY;
 			this->Z																						= Z;
-			this->CAPACITY																				= (1 << LOG_CAPACITY) * Z;
-			this->ELEMENTS																				= (CAPACITY / 4) * 3;
+			this->CAPACITY																				= (1 << LOG_CAPACITY);
+			this->ELEMENTS																				= (CAPACITY * Z / 4) * 3;
 
 			switch (storageType)
 			{
 				case StorageAdapterTypeInMemory:
-					this->storage = shared_ptr<AbsStorageAdapter>(new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY));
+					this->storage = shared_ptr<AbsStorageAdapter>(new InMemoryStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, Z));
 					break;
 				case StorageAdapterTypeFileSystem:
-					this->storage = shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true));
+					this->storage = shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true, Z));
 					break;
 				case StorageAdapterTypeRedis:
-					this->storage = shared_ptr<AbsStorageAdapter>(new RedisStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, REDIS_HOST, true));
+					this->storage = shared_ptr<AbsStorageAdapter>(new RedisStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, REDIS_HOST, true, Z));
 					break;
 				case StorageAdapterTypeAerospike:
-					this->storage = shared_ptr<AbsStorageAdapter>(new AerospikeStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, AEROSPIKE_HOST, true));
+					this->storage = shared_ptr<AbsStorageAdapter>(new AerospikeStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, AEROSPIKE_HOST, true, Z));
 					break;
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % storageType);
 			}
 
-			auto logCapacity = max((number)ceil(log(CAPACITY) / log(2)), 3uLL);
+			auto logCapacity = max((number)ceil(log(CAPACITY * Z) / log(2)), 3uLL);
 			auto z			 = 3uLL;
-			auto capacity	 = (1 << logCapacity) * z;
+			auto capacity	 = (1 << logCapacity);
 			auto blockSize	 = 2 * AES_BLOCK_SIZE;
 			this->map		 = !externalPositionMap ?
-							shared_ptr<AbsPositionMapAdapter>(new InMemoryPositionMapAdapter(CAPACITY + Z)) :
+							shared_ptr<AbsPositionMapAdapter>(new InMemoryPositionMapAdapter(CAPACITY * Z + Z)) :
 							shared_ptr<AbsPositionMapAdapter>(new ORAMPositionMapAdapter(
 								make_unique<ORAM>(
 									logCapacity,
 									blockSize,
 									z,
-									make_unique<InMemoryStorageAdapter>(capacity + z, blockSize, bytes()),
-									make_unique<InMemoryPositionMapAdapter>(capacity + z),
+									make_unique<InMemoryStorageAdapter>(capacity * z + z, blockSize, bytes(), z),
+									make_unique<InMemoryPositionMapAdapter>(capacity * z + z),
 									make_unique<InMemoryStashAdapter>(3 * logCapacity * z))));
 			this->stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
 
@@ -120,11 +120,11 @@ namespace PathORAM
 				storeKey(KEY, "key.bin");
 				storage.reset();
 				KEY		= loadKey("key.bin");
-				storage = make_shared<FileSystemStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, false);
+				storage = make_shared<FileSystemStorageAdapter>(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, false, Z);
 
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->storeToFile("position-map.bin");
 				map.reset();
-				map = make_shared<InMemoryPositionMapAdapter>(CAPACITY + Z);
+				map = make_shared<InMemoryPositionMapAdapter>(CAPACITY * Z + Z);
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->loadFromFile("position-map.bin");
 
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->storeToFile("stash.bin");
@@ -142,7 +142,7 @@ namespace PathORAM
 	string printTestName(testing::TestParamInfo<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>> input)
 	{
 		auto [LOG_CAPACITY, Z, BLOCK_SIZE, storageType, externalPositionMap, bulkLoad, batchSize] = input.param;
-		auto CAPACITY																			  = (1 << LOG_CAPACITY) * Z;
+		auto CAPACITY																			  = (1 << LOG_CAPACITY);
 
 		return boost::str(boost::format("i%1%i%2%i%3%i%4%i%5%i%6%i%7%i%8%") % LOG_CAPACITY % Z % BLOCK_SIZE % CAPACITY % storageType % externalPositionMap % bulkLoad % batchSize);
 	}
@@ -223,7 +223,7 @@ namespace PathORAM
 		// put / load all
 		if (get<5>(GetParam()))
 		{
-			oram->load(vector<pair<number, bytes>>(local.begin(), local.end()));
+			oram->load(vector<block>(local.begin(), local.end()));
 		}
 		else
 		{
@@ -245,7 +245,7 @@ namespace PathORAM
 		disaster();
 
 		// random operations
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number i = 0; i < ELEMENTS * 5; i++)
 		{
 			auto id	  = getRandomULong(ELEMENTS);

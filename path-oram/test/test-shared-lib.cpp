@@ -13,8 +13,8 @@ int main()
 	const auto LOG_CAPACITY = 5;
 	const auto BLOCK_SIZE	= 32;
 	const auto Z			= 3;
-	const auto CAPACITY		= (1 << LOG_CAPACITY) * Z;
-	const auto ELEMENTS		= (CAPACITY / 4) * 3;
+	const auto CAPACITY		= (1 << LOG_CAPACITY);
+	const auto ELEMENTS		= (CAPACITY * Z / 4) * 3;
 
 	cout << "LOG_CAPACITY: " << LOG_CAPACITY << endl;
 	cout << "BLOCK_SIZE: " << BLOCK_SIZE << endl;

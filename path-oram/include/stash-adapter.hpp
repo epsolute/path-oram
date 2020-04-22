@@ -19,9 +19,9 @@ namespace PathORAM
 		/**
 		 * @brief get the all blocks (ID and data) from the stash in a form of a pseudorandomly permuted vector.
 		 *
-		 * @return  vector<pair<number, bytes>> the pseudorandomly permuted vector of objects { ID, data }
+		 * @return  vector<block> the pseudorandomly permuted vector of objects { ID, data }
 		 */
-		virtual vector<pair<number, bytes>> getAll() = 0;
+		virtual vector<block> getAll() = 0;
 
 		/**
 		 * @brief put an object in the stash
@@ -110,7 +110,7 @@ namespace PathORAM
 
 		~InMemoryStashAdapter() final;
 
-		vector<pair<number, bytes>> getAll() final;
+		vector<block> getAll() final;
 		void add(number block, bytes data) final;
 		void update(number block, bytes data) final;
 		bytes get(number block) final;

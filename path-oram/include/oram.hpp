@@ -38,8 +38,8 @@ namespace PathORAM
 		number batchSize; // a max number of requests to process at a time (default 1)
 
 		// a layer between (expensive) storage and the protocol;
-		// holds items in memory and unencrypted
-		unordered_map<number, pair<number, bytes>> cache;
+		// holds items (buckets of blocks) in memory and unencrypted;
+		unordered_map<number, bucket> cache;
 
 		/**
 		 * @brief performs a single access, read or write
@@ -95,17 +95,17 @@ namespace PathORAM
 		 * That is, upon the cache miss the item will be downloaded and stored in cache.
 		 *
 		 * @param locations the addresses of the blocks to read
-		 * @return vector<pair<number, bytes>> the read blocks split into ORAM id and payload
+		 * @return vector<block> the read blocks split into ORAM id and payload
 		 */
-		vector<pair<number, bytes>> getCache(vector<number> locations);
+		vector<block> getCache(vector<number> locations);
 
 		/**
 		 * @brief make SET requests to the storage through cache.
 		 * This will NOT update the storage, only the cache (see syncCache).
 		 *
-		 * @param requests the set requests in a form of {address, {ORAM ID, payload}}
+		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, pair<number, bytes>>> requests);
+		void setCache(vector<pair<number, bucket>> requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
@@ -145,9 +145,9 @@ namespace PathORAM
 		 * This is the same as the extended constructor, except the adapters are created automatically.
 		 * They are destroyed when the ORAM instance is destroyed.
 		 * The adapters are created with the following capcities:
-		 * CAPACITY = 2^logCapacity * Z
-		 * 	in-memory storage: CAPACITY + Z
-		 * 	in-memory position map: CAPACITY + Z
+		 * CAPACITY = 2^logCapacity
+		 * 	in-memory storage: CAPACITY * Z + Z
+		 * 	in-memory position map: CAPACITY * Z + Z
 		 * 	in-memory stash: 3 * Z * logCapacity
 		 *
 		 * @param logCapacity as in the extended constructor
@@ -155,14 +155,6 @@ namespace PathORAM
 		 * @param Z as in the extended constructor
 		 */
 		ORAM(number logCapacity, number blockSize, number Z);
-
-		/**
-		 * @brief Destroy the ORAM object
-		 *
-		 * Also destroys adapters if shorthand constructor was used.
-		 * (Essentially, the one who owns is the one who destroys.)
-		 */
-		~ORAM();
 
 		/**
 		 * @brief Retrives a block from ORAM
@@ -193,7 +185,7 @@ namespace PathORAM
 		 * \note
 		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
 		 */
-		vector<bytes> multiple(vector<pair<number, bytes>> requests);
+		vector<bytes> multiple(vector<block> requests);
 
 		/**
 		 * @brief bulk loads the data bypassing usual ORAM protocol
@@ -211,6 +203,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(vector<pair<number, bytes>> data);
+		void load(vector<block> data);
 	};
 }
