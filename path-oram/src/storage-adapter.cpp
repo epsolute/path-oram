@@ -53,7 +53,7 @@ namespace PathORAM
 			auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
 			auto length	   = decrypted.size() / Z;
 
-			for (auto i = 0; i < Z; i++)
+			for (auto i = 0uLL; i < Z; i++)
 			{
 				// decompose to ID and data
 				bytes idBytes(decrypted.begin() + i * length, decrypted.begin() + i * length + AES_BLOCK_SIZE);

@@ -85,7 +85,6 @@ namespace PathORAM
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.
 		 * On the storage these zeroes will appear randomized encrypted.
-		 *
 		 */
 		void fillWithZeroes();
 

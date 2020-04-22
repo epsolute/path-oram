@@ -78,7 +78,7 @@ namespace PathORAM
 			for (number i = 0; i < CAPACITY; i++)
 			{
 				bucket bucket;
-				for (auto j = 0; j < Z; j++)
+				for (auto j = 0uLL; j < Z; j++)
 				{
 					bucket.push_back({i * Z + j, bytes()});
 				}

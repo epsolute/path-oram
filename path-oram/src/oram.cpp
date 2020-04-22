@@ -45,8 +45,6 @@ namespace PathORAM
 	{
 	}
 
-	ORAM::~ORAM() {}
-
 	bytes ORAM::get(number block)
 	{
 		auto result = access(true, block, bytes());

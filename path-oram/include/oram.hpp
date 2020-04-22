@@ -145,9 +145,9 @@ namespace PathORAM
 		 * This is the same as the extended constructor, except the adapters are created automatically.
 		 * They are destroyed when the ORAM instance is destroyed.
 		 * The adapters are created with the following capcities:
-		 * CAPACITY = 2^logCapacity * Z
-		 * 	in-memory storage: CAPACITY + Z
-		 * 	in-memory position map: CAPACITY + Z
+		 * CAPACITY = 2^logCapacity
+		 * 	in-memory storage: CAPACITY * Z + Z
+		 * 	in-memory position map: CAPACITY * Z + Z
 		 * 	in-memory stash: 3 * Z * logCapacity
 		 *
 		 * @param logCapacity as in the extended constructor
@@ -155,14 +155,6 @@ namespace PathORAM
 		 * @param Z as in the extended constructor
 		 */
 		ORAM(number logCapacity, number blockSize, number Z);
-
-		/**
-		 * @brief Destroy the ORAM object
-		 *
-		 * Also destroys adapters if shorthand constructor was used.
-		 * (Essentially, the one who owns is the one who destroys.)
-		 */
-		~ORAM();
 
 		/**
 		 * @brief Retrives a block from ORAM

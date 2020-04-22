@@ -144,6 +144,7 @@ namespace PathORAM
 	{
 		ASSERT_ANY_THROW(make_unique<InMemoryStorageAdapter>(CAPACITY, AES_BLOCK_SIZE, bytes(), Z));
 		ASSERT_ANY_THROW(make_unique<InMemoryStorageAdapter>(CAPACITY, AES_BLOCK_SIZE * 3 - 1, bytes(), Z));
+		ASSERT_ANY_THROW(make_unique<InMemoryStorageAdapter>(CAPACITY, AES_BLOCK_SIZE * 2, bytes(), 0));
 	}
 
 	TEST_P(StorageAdapterTest, ReadWriteNoCrash)
@@ -178,6 +179,14 @@ namespace PathORAM
 	{
 		auto bucket = generateBucket(5);
 		bucket[0].second.resize(BLOCK_SIZE + 1, 0x08);
+
+		ASSERT_ANY_THROW(adapter->set(CAPACITY - 1, bucket));
+	}
+
+	TEST_P(StorageAdapterTest, NotZBlocks)
+	{
+		auto bucket = generateBucket(5);
+		bucket.push_back({1, bytes()});
 
 		ASSERT_ANY_THROW(adapter->set(CAPACITY - 1, bucket));
 	}
