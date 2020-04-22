@@ -24,9 +24,9 @@ namespace PathORAM
 		stash.reserve(capacity);
 	}
 
-	vector<pair<number, bytes>> InMemoryStashAdapter::getAll()
+	vector<block> InMemoryStashAdapter::getAll()
 	{
-		vector<pair<number, bytes>> result(stash.begin(), stash.end());
+		vector<block> result(stash.begin(), stash.end());
 
 		uint n = result.size();
 		if (n >= 2)

@@ -21,7 +21,7 @@ namespace PathORAM
 			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> locations) {
 				return ((AbsStorageAdapter*)_real.get())->getInternal(locations);
 			});
-			ON_CALL(*this, setInternal).WillByDefault([this](vector<pair<number, bytes>> requests) {
+			ON_CALL(*this, setInternal).WillByDefault([this](vector<block> requests) {
 				return ((AbsStorageAdapter*)_real.get())->setInternal(requests);
 			});
 		}
@@ -39,7 +39,7 @@ namespace PathORAM
 
 		// these two need to be mocked since we want tot rack how and when they are called (hence ON_CALL above)
 		MOCK_METHOD(vector<bytes>, getInternal, (vector<number> locations), (override));
-		MOCK_METHOD(void, setInternal, ((vector<pair<number, bytes>>)requests), (override));
+		MOCK_METHOD(void, setInternal, ((vector<block>)requests), (override));
 
 		private:
 		unique_ptr<InMemoryStorageAdapter> _real;
@@ -77,7 +77,7 @@ namespace PathORAM
 		{
 			for (number i = 0; i < CAPACITY; i++)
 			{
-				vector<pair<number, bytes>> bucket;
+				bucket bucket;
 				for (auto j = 0; j < Z; j++)
 				{
 					bucket.push_back({i * Z + j, bytes()});
@@ -228,7 +228,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, MultipleTooManyRequests)
 	{
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		batch.resize(BATCH_SIZE + 1);
 		ASSERT_ANY_THROW(oram->multiple(batch));
 	}
@@ -244,7 +244,7 @@ namespace PathORAM
 		// make sure main storage is not called
 		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY * Z + Z), stash, true, BATCH_SIZE);
 
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number id = 0; id < BATCH_SIZE; id++)
 		{
 			batch.push_back({id, bytes()});
@@ -257,7 +257,7 @@ namespace PathORAM
 		};
 
 		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate))).Times(1);
-		EXPECT_CALL(*storage, setInternal(An<vector<pair<number, bytes>>>())).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<vector<block>>())).Times(1);
 
 		oram->multiple(batch);
 	}
@@ -269,7 +269,7 @@ namespace PathORAM
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
 		}
 
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			batch.push_back({id, bytes()});
@@ -293,7 +293,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, MultiplePut)
 	{
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
@@ -322,7 +322,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, BulkLoad)
 	{
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
@@ -339,7 +339,7 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, BulkLoadTooMany)
 	{
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number id = 0; id < CAPACITY * Z + 1; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});

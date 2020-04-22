@@ -223,7 +223,7 @@ namespace PathORAM
 		// put / load all
 		if (get<5>(GetParam()))
 		{
-			oram->load(vector<pair<number, bytes>>(local.begin(), local.end()));
+			oram->load(vector<block>(local.begin(), local.end()));
 		}
 		else
 		{
@@ -245,7 +245,7 @@ namespace PathORAM
 		disaster();
 
 		// random operations
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		for (number i = 0; i < ELEMENTS * 5; i++)
 		{
 			auto id	  = getRandomULong(ELEMENTS);

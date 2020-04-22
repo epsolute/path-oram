@@ -66,7 +66,7 @@ namespace PathORAM
 		}
 
 		// random operations
-		vector<pair<number, bytes>> batch;
+		vector<block> batch;
 		auto i = 0;
 		for (auto _ : state)
 		{

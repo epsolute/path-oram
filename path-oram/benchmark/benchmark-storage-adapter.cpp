@@ -71,7 +71,7 @@ namespace PathORAM
 			}
 			else
 			{
-				vector<pair<number, vector<pair<number, bytes>>>> writes;
+				vector<pair<number, bucket>> writes;
 				writes.resize(batch);
 				for (auto i = 0; i < batch; i++)
 				{

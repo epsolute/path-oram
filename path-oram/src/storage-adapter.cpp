@@ -22,7 +22,7 @@ namespace PathORAM
 	{
 	}
 
-	vector<pair<number, bytes>> AbsStorageAdapter::get(vector<number> locations)
+	vector<block> AbsStorageAdapter::get(vector<number> locations)
 	{
 		for (auto location : locations)
 		{
@@ -40,7 +40,7 @@ namespace PathORAM
 			raws = getInternal(locations);
 		}
 
-		vector<pair<number, bytes>> results;
+		vector<block> results;
 		results.reserve(raws.size() * Z);
 
 		for (auto raw : raws)
@@ -71,9 +71,9 @@ namespace PathORAM
 		return results;
 	}
 
-	void AbsStorageAdapter::set(vector<pair<number, vector<pair<number, bytes>>>> requests)
+	void AbsStorageAdapter::set(vector<pair<number, bucket>> requests)
 	{
-		vector<pair<number, bytes>> writes;
+		vector<block> writes;
 
 		for (auto [location, blocks] : requests)
 		{
@@ -131,14 +131,14 @@ namespace PathORAM
 		}
 	}
 
-	vector<pair<number, bytes>> AbsStorageAdapter::get(number location)
+	bucket AbsStorageAdapter::get(number location)
 	{
 		return get(vector<number>{location});
 	}
 
-	void AbsStorageAdapter::set(number location, vector<pair<number, bytes>> data)
+	void AbsStorageAdapter::set(number location, bucket data)
 	{
-		set(vector<pair<number, vector<pair<number, bytes>>>>{{location, data}});
+		set(vector<pair<number, vector<block>>>{{location, data}});
 	}
 
 	vector<bytes> AbsStorageAdapter::getInternal(vector<number> locations)
@@ -153,7 +153,7 @@ namespace PathORAM
 		return result;
 	}
 
-	void AbsStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
+	void AbsStorageAdapter::setInternal(vector<block> requests)
 	{
 		for (auto request : requests)
 		{
@@ -209,7 +209,7 @@ namespace PathORAM
 	{
 		for (auto i = 0uLL; i < capacity; i++)
 		{
-			vector<pair<number, bytes>> bucket;
+			bucket bucket;
 			for (auto j = 0uLL; j < Z; j++)
 			{
 				bucket.push_back({ULONG_MAX, bytes()});
@@ -347,7 +347,7 @@ namespace PathORAM
 	{
 		vector<pair<string, string>> input;
 		input.resize(requests.size());
-		transform(requests.begin(), requests.end(), input.begin(), [](pair<number, bytes> val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
+		transform(requests.begin(), requests.end(), input.begin(), [](block val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
 		redis->mset(input.begin(), input.end());
 	}
 

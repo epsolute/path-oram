@@ -64,9 +64,9 @@ namespace PathORAM
 			}
 		}
 
-		vector<pair<number, bytes>> generateBucket(number from)
+		bucket generateBucket(number from)
 		{
-			vector<pair<number, bytes>> bucket;
+			bucket bucket;
 			for (auto i = 0uLL; i < Z; i++)
 			{
 				bucket.push_back({from + i, fromText("hello" + to_string(from + i), BLOCK_SIZE)});

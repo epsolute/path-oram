@@ -45,9 +45,9 @@ namespace PathORAM
 		 * @brief retrieves the data from the location
 		 *
 		 * @param location location in question
-		 * @return vector<pair<number, bytes>> retrived data broken up into Z blocks {ID, decrypted payload}
+		 * @return bucket retrived data broken up into Z blocks {ID, decrypted payload}
 		 */
-		vector<pair<number, bytes>> get(number location);
+		bucket get(number location);
 
 		/**
 		 * @brief writes the data to the location
@@ -57,7 +57,7 @@ namespace PathORAM
 		 * @param location location in question
 		 * @param data composition of Z blocks {ID, plaintext payload}
 		 */
-		void set(number location, vector<pair<number, bytes>> data);
+		void set(number location, bucket data);
 
 		/**
 		 * @brief retrives the data in batch
@@ -67,9 +67,9 @@ namespace PathORAM
 		 * If it does not, batch will be executed sequentially.
 		 *
 		 * @param locations the locations from which to read
-		 * @return vector<pair<number, bytes>> retrived data broken up into IDs and decrypted payloads
+		 * @return vector<block> retrived data broken up into IDs and decrypted payloads
 		 */
-		virtual vector<pair<number, bytes>> get(vector<number> locations);
+		virtual vector<block> get(vector<number> locations);
 
 		/**
 		 * @brief writes the data in batch
@@ -80,7 +80,7 @@ namespace PathORAM
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
 		 */
-		virtual void set(vector<pair<number, vector<pair<number, bytes>>>> requests);
+		virtual void set(vector<pair<number, bucket>> requests);
 
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.

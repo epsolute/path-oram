@@ -5,7 +5,6 @@
 #include <boost/format.hpp>
 #include <unordered_set>
 
-// TODO use bucket type for vector<pair<number, bytes>>
 namespace PathORAM
 {
 	using namespace std;
@@ -61,7 +60,7 @@ namespace PathORAM
 		syncCache();
 	}
 
-	vector<bytes> ORAM::multiple(vector<pair<number, bytes>> requests)
+	vector<bytes> ORAM::multiple(vector<block> requests)
 	{
 		if (requests.size() > batchSize)
 		{
@@ -85,7 +84,7 @@ namespace PathORAM
 			requests.begin(),
 			requests.end(),
 			back_inserter(results),
-			[this](pair<number, bytes> request) { return access(request.second.size() == 0, request.first, request.second); });
+			[this](block request) { return access(request.second.size() == 0, request.first, request.second); });
 
 		// upload resulting new data
 		syncCache();
@@ -93,7 +92,7 @@ namespace PathORAM
 		return results;
 	}
 
-	void ORAM::load(vector<pair<number, bytes>> data)
+	void ORAM::load(vector<block> data)
 	{
 		// shuffle (such bulk load may leak in part the original order)
 		uint n = data.size();
@@ -195,14 +194,14 @@ namespace PathORAM
 	void ORAM::writePath(number leaf)
 	{
 		auto currentStash = stash->getAll();
-		vector<int> toDelete;										// rember the records that will need to be deleted from stash
-		vector<pair<number, vector<pair<number, bytes>>>> requests; // storage SET requests (batching)
+		vector<int> toDelete;				   // rember the records that will need to be deleted from stash
+		vector<pair<number, bucket>> requests; // storage SET requests (batching)
 
 		// following the path from leaf to root (greedy)
 		for (int level = height - 1; level >= 0; level--)
 		{
-			vector<pair<number, bytes>> toInsert; // block to be insterted in the bucket (up to Z)
-			vector<number> toDeleteLocal;		  // same blocks needs to be deleted from stash (these hold indices of elements in currentStash)
+			vector<block> toInsert;		  // block to be insterted in the bucket (up to Z)
+			vector<number> toDeleteLocal; // same blocks needs to be deleted from stash (these hold indices of elements in currentStash)
 			for (number i = 0; i < currentStash.size(); i++)
 			{
 				auto entry	   = currentStash[i];
@@ -231,7 +230,7 @@ namespace PathORAM
 			}
 
 			auto bucketId = bucketForLevelLeaf(level, leaf);
-			vector<pair<number, bytes>> bucket;
+			bucket bucket;
 			bucket.resize(Z);
 
 			// write the bucket
@@ -274,7 +273,7 @@ namespace PathORAM
 		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);
 	}
 
-	vector<pair<number, bytes>> ORAM::getCache(vector<number> locations)
+	vector<block> ORAM::getCache(vector<number> locations)
 	{
 		// get those locations not present in the cache
 		vector<number> toGet;
@@ -286,7 +285,7 @@ namespace PathORAM
 			auto downloaded = storage->get(toGet);
 
 			// add them to the cache
-			vector<pair<number, bytes>> bucket;
+			bucket bucket;
 			for (auto i = 0uLL; i < downloaded.size(); i++)
 			{
 				bucket.push_back(downloaded[i]);
@@ -299,7 +298,7 @@ namespace PathORAM
 		}
 
 		// answer the query (now from cache only)
-		vector<pair<number, bytes>> result;
+		vector<block> result;
 		for (auto location : locations)
 		{
 			auto bucket = cache[location];
@@ -309,7 +308,7 @@ namespace PathORAM
 		return result;
 	}
 
-	void ORAM::setCache(vector<pair<number, vector<pair<number, bytes>>>> requests)
+	void ORAM::setCache(vector<pair<number, bucket>> requests)
 	{
 		for (auto request : requests)
 		{
@@ -320,7 +319,7 @@ namespace PathORAM
 	void ORAM::syncCache()
 	{
 		// convert map to vector of pairs
-		vector<pair<number, vector<pair<number, bytes>>>> requests;
+		vector<pair<number, bucket>> requests;
 
 		copy(cache.begin(), cache.end(), back_inserter(requests));
 

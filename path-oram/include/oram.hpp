@@ -39,7 +39,7 @@ namespace PathORAM
 
 		// a layer between (expensive) storage and the protocol;
 		// holds items (buckets of blocks) in memory and unencrypted;
-		unordered_map<number, vector<pair<number, bytes>>> cache;
+		unordered_map<number, bucket> cache;
 
 		/**
 		 * @brief performs a single access, read or write
@@ -95,9 +95,9 @@ namespace PathORAM
 		 * That is, upon the cache miss the item will be downloaded and stored in cache.
 		 *
 		 * @param locations the addresses of the blocks to read
-		 * @return vector<pair<number, bytes>> the read blocks split into ORAM id and payload
+		 * @return vector<block> the read blocks split into ORAM id and payload
 		 */
-		vector<pair<number, bytes>> getCache(vector<number> locations);
+		vector<block> getCache(vector<number> locations);
 
 		/**
 		 * @brief make SET requests to the storage through cache.
@@ -105,7 +105,7 @@ namespace PathORAM
 		 *
 		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, vector<pair<number, bytes>>>> requests);
+		void setCache(vector<pair<number, bucket>> requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
@@ -193,7 +193,7 @@ namespace PathORAM
 		 * \note
 		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
 		 */
-		vector<bytes> multiple(vector<pair<number, bytes>> requests);
+		vector<bytes> multiple(vector<block> requests);
 
 		/**
 		 * @brief bulk loads the data bypassing usual ORAM protocol
@@ -211,6 +211,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(vector<pair<number, bytes>> data);
+		void load(vector<block> data);
 	};
 }
