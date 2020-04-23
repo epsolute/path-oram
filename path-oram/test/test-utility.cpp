@@ -55,7 +55,7 @@ namespace PathORAM
 			total += sample;
 		}
 
-		EXPECT_NEAR(max / 2, total / n, 0.01);
+		EXPECT_NEAR(max / 2, total / n, 0.05);
 	}
 
 	TEST_F(UtilityTest, EncryptionInputChecks)
