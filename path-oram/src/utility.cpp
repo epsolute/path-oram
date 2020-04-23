@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <openssl/aes.h>
 #include <openssl/rand.h>
+#include <random>
 #include <sstream>
 #include <vector>
 
@@ -49,6 +50,22 @@ namespace PathORAM
 		RAND_bytes((uchar *)material, sizeof(uint));
 		return material[0] % max;
 #endif
+	}
+
+	double getRandomDouble(double max)
+	{
+		number material[1];
+#ifdef TESTING
+		auto intMaterial = (int *)material;
+		intMaterial[0]	 = rand();
+		intMaterial[1]	 = rand();
+#else
+		RAND_bytes((uchar *)material, sizeof(number));
+#endif
+		mt19937_64 gen(material[0]);
+		uniform_real_distribution<> distribution(0, max);
+
+		return distribution(gen);
 	}
 
 	bytes encrypt(bytes key, bytes iv, bytes input, EncryptionMode mode)

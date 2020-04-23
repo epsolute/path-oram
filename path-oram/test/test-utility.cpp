@@ -40,6 +40,24 @@ namespace PathORAM
 		ASSERT_EQ(first, second);
 	}
 
+	TEST_F(UtilityTest, RandomDoubleBasicTest)
+	{
+		const auto n   = 1000uLL;
+		const auto max = 10.0;
+		double total   = 0;
+
+		for (auto i = 0uLL; i < n; i++)
+		{
+			auto sample = getRandomDouble(max);
+			EXPECT_LT(sample, max);
+			EXPECT_GE(sample, 0);
+
+			total += sample;
+		}
+
+		EXPECT_NEAR(max / 2, total / n, 10 * 1.0 / n);
+	}
+
 	TEST_F(UtilityTest, EncryptionInputChecks)
 	{
 		for (auto mode : {ENCRYPT, DECRYPT})

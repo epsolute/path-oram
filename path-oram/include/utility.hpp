@@ -29,6 +29,14 @@ namespace PathORAM
 	number getRandomULong(number max);
 
 	/**
+	 * @brief returns a pseudorandom double
+	 *
+	 * @param max the non-inclusive max of the range (min is inclusive 0).
+	 * @return double the resulting double
+	 */
+	double getRandomDouble(double max);
+
+	/**
 	 * @brief returns a pseudorandom uint
 	 *
 	 * A faster and smaller scale version of getRandomULong
