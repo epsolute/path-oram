@@ -42,7 +42,7 @@ namespace PathORAM
 
 	TEST_F(UtilityTest, RandomDoubleBasicTest)
 	{
-		const auto n   = 1000uLL;
+		const auto n   = 10000uLL;
 		const auto max = 10.0;
 		double total   = 0;
 
@@ -55,7 +55,7 @@ namespace PathORAM
 			total += sample;
 		}
 
-		EXPECT_NEAR(max / 2, total / n, 10 * 1.0 / n);
+		EXPECT_NEAR(max / 2, total / n, 0.01);
 	}
 
 	TEST_F(UtilityTest, EncryptionInputChecks)
