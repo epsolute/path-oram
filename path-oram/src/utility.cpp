@@ -17,7 +17,7 @@ namespace PathORAM
 	bytes getRandomBlock(number blockSize)
 	{
 		uchar material[blockSize];
-#ifdef TESTING
+#if defined(TESTING) || defined(DEBUG)
 		for (number i = 0; i < blockSize; i++)
 		{
 			material[i] = (uchar)rand();
@@ -31,7 +31,7 @@ namespace PathORAM
 	number getRandomULong(number max)
 	{
 		number material[1];
-#ifdef TESTING
+#if defined(TESTING) || defined(DEBUG)
 		auto intMaterial = (int *)material;
 		intMaterial[0]	 = rand();
 		intMaterial[1]	 = rand();
@@ -43,7 +43,7 @@ namespace PathORAM
 
 	uint getRandomUInt(uint max)
 	{
-#ifdef TESTING
+#if defined(TESTING) || defined(DEBUG)
 		return rand() % max;
 #else
 		uint material[1];
@@ -55,7 +55,7 @@ namespace PathORAM
 	double getRandomDouble(double max)
 	{
 		number material[1];
-#ifdef TESTING
+#if defined(TESTING) || defined(DEBUG)
 		auto intMaterial = (int *)material;
 		intMaterial[0]	 = rand();
 		intMaterial[1]	 = rand();

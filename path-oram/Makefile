@@ -70,7 +70,7 @@ $(BENCHMARKSBIN): $(OBJ) $$(subst $$(BDIR), $(HDIR), $$@).cpp
 $(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 	$(ENTRYPOINTCC)
 
-shared-debug: CPPFLAGS += -g
+shared-debug: CPPFLAGS += -g -DDEBUG
 shared-debug: shared
 
 shared: CPPFLAGS += -DSHARED
