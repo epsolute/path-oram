@@ -92,4 +92,23 @@ namespace PathORAM
 	 * @return bytes the key read (KEYSIZE length)
 	 */
 	bytes loadKey(string filename);
+
+	/**
+	 * @brief compute a hash of the given input using OpenSSL algorithms.
+	 * SHA-2 family is used, disgest size in bits is HASHSIZE macro (currently 256).
+	 *
+	 * @param input the message to disgest
+	 * @return bytes the digest of the message
+	 */
+	bytes hash(bytes input);
+
+	/**
+	 * @brief compute a hash of the message in a form of a number from zero to max.
+	 * Simply computes a SHA2 hash, takes first sizeof(number) bytes and returns this mod max.
+	 *
+	 * @param input the message to disgest
+	 * @param max the exclusive max number of the output
+	 * @return number the hash of the message as a number [0, max)
+	 */
+	number hashToNumber(bytes input, number max);
 }

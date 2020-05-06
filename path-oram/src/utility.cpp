@@ -5,10 +5,17 @@
 #include <fstream>
 #include <iomanip>
 #include <openssl/aes.h>
+#include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <random>
 #include <sstream>
 #include <vector>
+
+#define HANDLE_ERROR(statement)      \
+	if (!(statement))                \
+	{                                \
+		throw Exception(#statement); \
+	}
 
 namespace PathORAM
 {
@@ -164,5 +171,39 @@ namespace PathORAM
 		file.close();
 
 		return bytes(material, material + KEYSIZE);
+	}
+
+	bytes hash(bytes input)
+	{
+		// https: //wiki.openssl.org/index.php/EVP_Message_Digests
+
+		uchar message[input.size()];
+		uchar **digest = (uchar **)malloc(HASHSIZE / 16);
+		copy(input.begin(), input.end(), message);
+
+		EVP_MD_CTX *context;
+		HANDLE_ERROR((context = EVP_MD_CTX_new()) != nullptr);
+		HANDLE_ERROR(EVP_DigestInit_ex(context, HASH_ALGORITHM(), nullptr));
+		HANDLE_ERROR(EVP_DigestUpdate(context, message, input.size()));
+		HANDLE_ERROR((*digest = (unsigned char *)OPENSSL_malloc(EVP_MD_size(HASH_ALGORITHM()))) != nullptr);
+		HANDLE_ERROR(EVP_DigestFinal_ex(context, *digest, nullptr));
+
+		auto result = bytes(*digest, *digest + (HASHSIZE / 16));
+
+		EVP_MD_CTX_free(context);
+		free(digest);
+
+		return result;
+	}
+
+	number hashToNumber(bytes input, number max)
+	{
+		bytes digest = hash(input);
+		number material[1];
+		auto ucharMaterial = (uchar *)material;
+
+		copy(digest.begin(), digest.begin() + sizeof(number), ucharMaterial);
+
+		return material[0] % max;
 	}
 }

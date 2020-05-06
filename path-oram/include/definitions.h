@@ -8,6 +8,10 @@
 // use 256-bit security
 #define KEYSIZE 32
 
+// 256 bit hash size (SHA-256)
+#define HASHSIZE 256
+#define HASH_ALGORITHM EVP_sha256
+
 // change to run all tests from different seed
 #define TEST_SEED 0x13
 

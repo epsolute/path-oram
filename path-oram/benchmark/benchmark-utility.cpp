@@ -21,6 +21,18 @@ namespace PathORAM
 		}
 	}
 
+	BENCHMARK_DEFINE_F(UtilityBenchmark, Hash)
+	(benchmark::State& state)
+	{
+		auto i = 0uLL;
+		for (auto _ : state)
+		{
+			number material[1] = {i};
+			auto input		   = bytes((uchar*)material, (uchar*)material + sizeof(number));
+			benchmark::DoNotOptimize(hash(input));
+		}
+	}
+
 	BENCHMARK_DEFINE_F(UtilityBenchmark, Encrypt)
 	(benchmark::State& state)
 	{
@@ -49,6 +61,10 @@ namespace PathORAM
 	}
 
 	BENCHMARK_REGISTER_F(UtilityBenchmark, Random)
+		->Iterations(1 << 20)
+		->Unit(benchmark::kMicrosecond);
+
+	BENCHMARK_REGISTER_F(UtilityBenchmark, Hash)
 		->Iterations(1 << 20)
 		->Unit(benchmark::kMicrosecond);
 

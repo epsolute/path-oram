@@ -2,6 +2,8 @@
 #include "utility.hpp"
 
 #include "gtest/gtest.h"
+#include <cmath>
+#include <numeric>
 #include <openssl/aes.h>
 
 using namespace std;
@@ -112,9 +114,61 @@ namespace PathORAM
 		ASSERT_ANY_THROW(storeKey(bytes(), "/error/path/should/not/exist"));
 		ASSERT_ANY_THROW(loadKey("/error/path/should/not/exist"));
 	}
+
+	TEST_F(UtilityTest, HashSameInput)
+	{
+		auto input	= fromText("Hello, world", 500);
+		auto first	= hash(input);
+		auto second = hash(input);
+
+		ASSERT_EQ(first, second);
+	}
+
+	TEST_F(UtilityTest, HashDifferentInput)
+	{
+		auto first	= hash(fromText("Hello, world", 500));
+		auto second = hash(fromText("Hi", 500));
+
+		ASSERT_NE(first, second);
+	}
+
+	TEST_F(UtilityTest, HashExpectedSize)
+	{
+		auto disgest = hash(fromText("Hello, world", 500));
+
+		ASSERT_EQ(HASHSIZE / 16, disgest.size());
+	}
+
+	TEST_F(UtilityTest, HashToNumberUniform)
+	{
+		const auto RUNS = 10000uLL;
+		const auto MAX = 10uLL;
+		vector<number> bins(MAX, 0);
+
+		for (auto i = 0uLL; i < RUNS; i++)
+		{
+			number material[1] = {i};
+			auto input		   = bytes((uchar *)material, (uchar *)material + sizeof(number));
+
+			auto sample = hashToNumber(input, MAX);
+			EXPECT_LT(sample, MAX);
+			EXPECT_GE(sample, 0);
+
+			bins[sample]++;
+		}
+
+		auto sum  = accumulate(bins.begin(), bins.end(), 0.0);
+		auto mean = sum / bins.size();
+
+		auto sq_sum = inner_product(bins.begin(), bins.end(), bins.begin(), 0.0);
+		auto stddev = sqrt(sq_sum / bins.size() - mean * mean);
+
+		EXPECT_NEAR(RUNS / (double)MAX, mean, 0.01);
+		EXPECT_NEAR(0.0, stddev, 0.01 * RUNS);
+	}
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	::testing::InitGoogleTest(&argc, argv);
 	return RUN_ALL_TESTS();
