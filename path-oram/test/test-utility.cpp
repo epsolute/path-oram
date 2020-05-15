@@ -84,7 +84,7 @@ namespace PathORAM
 		ASSERT_EQ(input, plaintext);
 	}
 
-	TEST_F(UtilityTest, EncryptDecryptMany)
+	TEST_F(UtilityTest, EncryptDecryptManyCBC)
 	{
 		for (number i = 0; i < 100; i++)
 		{
@@ -98,6 +98,36 @@ namespace PathORAM
 
 			ASSERT_EQ(input, plaintext);
 		}
+	}
+
+	TEST_F(UtilityTest, EncryptDecryptManyCTR)
+	{
+		__blockCipherMode = CTR;
+
+		for (number i = 0; i < 100; i++)
+		{
+			auto key   = getRandomBlock(KEYSIZE);
+			auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
+			auto input = getRandomBlock(AES_BLOCK_SIZE * 3);
+
+			auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+
+			auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+
+			ASSERT_EQ(input, plaintext);
+		}
+	}
+
+	TEST_F(UtilityTest, UnimplementedMode)
+	{
+		__blockCipherMode = (BlockCipherMode)INT_MAX;
+
+		ASSERT_ANY_THROW(
+			encrypt(
+				getRandomBlock(KEYSIZE),
+				getRandomBlock(AES_BLOCK_SIZE),
+				getRandomBlock(AES_BLOCK_SIZE * 3),
+				ENCRYPT));
 	}
 
 	TEST_F(UtilityTest, LoadStoreKey)
@@ -142,7 +172,7 @@ namespace PathORAM
 	TEST_F(UtilityTest, HashToNumberUniform)
 	{
 		const auto RUNS = 10000uLL;
-		const auto MAX = 10uLL;
+		const auto MAX	= 10uLL;
 		vector<number> bins(MAX, 0);
 
 		for (auto i = 0uLL; i < RUNS; i++)

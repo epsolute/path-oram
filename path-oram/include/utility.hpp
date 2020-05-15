@@ -49,7 +49,8 @@ namespace PathORAM
 	/**
 	 * @brief Encryption routine
 	 *
-	 * Does encryption or decryption using OpenSSL AES-CBC-256 (or whatver size key is provided, defined by KEYSIZE)
+	 * Does encryption or decryption using OpenSSL AES-MODE-256 (or whatver size key is provided, defined by KEYSIZE).
+	 * The MODE is configured with global setting __blockCipherMode (currently CBC or CTR).
 	 *
 	 * @param key the AES key (must be KEYSIZE bytes)
 	 * @param iv initialization vector (better be randomly generated, must be of size of the AES block, 16 bytes)

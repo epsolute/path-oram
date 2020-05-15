@@ -34,6 +34,12 @@ namespace PathORAM
 		DECRYPT
 	};
 
+	enum BlockCipherMode
+	{
+		CBC,
+		CTR
+	};
+
 	/**
 	 * @brief Primitive exception class that passes along the excpetion message
 	 *
@@ -67,4 +73,10 @@ namespace PathORAM
 		protected:
 		string msg_;
 	};
+
+	/**
+	 * @brief global setting, block cipher mode which will be used for encryption
+	 *
+	 */
+	inline BlockCipherMode __blockCipherMode = CBC;
 }
