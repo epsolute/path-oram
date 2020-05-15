@@ -74,5 +74,9 @@ namespace PathORAM
 		string msg_;
 	};
 
+	/**
+	 * @brief global setting, block cipher mode which will be used for encryption
+	 *
+	 */
 	inline BlockCipherMode __blockCipherMode = CBC;
 }

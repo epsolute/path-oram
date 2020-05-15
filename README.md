@@ -11,7 +11,7 @@ This implementation has the following features:
 	- `Aerospike` (using external Aerospike server and [official C client](https://www.aerospike.com/docs/client/c/), supports batch read, no batch write)
 - position map can be either in-memory, or using another PathORAM, thus enabling arbitrary-level recursive PathORAM
 - an optimization for multiple requests at a time (mixed get and put)
-- PRG and encryption are done with OpenSSL, encryption is AES-CBC-256, random IV every time
+- PRG and encryption are done with OpenSSL, encryption is AES-CBC-256 (or AES-CTR-256), random IV every time
 - the solution is tested, the coverage is 100%
 - the solution is benchmarked
 - the solution is documented, the documentation is [online](https://pathoram.dbogatov.org/)

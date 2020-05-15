@@ -121,21 +121,21 @@ namespace PathORAM
 		uchar ctr_buffer[AES_BLOCK_SIZE];
 		memset(ctr_buffer, 0x00, AES_BLOCK_SIZE);
 
+		// this last parameter is essentially a block cipher itself (as a function);
+		// CRYPTO_ family functions are cipher-agnostic
 		switch (__blockCipherMode)
 		{
 			case CBC:
-				// TODO use CRYPTO_ family here
-				AES_cbc_encrypt(
+				(mode == ENCRYPT ? CRYPTO_cbc128_encrypt : CRYPTO_cbc128_decrypt)(
 					(const uchar *)inputMaterial,
 					outputMaterial,
 					size,
 					&aesKey,
 					ivMaterial,
-					mode == ENCRYPT ? AES_ENCRYPT : AES_DECRYPT);
+					(block128_f)(mode == ENCRYPT ? AES_encrypt : AES_decrypt));
 				break;
 
 			case CTR:
-
 				CRYPTO_ctr128_encrypt(
 					(const uchar *)inputMaterial,
 					outputMaterial,
@@ -145,8 +145,6 @@ namespace PathORAM
 					ctr_buffer,
 					&ctr_num,
 					(block128_f)AES_encrypt);
-				// this last parameter is essentially a block cipher itself (as a function);
-				// CRYPTO_ family functions are cipher-agnostic
 				break;
 
 			default:
