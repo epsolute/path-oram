@@ -38,7 +38,7 @@ namespace PathORAM
 	{
 		__blockCipherMode = (BlockCipherMode)state.range(0);
 
-		auto palintext = getRandomBlock(64);
+		auto palintext = getRandomBlock(1024);
 		auto key	   = getRandomBlock(KEYSIZE);
 		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
 
@@ -53,7 +53,7 @@ namespace PathORAM
 	{
 		__blockCipherMode = (BlockCipherMode)state.range(0);
 
-		auto palintext	= getRandomBlock(64);
+		auto palintext	= getRandomBlock(1024);
 		auto key		= getRandomBlock(KEYSIZE);
 		auto iv			= getRandomBlock(AES_BLOCK_SIZE);
 		auto ciphertext = encrypt(key, iv, palintext, ENCRYPT);
@@ -75,13 +75,13 @@ namespace PathORAM
 	BENCHMARK_REGISTER_F(UtilityBenchmark, Encrypt)
 		->Args({CBC})
 		->Args({CTR})
-		->Iterations(1 << 20)
+		->Iterations(1 << 15)
 		->Unit(benchmark::kMicrosecond);
 
 	BENCHMARK_REGISTER_F(UtilityBenchmark, Decrypt)
 		->Args({CBC})
 		->Args({CTR})
-		->Iterations(1 << 20)
+		->Iterations(1 << 15)
 		->Unit(benchmark::kMicrosecond);
 }
 
