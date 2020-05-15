@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
+#include <openssl/modes.h>
 #include <openssl/rand.h>
 #include <random>
 #include <sstream>
@@ -97,7 +98,8 @@ namespace PathORAM
 		AES_KEY aesKey;
 		uchar keyMaterial[KEYSIZE];
 		copy(key.begin(), key.end(), keyMaterial);
-		if (mode == ENCRYPT)
+		// CTR always does encryption only
+		if (mode == ENCRYPT || __blockCipherMode == CTR)
 		{
 			AES_set_encrypt_key(keyMaterial, KEYSIZE * 8, &aesKey);
 		}
@@ -115,7 +117,41 @@ namespace PathORAM
 		uchar outputMaterial[size];
 		memset(outputMaterial, 0x00, size);
 
-		AES_cbc_encrypt((const uchar *)inputMaterial, outputMaterial, size, &aesKey, ivMaterial, mode == ENCRYPT ? AES_ENCRYPT : AES_DECRYPT);
+		uint ctr_num = 0;
+		uchar ctr_buffer[AES_BLOCK_SIZE];
+		memset(ctr_buffer, 0x00, AES_BLOCK_SIZE);
+
+		switch (__blockCipherMode)
+		{
+			case CBC:
+				// TODO use CRYPTO_ family here
+				AES_cbc_encrypt(
+					(const uchar *)inputMaterial,
+					outputMaterial,
+					size,
+					&aesKey,
+					ivMaterial,
+					mode == ENCRYPT ? AES_ENCRYPT : AES_DECRYPT);
+				break;
+
+			case CTR:
+
+				CRYPTO_ctr128_encrypt(
+					(const uchar *)inputMaterial,
+					outputMaterial,
+					size,
+					&aesKey,
+					ivMaterial,
+					ctr_buffer,
+					&ctr_num,
+					(block128_f)AES_encrypt);
+				// this last parameter is essentially a block cipher itself (as a function);
+				// CRYPTO_ family functions are cipher-agnostic
+				break;
+
+			default:
+				throw Exception(boost::format("Block cipher mode not implemented: %1%") % __blockCipherMode);
+		}
 
 		return bytes(outputMaterial, outputMaterial + size);
 	}
