@@ -3,6 +3,7 @@
 #include "definitions.h"
 
 #include <aerospike/aerospike.h>
+#include <boost/signals2/signal.hpp>
 #include <fstream>
 #include <sw/redis++/redis++.h>
 
@@ -19,6 +20,8 @@ namespace PathORAM
 	 */
 	class AbsStorageAdapter
 	{
+		using OnStorageRequest = boost::signals2::signal<void(bool read, number batch, number size, number overhead)>;
+
 		private:
 		/**
 		 * @brief throws exception if a requested location is outside of capcity
@@ -34,8 +37,31 @@ namespace PathORAM
 		 */
 		void checkBlockSize(number dataSize);
 
+		/**
+		 * @brief Proxy for setInternal(number location, bytes raw) that emits OnStorageRequest
+		 */
+		void setAndRecord(number location, bytes raw);
+
+		/**
+		 * @brief Proxy for getInternal(number location) that emits OnStorageRequest
+		 */
+		bytes getAndRecord(number location);
+
+		/**
+		 * @brief Proxy for setInternal(vector<pair<number, bytes>> requests) that emits OnStorageRequest
+		 */
+		void setAndRecord(vector<pair<number, bytes>> requests);
+
+		/**
+		 * @brief Proxy for getInternal(vector<number> locations) that emits OnStorageRequest
+		 */
+		vector<bytes> getAndRecord(vector<number> locations);
+
 		bytes key; // AES key for encryption operations
 		number Z;  // number of blocks in a bucket
+
+		// Event handler
+		OnStorageRequest onStorageRequest;
 
 		friend class StorageAdapterTest_GetSetInternal_Test;
 		friend class MockStorage;
@@ -60,6 +86,14 @@ namespace PathORAM
 		void set(number location, bucket data);
 
 		/**
+		 * @brief Subscribes to OnStorageRequest notifications.
+		 *
+		 * @param handler the handler to execute with event
+		 * @return boost::signals2::connection the connection object (to be used for unsubscribing)
+		 */
+		boost::signals2::connection subscribe(const OnStorageRequest::slot_type &handler);
+
+		/**
 		 * @brief retrives the data in batch
 		 *
 		 * \note
@@ -69,7 +103,7 @@ namespace PathORAM
 		 * @param locations the locations from which to read
 		 * @return vector<block> retrived data broken up into IDs and decrypted payloads
 		 */
-		virtual vector<block> get(vector<number> locations);
+		vector<block> get(vector<number> locations);
 
 		/**
 		 * @brief writes the data in batch
@@ -80,13 +114,23 @@ namespace PathORAM
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
 		 */
-		virtual void set(vector<pair<number, bucket>> requests);
+		void set(vector<pair<number, bucket>> requests);
 
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.
 		 * On the storage these zeroes will appear randomized encrypted.
 		 */
 		void fillWithZeroes();
+
+		/**
+		 * @brief whether this adapter supports batch read operations.
+		 */
+		virtual const bool supportsBatchGet() = 0;
+
+		/**
+		 * @brief whether this adapter supports batch write operations.
+		 */
+		virtual const bool supportsBatchSet() = 0;
 
 		/**
 		 * @brief Construct a new Abs Storage Adapter object
@@ -161,6 +205,9 @@ namespace PathORAM
 		void setInternal(number location, bytes raw) final;
 		bytes getInternal(number location) final;
 
+		const bool supportsBatchGet() final { return false; };
+		const bool supportsBatchSet() final { return false; };
+
 		friend class MockStorage;
 	};
 
@@ -195,6 +242,9 @@ namespace PathORAM
 		protected:
 		void setInternal(number location, bytes raw) final;
 		bytes getInternal(number location) final;
+
+		const bool supportsBatchGet() final { return false; };
+		const bool supportsBatchSet() final { return false; };
 	};
 
 	/**
@@ -231,6 +281,9 @@ namespace PathORAM
 
 		void setInternal(vector<pair<number, bytes>> requests) final;
 		vector<bytes> getInternal(vector<number> locations) final;
+
+		const bool supportsBatchGet() final { return true; };
+		const bool supportsBatchSet() final { return true; };
 	};
 
 	/**
@@ -276,5 +329,8 @@ namespace PathORAM
 		bytes getInternal(number location) final;
 
 		vector<bytes> getInternal(vector<number> locations) final;
+
+		const bool supportsBatchGet() final { return true; };
+		const bool supportsBatchSet() final { return false; };
 	};
 }

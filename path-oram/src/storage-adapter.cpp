@@ -11,6 +11,19 @@
 #include <utility.hpp>
 #include <vector>
 
+#define RECORD_AND_EXECUTE(condition, plain, execute, record)                                                   \
+	if (condition)                                                                                              \
+	{                                                                                                           \
+		plain;                                                                                                  \
+	}                                                                                                           \
+	else                                                                                                        \
+	{                                                                                                           \
+		auto start = chrono::steady_clock::now();                                                               \
+		execute;                                                                                                \
+		auto elapsed = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now() - start).count(); \
+		record;                                                                                                 \
+	}
+
 namespace PathORAM
 {
 	using namespace std;
@@ -33,11 +46,11 @@ namespace PathORAM
 		vector<bytes> raws;
 		if (locations.size() == 1)
 		{
-			raws.push_back(getInternal(locations[0]));
+			raws.push_back(getAndRecord(locations[0]));
 		}
 		else
 		{
-			raws = getInternal(locations);
+			raws = getAndRecord(locations);
 		}
 
 		vector<block> results;
@@ -123,11 +136,11 @@ namespace PathORAM
 		// optimize for single operation
 		if (writes.size() == 1)
 		{
-			setInternal(writes[0].first, writes[0].second);
+			setAndRecord(writes[0].first, writes[0].second);
 		}
 		else
 		{
-			setInternal(writes);
+			setAndRecord(writes);
 		}
 	}
 
@@ -147,7 +160,7 @@ namespace PathORAM
 		result.resize(locations.size());
 		for (unsigned int i = 0; i < locations.size(); i++)
 		{
-			result[i] = getInternal(locations[i]);
+			result[i] = getAndRecord(locations[i]);
 		}
 
 		return result;
@@ -157,7 +170,7 @@ namespace PathORAM
 	{
 		for (auto request : requests)
 		{
-			setInternal(request.first, request.second);
+			setAndRecord(request.first, request.second);
 		}
 	}
 
@@ -217,6 +230,65 @@ namespace PathORAM
 
 			set(i, bucket);
 		}
+	}
+
+	boost::signals2::connection AbsStorageAdapter::subscribe(const OnStorageRequest::slot_type &handler)
+	{
+		return onStorageRequest.connect(handler);
+	}
+
+	void AbsStorageAdapter::setAndRecord(number location, bytes raw)
+	{
+		RECORD_AND_EXECUTE(
+			onStorageRequest.empty(),
+			setInternal(location, raw),
+			setInternal(location, raw),
+			onStorageRequest(false, 1, raw.size(), elapsed));
+	}
+
+	bytes AbsStorageAdapter::getAndRecord(number location)
+	{
+		RECORD_AND_EXECUTE(
+			onStorageRequest.empty(),
+			return getInternal(location),
+			auto raw = getInternal(location),
+			{
+				onStorageRequest(true, 1, raw.size(), elapsed);
+				return raw;
+			});
+	}
+
+	void AbsStorageAdapter::setAndRecord(vector<pair<number, bytes>> requests)
+	{
+		RECORD_AND_EXECUTE(
+			onStorageRequest.empty() || !supportsBatchSet(),
+			setInternal(requests),
+			setInternal(requests),
+			{
+				auto size = 0;
+				for (auto &&request : requests)
+				{
+					size += request.second.size();
+				}
+				onStorageRequest(false, requests.size(), size, elapsed);
+			});
+	}
+
+	vector<bytes> AbsStorageAdapter::getAndRecord(vector<number> locations)
+	{
+		RECORD_AND_EXECUTE(
+			onStorageRequest.empty() || !supportsBatchGet(),
+			return getInternal(locations),
+			auto raws = getInternal(locations),
+			{
+				auto size = 0;
+				for (auto &&raw : raws)
+				{
+					size += raw.size();
+				}
+				onStorageRequest(true, raws.size(), size, elapsed);
+				return raws;
+			});
 	}
 
 #pragma endregion AbsStorageAdapter

@@ -26,7 +26,7 @@ namespace PathORAM
 			});
 		}
 
-		// these two do not need to be mocked, they just have to exist to make class concrete
+		// these four do not need to be mocked, they just have to exist to make class concrete
 		virtual bytes getInternal(number location) override
 		{
 			return _real->getInternal(location);
@@ -35,6 +35,16 @@ namespace PathORAM
 		virtual void setInternal(number location, bytes raw) override
 		{
 			_real->setInternal(location, raw);
+		}
+
+		virtual const bool supportsBatchGet() override
+		{
+			return false;
+		}
+
+		virtual const bool supportsBatchSet() override
+		{
+			return false;
 		}
 
 		// these two need to be mocked since we want tot rack how and when they are called (hence ON_CALL above)
