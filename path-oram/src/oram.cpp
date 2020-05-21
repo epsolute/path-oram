@@ -92,6 +92,8 @@ namespace PathORAM
 
 	void ORAM::load(vector<block> data)
 	{
+		// TODO construct local storage, upload in bulk
+
 		// shuffle (such bulk load may leak in part the original order)
 		uint n = data.size();
 		if (n >= 2)
@@ -274,6 +276,7 @@ namespace PathORAM
 	vector<block> ORAM::getCache(vector<number> locations)
 	{
 		// get those locations not present in the cache
+		// TODO put those from cache right in the resutls
 		vector<number> toGet;
 		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });
 

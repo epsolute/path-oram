@@ -175,6 +175,10 @@ namespace PathORAM
 		/**
 		 * @brief processes multiple requests at a time
 		 *
+		 * \note
+		 * If a sequence contains duplicates, those duplicate requests will miss the cache.
+		 * The answer will still be correct, and operation secure, just not optimal.
+		 *
 		 * @param requests the sequence of requests in a form of {ID, payload}
 		 * If payload is empty (zero size), the requests is treated as GET, otherwise PUT.
 		 * @return vector<bytes> the answer to the requests.
