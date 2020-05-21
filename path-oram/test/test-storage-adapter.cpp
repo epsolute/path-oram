@@ -281,6 +281,55 @@ namespace PathORAM
 		}
 	}
 
+	TEST_P(StorageAdapterTest, EventHandling)
+	{
+		tuple<bool, number, number, number> event;
+
+		auto connection = adapter->subscribe([&event](bool read, number batch, number size, number overhead) -> void {
+			get<0>(event) = read;
+			get<1>(event) = batch;
+			get<2>(event) = size;
+			get<3>(event) = overhead;
+		});
+
+		auto bucket		   = generateBucket(5);
+		const auto rawSize = (BLOCK_SIZE + AES_BLOCK_SIZE) * Z + AES_BLOCK_SIZE;
+
+		adapter->set(CAPACITY - 1, bucket);
+
+		EXPECT_FALSE(get<0>(event));
+		EXPECT_EQ(1, get<1>(event));
+		EXPECT_EQ(rawSize, get<2>(event));
+		EXPECT_LT(0, get<3>(event));
+
+		adapter->get(CAPACITY - 1);
+
+		EXPECT_TRUE(get<0>(event));
+		EXPECT_EQ(1, get<1>(event));
+		EXPECT_EQ(rawSize, get<2>(event));
+		EXPECT_LT(0, get<3>(event));
+
+		adapter->set({{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}});
+
+		EXPECT_FALSE(get<0>(event));
+		EXPECT_EQ(adapter->supportsBatchSet() ? 2 : 1, get<1>(event));
+		EXPECT_EQ(
+			(adapter->supportsBatchSet() ? 2 : 1) * rawSize,
+			get<2>(event));
+		EXPECT_LT(0, get<3>(event));
+
+		adapter->get({CAPACITY - 1, CAPACITY - 2});
+
+		EXPECT_TRUE(get<0>(event));
+		EXPECT_EQ(adapter->supportsBatchGet() ? 2 : 1, get<1>(event));
+		EXPECT_EQ(
+			(adapter->supportsBatchGet() ? 2 : 1) * rawSize,
+			get<2>(event));
+		EXPECT_LT(0, get<3>(event));
+
+		connection.disconnect();
+	}
+
 	string printTestName(testing::TestParamInfo<TestingStorageAdapterType> input)
 	{
 		switch (input.param)

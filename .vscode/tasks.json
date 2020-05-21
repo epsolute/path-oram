@@ -3,7 +3,7 @@
 	"tasks": [{
 		"label": "build",
 		"type": "shell",
-		"command": "make debug",
+		"command": "make debug -j8",
 		"args": [],
 		"options": {
 			"cwd": "${workspaceFolder}/path-oram"
