@@ -92,7 +92,12 @@ namespace PathORAM
 
 	void ORAM::load(vector<block> data)
 	{
-		// TODO construct local storage, upload in bulk
+		unordered_map<number, bucket> localStorage;
+		auto emptyBucket = vector<block>();
+		for (auto i = 0uLL; i < Z; i++)
+		{
+			emptyBucket.push_back({ULONG_MAX, bytes()});
+		}
 
 		// shuffle (such bulk load may leak in part the original order)
 		uint n = data.size();
@@ -116,15 +121,15 @@ namespace PathORAM
 				for (int level = height - 1; level >= 0; level--)
 				{
 					auto bucketId = bucketForLevelLeaf(level, leaf);
-					auto bucket	  = storage->get(bucketId);
+					auto bucket	  = localStorage.count(bucketId) == 0 ? emptyBucket : localStorage[bucketId];
 
 					for (number i = 0; i < Z; i++)
 					{
 						// if empty
 						if (bucket[i].first == ULONG_MAX)
 						{
-							bucket[i] = record;
-							storage->set(bucketId, bucket);
+							bucket[i]			   = record;
+							localStorage[bucketId] = bucket;
 							map->set(record.first, leaf);
 							goto found;
 						}
@@ -138,6 +143,10 @@ namespace PathORAM
 		found:
 			continue;
 		}
+
+		vector<pair<number, bucket>> requests;
+		copy(localStorage.begin(), localStorage.end(), back_inserter(requests));
+		storage->set(requests);
 	}
 
 	bytes ORAM::access(bool read, number block, bytes data)
@@ -275,20 +284,33 @@ namespace PathORAM
 
 	vector<block> ORAM::getCache(vector<number> locations)
 	{
+		vector<block> result;
+
 		// get those locations not present in the cache
-		// TODO put those from cache right in the resutls
 		vector<number> toGet;
-		copy_if(locations.begin(), locations.end(), back_inserter(toGet), [this](number location) { return cache.count(location) == 0; });
+		for (auto &&location : locations)
+		{
+			auto bucketIt = cache.find(location);
+			if (bucketIt == cache.end())
+			{
+				toGet.push_back(location);
+			}
+			else
+			{
+				result.insert(result.begin(), (*bucketIt).second.begin(), (*bucketIt).second.end());
+			}
+		}
 
 		if (toGet.size() > 0)
 		{
 			// download those blocks
 			auto downloaded = storage->get(toGet);
 
-			// add them to the cache
+			// add them to the cache and the result
 			bucket bucket;
 			for (auto i = 0uLL; i < downloaded.size(); i++)
 			{
+				result.push_back(downloaded[i]);
 				bucket.push_back(downloaded[i]);
 				if (i % Z == Z - 1)
 				{
@@ -296,14 +318,6 @@ namespace PathORAM
 					bucket.clear();
 				}
 			}
-		}
-
-		// answer the query (now from cache only)
-		vector<block> result;
-		for (auto location : locations)
-		{
-			auto bucket = cache[location];
-			result.insert(result.begin(), bucket.begin(), bucket.end());
 		}
 
 		return result;
