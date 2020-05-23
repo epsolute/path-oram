@@ -33,6 +33,11 @@ Dependencies:
 	- `gcovr` for coverage
 	- `doxygen` for generating docs
 - or, use this Docker image: `dbogatov/docker-images:pbc-latest`
+- note, to test against storage adapters other than `InMemory` and `FileSystem`
+	- To use `Redis`, a Redis instance has to be accessible over `tcp://127.0.0.1:6379`
+		- For example: `docker run -it -p 6379:6379 redis`
+	- To use `Aerospike`, an Aerospike instance has to be accessible over `127.0.0.1:3000`
+		- For example: `docker run -it -p 3000:3000 aerospike/aerospike-server`
 
 [Makefile](./path-oram/Makefile) is used for everything.
 

@@ -76,13 +76,21 @@ namespace PathORAM
 		return distribution(gen);
 	}
 
-	bytes encrypt(bytes key, bytes iv, bytes input, EncryptionMode mode)
+	void encrypt(
+		bytes::const_iterator keyFirst,
+		bytes::const_iterator keyLast,
+		bytes::const_iterator ivFist,
+		bytes::const_iterator ivLast,
+		bytes::const_iterator inputFirst,
+		bytes::const_iterator inputLast,
+		bytes &output,
+		EncryptionMode mode)
 	{
-		auto size = input.size();
+		auto size = distance(inputFirst, inputLast);
 
-		if (key.size() != KEYSIZE)
+		if (distance(keyFirst, keyLast) != KEYSIZE)
 		{
-			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % key.size() % KEYSIZE);
+			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % distance(keyFirst, keyLast) % KEYSIZE);
 		}
 
 		if (size == 0 || size % AES_BLOCK_SIZE != 0)
@@ -90,14 +98,14 @@ namespace PathORAM
 			throw Exception(boost::format("input must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % size);
 		}
 
-		if (iv.size() != AES_BLOCK_SIZE)
+		if (distance(ivFist, ivLast) != AES_BLOCK_SIZE)
 		{
-			throw Exception(boost::format("IV of size %1% bytes provided, need %2% bytes") % iv.size() % AES_BLOCK_SIZE);
+			throw Exception(boost::format("IV of size %1% bytes provided, need %2% bytes") % distance(ivFist, ivLast) % AES_BLOCK_SIZE);
 		}
 
 		AES_KEY aesKey;
 		uchar keyMaterial[KEYSIZE];
-		copy(key.begin(), key.end(), keyMaterial);
+		copy(keyFirst, keyLast, keyMaterial);
 		// CTR always does encryption only
 		if (mode == ENCRYPT || __blockCipherMode == CTR)
 		{
@@ -109,10 +117,10 @@ namespace PathORAM
 		}
 
 		uchar ivMaterial[AES_BLOCK_SIZE];
-		copy(iv.begin(), iv.end(), ivMaterial);
+		copy(ivFist, ivLast, ivMaterial);
 
 		uchar inputMaterial[size];
-		copy(input.begin(), input.end(), inputMaterial);
+		copy(inputFirst, inputLast, inputMaterial);
 
 		uchar outputMaterial[size];
 		memset(outputMaterial, 0x00, size);
@@ -151,7 +159,7 @@ namespace PathORAM
 				throw Exception(boost::format("Block cipher mode not implemented: %1%") % __blockCipherMode);
 		}
 
-		return bytes(outputMaterial, outputMaterial + size);
+		output.insert(output.end(), outputMaterial, outputMaterial + size);
 	}
 
 	bytes fromText(string text, number BLOCK_SIZE)

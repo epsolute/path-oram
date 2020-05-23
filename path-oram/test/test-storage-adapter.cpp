@@ -106,12 +106,16 @@ namespace PathORAM
 			auto storage	= createAdapter(filename, true, key);
 
 			storage->set(CAPACITY - 1, bucket);
-			ASSERT_EQ(bucket, storage->get(CAPACITY - 1));
+			vector<block> got;
+			storage->get(CAPACITY - 1, got);
+			ASSERT_EQ(bucket, got);
 			storage.reset();
 
 			storage = createAdapter(filename, false, key);
 
-			ASSERT_EQ(bucket, storage->get(CAPACITY - 1));
+			got.clear();
+			storage->get(CAPACITY - 1, got);
+			ASSERT_EQ(bucket, got);
 
 			remove(filename.c_str());
 		}
@@ -152,14 +156,16 @@ namespace PathORAM
 		auto bucket = generateBucket(5);
 
 		EXPECT_NO_THROW({
+			vector<block> got;
 			adapter->set(CAPACITY - 1, bucket);
-			adapter->get(CAPACITY - 2);
+			adapter->get(CAPACITY - 2, got);
 		});
 	}
 
 	TEST_P(StorageAdapterTest, ReadEmpty)
 	{
-		auto bucket = adapter->get(CAPACITY - 2);
+		vector<block> bucket;
+		adapter->get(CAPACITY - 2, bucket);
 		ASSERT_EQ(Z, bucket.size());
 		for (auto block : bucket)
 		{
@@ -171,7 +177,10 @@ namespace PathORAM
 	{
 		auto bucket = generateBucket(5);
 
-		ASSERT_ANY_THROW(adapter->get(CAPACITY + 1));
+		ASSERT_ANY_THROW({
+			vector<block> got;
+			adapter->get(CAPACITY + 1, got);
+		});
 		ASSERT_ANY_THROW(adapter->set(CAPACITY + 1, bucket));
 	}
 
@@ -196,7 +205,8 @@ namespace PathORAM
 		auto bucket = generateBucket(5);
 
 		adapter->set(CAPACITY - 1, bucket);
-		auto returned = adapter->get(CAPACITY - 1);
+		vector<block> returned;
+		adapter->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ(bucket, returned);
 	}
@@ -209,7 +219,8 @@ namespace PathORAM
 		data.resize(Z * (BLOCK_SIZE + AES_BLOCK_SIZE) + AES_BLOCK_SIZE);
 
 		adapter->setInternal(CAPACITY - 1, data);
-		auto returned = adapter->getInternal(CAPACITY - 1);
+		bytes returned;
+		adapter->getInternal(CAPACITY - 1, returned);
 
 		ASSERT_EQ(data, returned);
 	}
@@ -224,7 +235,8 @@ namespace PathORAM
 
 		adapter->set(CAPACITY - 1, bucket);
 
-		auto returned = adapter->get(CAPACITY - 1);
+		vector<block> returned;
+		adapter->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ(bucket, returned);
 	}
@@ -236,7 +248,8 @@ namespace PathORAM
 			auto expected = bytes();
 			expected.resize(BLOCK_SIZE);
 
-			auto returned = adapter->get(i);
+			vector<block> returned;
+			adapter->get(i, returned);
 
 			ASSERT_EQ(Z, returned.size());
 			for (auto block : returned)
@@ -260,7 +273,8 @@ namespace PathORAM
 		}
 		adapter->set(writes);
 
-		auto read = adapter->get(reads);
+		vector<block> read;
+		adapter->get(reads, read);
 
 		ASSERT_EQ(runs * Z, read.size());
 		for (auto block : read)
@@ -302,14 +316,16 @@ namespace PathORAM
 		EXPECT_EQ(rawSize, get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->get(CAPACITY - 1);
+		vector<block> got;
+		adapter->get(CAPACITY - 1, got);
 
 		EXPECT_TRUE(get<0>(event));
 		EXPECT_EQ(1, get<1>(event));
 		EXPECT_EQ(rawSize, get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->set({{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}});
+		vector<pair<number, vector<block>>> requests = {{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}};
+		adapter->set(requests);
 
 		EXPECT_FALSE(get<0>(event));
 		EXPECT_EQ(adapter->supportsBatchSet() ? 2 : 1, get<1>(event));
@@ -318,7 +334,9 @@ namespace PathORAM
 			get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->get({CAPACITY - 1, CAPACITY - 2});
+		got.clear();
+		vector<number> locations = {CAPACITY - 1, CAPACITY - 2};
+		adapter->get(locations, got);
 
 		EXPECT_TRUE(get<0>(event));
 		EXPECT_EQ(adapter->supportsBatchGet() ? 2 : 1, get<1>(event));

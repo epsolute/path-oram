@@ -304,7 +304,8 @@ namespace PathORAM
 		if (toGet.size() > 0)
 		{
 			// download those blocks
-			auto downloaded = storage->get(toGet);
+			vector<block> downloaded;
+			storage->get(toGet, downloaded);
 
 			// add them to the cache and the result
 			bucket bucket;

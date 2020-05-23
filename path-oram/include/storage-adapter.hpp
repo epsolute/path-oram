@@ -45,17 +45,17 @@ namespace PathORAM
 		/**
 		 * @brief Proxy for getInternal(number location) that emits OnStorageRequest
 		 */
-		bytes getAndRecord(number location);
+		void getAndRecord(number location, bytes &response);
 
 		/**
 		 * @brief Proxy for setInternal(vector<pair<number, bytes>> requests) that emits OnStorageRequest
 		 */
-		void setAndRecord(vector<pair<number, bytes>> requests);
+		void setAndRecord(vector<pair<number, bytes>> &requests);
 
 		/**
 		 * @brief Proxy for getInternal(vector<number> locations) that emits OnStorageRequest
 		 */
-		vector<bytes> getAndRecord(vector<number> locations);
+		void getAndRecord(vector<number> &locations, vector<bytes> &response);
 
 		bytes key; // AES key for encryption operations
 		number Z;  // number of blocks in a bucket
@@ -73,7 +73,7 @@ namespace PathORAM
 		 * @param location location in question
 		 * @return bucket retrived data broken up into Z blocks {ID, decrypted payload}
 		 */
-		bucket get(number location);
+		void get(number location, bucket &response);
 
 		/**
 		 * @brief writes the data to the location
@@ -83,7 +83,7 @@ namespace PathORAM
 		 * @param location location in question
 		 * @param data composition of Z blocks {ID, plaintext payload}
 		 */
-		void set(number location, bucket data);
+		void set(number location, bucket &data);
 
 		/**
 		 * @brief Subscribes to OnStorageRequest notifications.
@@ -103,7 +103,7 @@ namespace PathORAM
 		 * @param locations the locations from which to read
 		 * @return vector<block> retrived data broken up into IDs and decrypted payloads
 		 */
-		vector<block> get(vector<number> locations);
+		void get(vector<number> &locations, vector<block> &response);
 
 		/**
 		 * @brief writes the data in batch
@@ -114,7 +114,7 @@ namespace PathORAM
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
 		 */
-		void set(vector<pair<number, bucket>> requests);
+		void set(vector<pair<number, bucket>> &requests);
 
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.
@@ -161,7 +161,7 @@ namespace PathORAM
 		 * @param location where to write bytes
 		 * @param raw the bytes to write
 		 */
-		virtual void setInternal(number location, bytes raw) = 0;
+		virtual void setInternal(number location, bytes &raw) = 0;
 
 		/**
 		 * @brief actual routine that retrieves raw bytes to storage
@@ -169,14 +169,14 @@ namespace PathORAM
 		 * @param location location from where to read bytes
 		 * @return bytes the retrieved bytes
 		 */
-		virtual bytes getInternal(number location) = 0;
+		virtual void getInternal(number location, bytes &response) = 0;
 
 		/**
 		 * @brief batch version of setInternal
 		 *
 		 * @param requests sequency of blocks to write (location, raw bytes)
 		 */
-		virtual void setInternal(vector<pair<number, bytes>> requests);
+		virtual void setInternal(vector<pair<number, bytes>> &requests);
 
 		/**
 		 * @brief batch version of getInternal
@@ -184,7 +184,7 @@ namespace PathORAM
 		 * @param locations sequence (ordered) of locations to read from
 		 * @return vector<bytes> blocks of bytes in the order defined by locations
 		 */
-		virtual vector<bytes> getInternal(vector<number> locations);
+		virtual void getInternal(vector<number> &locations, vector<bytes> &response);
 	};
 
 	/**
@@ -202,8 +202,8 @@ namespace PathORAM
 		~InMemoryStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(number location, bytes &raw) final;
+		void getInternal(number location, bytes &reponse) final;
 
 		const bool supportsBatchGet() final { return false; };
 		const bool supportsBatchSet() final { return false; };
@@ -240,8 +240,8 @@ namespace PathORAM
 		~FileSystemStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(number location, bytes &raw) final;
+		void getInternal(number location, bytes &reponse) final;
 
 		const bool supportsBatchGet() final { return false; };
 		const bool supportsBatchSet() final { return false; };
@@ -276,11 +276,11 @@ namespace PathORAM
 		~RedisStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(number location, bytes &raw) final;
+		void getInternal(number location, bytes &reponse) final;
 
-		void setInternal(vector<pair<number, bytes>> requests) final;
-		vector<bytes> getInternal(vector<number> locations) final;
+		void setInternal(vector<pair<number, bytes>> &requests) final;
+		void getInternal(vector<number> &locations, vector<bytes> &response) final;
 
 		const bool supportsBatchGet() final { return true; };
 		const bool supportsBatchSet() final { return true; };
@@ -325,10 +325,10 @@ namespace PathORAM
 		~AerospikeStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(number location, bytes &raw) final;
+		void getInternal(number location, bytes &reponse) final;
 
-		vector<bytes> getInternal(vector<number> locations) final;
+		void getInternal(vector<number> &locations, vector<bytes> &response) final;
 
 		const bool supportsBatchGet() final { return true; };
 		const bool supportsBatchSet() final { return false; };

@@ -58,7 +58,15 @@ namespace PathORAM
 	 * @param mode ENCRYPTION or DECRYPTION
 	 * @return bytes the ciphertex or plaintex material, the result of the encryption operation
 	 */
-	bytes encrypt(bytes key, bytes iv, bytes input, EncryptionMode mode);
+	void encrypt(
+		bytes::const_iterator keyFirst,
+		bytes::const_iterator keyLast,
+		bytes::const_iterator ivFist,
+		bytes::const_iterator ivLast,
+		bytes::const_iterator inputFist,
+		bytes::const_iterator inputLast,
+		bytes &output,
+		EncryptionMode mode);
 
 	/**
 	 * @brief helper to convert string to bytes and pad (from right with zeros)

@@ -18,21 +18,21 @@ namespace PathORAM
 			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z);
 
 			// by default, all calls are delegated to the real object
-			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> locations) {
-				return ((AbsStorageAdapter*)_real.get())->getInternal(locations);
+			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> &locations, vector<bytes> &response) {
+				return ((AbsStorageAdapter *)_real.get())->getInternal(locations, response);
 			});
-			ON_CALL(*this, setInternal).WillByDefault([this](vector<block> requests) {
-				return ((AbsStorageAdapter*)_real.get())->setInternal(requests);
+			ON_CALL(*this, setInternal).WillByDefault([this](vector<block> &requests) {
+				return ((AbsStorageAdapter *)_real.get())->setInternal(requests);
 			});
 		}
 
 		// these four do not need to be mocked, they just have to exist to make class concrete
-		virtual bytes getInternal(number location) override
+		virtual void getInternal(number location, bytes &response) override
 		{
-			return _real->getInternal(location);
+			return _real->getInternal(location, response);
 		}
 
-		virtual void setInternal(number location, bytes raw) override
+		virtual void setInternal(number location, bytes &raw) override
 		{
 			_real->setInternal(location, raw);
 		}
@@ -47,9 +47,9 @@ namespace PathORAM
 			return false;
 		}
 
-		// these two need to be mocked since we want tot rack how and when they are called (hence ON_CALL above)
-		MOCK_METHOD(vector<bytes>, getInternal, (vector<number> locations), (override));
-		MOCK_METHOD(void, setInternal, ((vector<block>)requests), (override));
+		// these two need to be mocked since we want to track how and when they are called (hence ON_CALL above)
+		MOCK_METHOD(void, getInternal, (vector<number> & locations, vector<bytes> &response), (override));
+		MOCK_METHOD(void, setInternal, ((vector<block>)&requests), (override));
 
 		private:
 		unique_ptr<InMemoryStorageAdapter> _real;
@@ -200,7 +200,8 @@ namespace PathORAM
 			auto found = false;
 			for (number location = 0; location < CAPACITY; location++)
 			{
-				auto bucket = storage->get(location);
+				bucket bucket;
+				storage->get(location, bucket);
 				for (auto block : bucket)
 				{
 					if (block.first == id)
@@ -260,14 +261,14 @@ namespace PathORAM
 			batch.push_back({id, bytes()});
 		}
 
-		auto noDupsPredicate = [](vector<number> locations) -> bool {
+		auto noDupsPredicate = [](vector<number> &locations) -> bool {
 			sort(locations.begin(), locations.end());
 			auto it = unique(locations.begin(), locations.end());
 			return it == locations.end();
 		};
 
-		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate))).Times(1);
-		EXPECT_CALL(*storage, setInternal(An<vector<block>>())).Times(1);
+		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate), An<vector<bytes> &>())).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<vector<block> &>())).Times(1);
 
 		oram->multiple(batch);
 	}
@@ -381,7 +382,7 @@ namespace PathORAM
 	}
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	srand(TEST_SEED);
 
