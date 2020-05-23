@@ -225,7 +225,8 @@ namespace PathORAM
 		// put / load all
 		if (get<5>(GetParam()))
 		{
-			oram->load(vector<block>(local.begin(), local.end()));
+			auto toLoad = vector<block>(local.begin(), local.end());
+			oram->load(toLoad);
 		}
 		else
 		{
@@ -240,7 +241,8 @@ namespace PathORAM
 		// get all
 		for (number id = 0; id < ELEMENTS; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(local[id], returned);
 		}
 
@@ -275,7 +277,8 @@ namespace PathORAM
 						if (batch[0].second.size() == 0)
 						{
 							// read
-							auto returned = oram->get(batch[0].first);
+							bytes returned;
+							oram->get(batch[0].first, returned);
 							EXPECT_EQ(local[batch[0].first], returned);
 						}
 						else
@@ -288,20 +291,21 @@ namespace PathORAM
 					else
 					{
 						// batch enabled
-						auto returned = oram->multiple(batch);
-						ASSERT_EQ(batch.size(), returned.size());
+						vector<bytes> response;
+						oram->multiple(batch, response);
+						ASSERT_EQ(batch.size(), response.size());
 
 						for (number j = 0; j < batch.size(); j++)
 						{
 							if (batch[j].second.size() == 0)
 							{
 								// read
-								EXPECT_EQ(local[batch[j].first], returned[j]);
+								EXPECT_EQ(local[batch[j].first], response[j]);
 							}
 							else
 							{
 								// write
-								EXPECT_EQ(batch[j].second, returned[j]);
+								EXPECT_EQ(batch[j].second, response[j]);
 								local[batch[j].first] = batch[j].second;
 							}
 						}

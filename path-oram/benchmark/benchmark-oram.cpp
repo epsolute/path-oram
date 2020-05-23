@@ -62,7 +62,8 @@ namespace PathORAM
 		// get all
 		for (number id = 0; id < ELEMENTS; id++)
 		{
-			oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 		}
 
 		// random operations
@@ -92,7 +93,8 @@ namespace PathORAM
 			{
 				if (batch.size() > 0)
 				{
-					benchmark::DoNotOptimize(oram->multiple(batch));
+					vector<bytes> response;
+					oram->multiple(batch, response);
 
 					batch.clear();
 				}

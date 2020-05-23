@@ -45,7 +45,8 @@ namespace PathORAM
 
 		stash = make_unique<InMemoryStashAdapter>(CAPACITY);
 		stash->loadFromFile(filename, blockSize);
-		auto read = stash->get(5);
+		bytes read;
+		stash->get(5, read);
 		EXPECT_EQ(expected, read);
 
 		remove(filename);
@@ -106,7 +107,8 @@ namespace PathORAM
 		auto data  = bytes{0x25};
 
 		adapter->add(block, data);
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
 		ASSERT_EQ(data, returned);
 	}
@@ -119,7 +121,8 @@ namespace PathORAM
 		adapter->add(block, old);
 		adapter->update(block, _new);
 
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
 		vector<pair<number, bytes>> got;
 		adapter->getAll(got);
@@ -135,7 +138,8 @@ namespace PathORAM
 		adapter->add(block, old);
 		adapter->add(block, _new);
 
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
 		vector<pair<number, bytes>> got;
 		adapter->getAll(got);

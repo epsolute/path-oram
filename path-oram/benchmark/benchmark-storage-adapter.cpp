@@ -73,13 +73,13 @@ namespace PathORAM
 			}
 			else
 			{
-				vector<pair<number, bucket>> writes;
+				vector<pair<const number, bucket>> writes;
 				writes.resize(batch);
 				for (auto i = 0; i < batch; i++)
 				{
-					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, toWrite};
+					writes.push_back({((location + i) * (1 << 10)) % CAPACITY, toWrite});
 				}
-				adapter->set(writes);
+				adapter->set(boost::make_iterator_range(writes.begin(), writes.end()));
 			}
 
 			location++;

@@ -87,7 +87,7 @@ namespace PathORAM
 		}
 	}
 
-	void AbsStorageAdapter::set(vector<pair<number, bucket>> &requests)
+	void AbsStorageAdapter::set(request_anyrange requests)
 	{
 		vector<block> writes;
 
@@ -157,8 +157,9 @@ namespace PathORAM
 
 	void AbsStorageAdapter::set(number location, bucket &data)
 	{
-		auto requests = vector<pair<number, vector<block>>>{{location, data}};
-		set(requests);
+		auto requests = vector<pair<const number, vector<block>>>{{location, data}};
+
+		set(boost::make_iterator_range(requests.begin(), requests.end()));
 	}
 
 	void AbsStorageAdapter::getInternal(vector<number> &locations, vector<bytes> &response)

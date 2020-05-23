@@ -50,7 +50,7 @@ namespace PathORAM
 		 * @param block ID of the block
 		 * @return bytes data part of the object
 		 */
-		virtual bytes get(number block) = 0;
+		virtual void get(number block, bytes &response) = 0;
 
 		/**
 		 * @brief removes the object by ID
@@ -113,7 +113,7 @@ namespace PathORAM
 		void getAll(vector<block> &response) final;
 		void add(number block, bytes data) final;
 		void update(number block, bytes data) final;
-		bytes get(number block) final;
+		void get(number block, bytes &response) final;
 		void remove(number block) final;
 
 		/**

@@ -3,6 +3,7 @@
 #include "definitions.h"
 
 #include <aerospike/aerospike.h>
+#include <boost/range/any_range.hpp>
 #include <boost/signals2/signal.hpp>
 #include <fstream>
 #include <sw/redis++/redis++.h>
@@ -10,6 +11,7 @@
 namespace PathORAM
 {
 	using namespace std;
+	using request_anyrange = boost::any_range<pair<const number, bucket>, boost::forward_traversal_tag>;
 
 	/**
 	 * @brief An abstraction over storage adapter
@@ -114,7 +116,7 @@ namespace PathORAM
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
 		 */
-		void set(vector<pair<number, bucket>> &requests);
+		void set(request_anyrange requests);
 
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.

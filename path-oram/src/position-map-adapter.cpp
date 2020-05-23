@@ -85,7 +85,8 @@ namespace PathORAM
 
 	number ORAMPositionMapAdapter::get(number block)
 	{
-		auto returned = oram->get(block);
+		bytes returned;
+		oram->get(block, returned);
 		uchar buffer[returned.size()];
 		copy(returned.begin(), returned.end(), buffer);
 

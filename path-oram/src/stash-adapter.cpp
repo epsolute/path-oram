@@ -54,9 +54,10 @@ namespace PathORAM
 		stash[block] = data;
 	}
 
-	bytes InMemoryStashAdapter::get(number block)
+	void InMemoryStashAdapter::get(number block, bytes &response)
 	{
-		return stash[block];
+		auto found = stash[block];
+		response.insert(response.begin(), found.begin(), found.end());
 	}
 
 	void InMemoryStashAdapter::remove(number block)

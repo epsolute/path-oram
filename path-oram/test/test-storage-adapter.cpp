@@ -264,14 +264,14 @@ namespace PathORAM
 	{
 		const auto runs = 3;
 
-		vector<pair<number, vector<pair<number, bytes>>>> writes;
+		vector<pair<const number, vector<pair<number, bytes>>>> writes;
 		vector<number> reads;
 		for (auto i = 0; i < runs; i++)
 		{
 			writes.push_back({CAPACITY - 4 + i, generateBucket(i * Z)});
 			reads.push_back(CAPACITY - 4 + i);
 		}
-		adapter->set(writes);
+		adapter->set(boost::make_iterator_range(writes.begin(), writes.end()));
 
 		vector<block> read;
 		adapter->get(reads, read);
@@ -324,8 +324,8 @@ namespace PathORAM
 		EXPECT_EQ(rawSize, get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		vector<pair<number, vector<block>>> requests = {{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}};
-		adapter->set(requests);
+		vector<pair<const number, vector<block>>> requests = {{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}};
+		adapter->set(boost::make_iterator_range(requests.begin(), requests.end()));
 
 		EXPECT_FALSE(get<0>(event));
 		EXPECT_EQ(adapter->supportsBatchSet() ? 2 : 1, get<1>(event));

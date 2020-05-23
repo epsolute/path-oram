@@ -156,7 +156,8 @@ namespace PathORAM
 		stash->getAll(stashDump);
 		EXPECT_EQ(0, stashDump.size());
 
-		auto path = oram->readPath(10uLL);
+		unordered_set<number> path;
+		oram->readPath(10uLL, path, true);
 
 		stashDump.clear();
 		stash->getAll(stashDump);
@@ -176,18 +177,23 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, GetNoException)
 	{
-		oram->get(CAPACITY - 1);
+		bytes got;
+		oram->get(CAPACITY - 1, got);
 	}
 
 	TEST_F(ORAMTest, PutNoException)
 	{
-		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
+		auto toPut = fromText("hello", BLOCK_SIZE);
+		oram->put(CAPACITY - 1, toPut);
 	}
 
 	TEST_F(ORAMTest, GetPutSame)
 	{
-		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
-		auto returned = oram->get(CAPACITY - 1);
+		auto toPut = fromText("hello", BLOCK_SIZE);
+		oram->put(CAPACITY - 1, toPut);
+
+		bytes returned;
+		oram->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
 	}
@@ -196,7 +202,8 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
@@ -231,12 +238,14 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -245,7 +254,10 @@ namespace PathORAM
 	{
 		vector<block> batch;
 		batch.resize(BATCH_SIZE + 1);
-		ASSERT_ANY_THROW(oram->multiple(batch));
+		ASSERT_ANY_THROW({
+			vector<bytes> response;
+			oram->multiple(batch, response);
+		});
 	}
 
 	TEST_F(ORAMTest, MultipleCheckCache)
@@ -274,14 +286,16 @@ namespace PathORAM
 		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate), An<vector<bytes> &>())).Times(1);
 		EXPECT_CALL(*storage, setInternal(An<vector<block> &>())).Times(1);
 
-		oram->multiple(batch);
+		vector<bytes> response;
+		oram->multiple(batch, response);
 	}
 
 	TEST_F(ORAMTest, MultipleGet)
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		vector<block> batch;
@@ -292,12 +306,13 @@ namespace PathORAM
 			{
 				if (batch.size() > 0)
 				{
-					auto returned = oram->multiple(batch);
-					ASSERT_EQ(batch.size(), returned.size());
+					vector<bytes> response;
+					oram->multiple(batch, response);
+					ASSERT_EQ(batch.size(), response.size());
 
 					for (number i = 0; i < batch.size(); i++)
 					{
-						EXPECT_EQ(to_string(batch[i].first), toText(returned[i], BLOCK_SIZE));
+						EXPECT_EQ(to_string(batch[i].first), toText(response[i], BLOCK_SIZE));
 					}
 
 					batch.clear();
@@ -316,11 +331,13 @@ namespace PathORAM
 			{
 				if (batch.size() > 0)
 				{
-					auto returned = oram->multiple(batch);
-					ASSERT_EQ(batch.size(), returned.size());
+					vector<bytes> response;
+					oram->multiple(batch, response);
+
+					ASSERT_EQ(batch.size(), response.size());
 					for (number i = 0; i < batch.size(); i++)
 					{
-						EXPECT_EQ(batch[i].second, returned[i]);
+						EXPECT_EQ(batch[i].second, response[i]);
 					}
 				}
 
@@ -330,7 +347,8 @@ namespace PathORAM
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -347,7 +365,8 @@ namespace PathORAM
 
 		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -371,7 +390,8 @@ namespace PathORAM
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 			vector<block> stashDump;
 			stash->getAll(stashDump);
 			puts.push_back(stashDump.size());
@@ -379,7 +399,8 @@ namespace PathORAM
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
-			oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			vector<block> stashDump;
 			stash->getAll(stashDump);
 			puts.push_back(stashDump.size());

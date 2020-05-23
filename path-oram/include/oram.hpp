@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace PathORAM
 {
@@ -49,7 +50,7 @@ namespace PathORAM
 		 * @param data if write, the data to be put in block (discarded if read)
 		 * @return bytes if read, the content of requested block (empty if write)
 		 */
-		bytes access(bool read, number block, bytes data);
+		void access(bool read, number block, bytes &data, bytes &response);
 
 		/**
 		 * @brief puts a path into the stash
@@ -60,7 +61,7 @@ namespace PathORAM
 		 * Otherwise, will only return the locations of blocks in the path.
 		 * @return vector<number> the locations of the blocks in the path
 		 */
-		vector<number> readPath(number leaf, bool putInStash = true);
+		void readPath(number leaf, unordered_set<number> &path, bool putInStash);
 
 		/**
 		 * @brief write a path using the blocks from stash
@@ -97,7 +98,7 @@ namespace PathORAM
 		 * @param locations the addresses of the blocks to read
 		 * @return vector<block> the read blocks split into ORAM id and payload
 		 */
-		vector<block> getCache(vector<number> locations);
+		void getCache(unordered_set<number> &locations, vector<block> &response, bool dryRun);
 
 		/**
 		 * @brief make SET requests to the storage through cache.
@@ -105,7 +106,7 @@ namespace PathORAM
 		 *
 		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, bucket>> requests);
+		void setCache(vector<pair<number, bucket>> &requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
@@ -162,7 +163,7 @@ namespace PathORAM
 		 * @param block block ID to request
 		 * @return bytes the (decrypted) data from the block
 		 */
-		bytes get(number block);
+		void get(number block, bytes &response);
 
 		/**
 		 * @brief Puts a block to ORAM
@@ -170,7 +171,7 @@ namespace PathORAM
 		 * @param block block ID to request
 		 * @param data the (plaintext) data to put in the block
 		 */
-		void put(number block, bytes data);
+		void put(number block, bytes &data);
 
 		/**
 		 * @brief processes multiple requests at a time
@@ -189,7 +190,7 @@ namespace PathORAM
 		 * \note
 		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
 		 */
-		vector<bytes> multiple(vector<block> requests);
+		void multiple(vector<block> &requests, vector<bytes> &response);
 
 		/**
 		 * @brief bulk loads the data bypassing usual ORAM protocol
@@ -207,6 +208,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(vector<block> data);
+		void load(vector<block> &data);
 	};
 }
