@@ -96,7 +96,7 @@ namespace PathORAM
 			unsigned char buffer[stash.size() * recordSize];
 
 			auto i = 0;
-			for (auto record : stash)
+			for (auto &&record : stash)
 			{
 				number numberBuffer[1] = {record.first};
 				copy((unsigned char *)numberBuffer, (unsigned char *)numberBuffer + sizeof(number), buffer + recordSize * i);

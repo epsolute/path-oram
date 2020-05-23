@@ -67,7 +67,7 @@ namespace PathORAM
 
 		// populate cache
 		unordered_set<number> locations;
-		for (auto request : requests)
+		for (auto &&request : requests)
 		{
 			readPath(map->get(request.first), locations, false);
 		}
@@ -109,7 +109,7 @@ namespace PathORAM
 			}
 		}
 
-		for (auto record : data)
+		for (auto &&record : data)
 		{
 			auto safeGuard = 0;
 			while (true)
@@ -181,7 +181,7 @@ namespace PathORAM
 			vector<block> blocks;
 			getCache(path, blocks, false);
 
-			for (auto [id, data] : blocks)
+			for (auto &&[id, data] : blocks)
 			{
 				// skip "empty" buckets
 				if (id != ULONG_MAX)

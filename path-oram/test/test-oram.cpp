@@ -122,7 +122,7 @@ namespace PathORAM
 				{14, {1, 3, 7, 15, 30}},
 			};
 
-		for (auto test : tests)
+		for (auto &&test : tests)
 		{
 			for (number level = 0; level < LOG_CAPACITY; level++)
 			{
@@ -142,7 +142,7 @@ namespace PathORAM
 				{0, 11, 2, false},
 			};
 
-		for (auto test : tests)
+		for (auto &&test : tests)
 		{
 			EXPECT_EQ(get<3>(test), oram->canInclude(get<0>(test), get<1>(test), get<2>(test)));
 		}
@@ -165,7 +165,7 @@ namespace PathORAM
 
 		vector<int> expected = {1, 3, 6, 13, 26};
 
-		for (auto block : expected)
+		for (auto &&block : expected)
 		{
 			for (number i = 0; i < Z; i++)
 			{
@@ -213,7 +213,7 @@ namespace PathORAM
 			{
 				bucket bucket;
 				storage->get(location, bucket);
-				for (auto block : bucket)
+				for (auto &&block : bucket)
 				{
 					if (block.first == id)
 					{

@@ -230,7 +230,7 @@ namespace PathORAM
 		}
 		else
 		{
-			for (auto record : local)
+			for (auto &&record : local)
 			{
 				oram->put(record.first, record.second);
 			}

@@ -167,7 +167,7 @@ namespace PathORAM
 		vector<block> bucket;
 		adapter->get(CAPACITY - 2, bucket);
 		ASSERT_EQ(Z, bucket.size());
-		for (auto block : bucket)
+		for (auto &&block : bucket)
 		{
 			ASSERT_EQ(BLOCK_SIZE, block.second.size());
 		}
@@ -252,7 +252,7 @@ namespace PathORAM
 			adapter->get(i, returned);
 
 			ASSERT_EQ(Z, returned.size());
-			for (auto block : returned)
+			for (auto &&block : returned)
 			{
 				ASSERT_EQ(ULONG_MAX, block.first);
 				ASSERT_EQ(expected, block.second);
@@ -277,12 +277,12 @@ namespace PathORAM
 		adapter->get(reads, read);
 
 		ASSERT_EQ(runs * Z, read.size());
-		for (auto block : read)
+		for (auto &&block : read)
 		{
 			auto found = false;
-			for (auto write : writes)
+			for (auto &&write : writes)
 			{
-				for (auto wBlock : write.second)
+				for (auto &&wBlock : write.second)
 				{
 					if (wBlock.first == block.first)
 					{

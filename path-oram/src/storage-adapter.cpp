@@ -37,7 +37,7 @@ namespace PathORAM
 
 	void AbsStorageAdapter::get(vector<number> &locations, vector<block> &response)
 	{
-		for (auto location : locations)
+		for (auto &&location : locations)
 		{
 			checkCapacity(location);
 		}
@@ -173,7 +173,7 @@ namespace PathORAM
 
 	void AbsStorageAdapter::setInternal(vector<block> &requests)
 	{
-		for (auto request : requests)
+		for (auto &&request : requests)
 		{
 			setAndRecord(request.first, request.second);
 		}
