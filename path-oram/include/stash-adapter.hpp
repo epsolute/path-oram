@@ -19,7 +19,7 @@ namespace PathORAM
 		/**
 		 * @brief get the all blocks (ID and data) from the stash in a form of a pseudorandomly permuted vector.
 		 *
-		 * @return  vector<block> the pseudorandomly permuted vector of objects { ID, data }
+		 * @pararm response the pseudorandomly permuted vector of objects { ID, data }
 		 */
 		virtual void getAll(vector<block> &response) = 0;
 
@@ -48,7 +48,7 @@ namespace PathORAM
 		 * @brief retrieve the object by ID
 		 *
 		 * @param block ID of the block
-		 * @return bytes data part of the object
+		 * @param response data part of the object
 		 */
 		virtual void get(number block, bytes &response) = 0;
 

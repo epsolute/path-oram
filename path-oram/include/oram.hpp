@@ -48,7 +48,7 @@ namespace PathORAM
 		 * @param read true of read access, false if write access
 		 * @param block the block ID requested
 		 * @param data if write, the data to be put in block (discarded if read)
-		 * @return bytes if read, the content of requested block (empty if write)
+		 * @param response if read, the content of requested block (empty if write)
 		 */
 		void access(bool read, number block, bytes &data, bytes &response);
 
@@ -57,9 +57,9 @@ namespace PathORAM
 		 *
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
+		 * @param response path locations of the blocks in the path (will be populated)
 		 * @param putInStash if set, the path will be read from storage and put in stash.
-		 * Otherwise, will only return the locations of blocks in the path.
-		 * @return vector<number> the locations of the blocks in the path
+		 * Otherwise, will only populate the locations of blocks in the path.
 		 */
 		void readPath(number leaf, unordered_set<number> &path, bool putInStash);
 
@@ -96,7 +96,8 @@ namespace PathORAM
 		 * That is, upon the cache miss the item will be downloaded and stored in cache.
 		 *
 		 * @param locations the addresses of the blocks to read
-		 * @return vector<block> the read blocks split into ORAM id and payload
+		 * @param response the read blocks split into ORAM id and payload
+		 * @param dryRun if set, will not populate response (will only download and put in interanal cache)
 		 */
 		void getCache(unordered_set<number> &locations, vector<block> &response, bool dryRun);
 
@@ -110,7 +111,6 @@ namespace PathORAM
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
-		 *
 		 */
 		void syncCache();
 
@@ -161,7 +161,7 @@ namespace PathORAM
 		 * @brief Retrives a block from ORAM
 		 *
 		 * @param block block ID to request
-		 * @return bytes the (decrypted) data from the block
+		 * @param response the (decrypted) data from the block
 		 */
 		void get(number block, bytes &response);
 
@@ -182,7 +182,7 @@ namespace PathORAM
 		 *
 		 * @param requests the sequence of requests in a form of {ID, payload}
 		 * If payload is empty (zero size), the requests is treated as GET, otherwise PUT.
-		 * @return vector<bytes> the answer to the requests.
+		 * @param response the answer to the requests.
 		 * Matches the order of requests.
 		 * For a GET request the answer is a payload for ID.
 		 * For a PUT request the supplied payload is returned.

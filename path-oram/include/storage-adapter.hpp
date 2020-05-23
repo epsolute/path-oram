@@ -11,6 +11,8 @@
 namespace PathORAM
 {
 	using namespace std;
+
+	// range abstraction that is iterable (will be used for vector of pairs and unordered map)
 	using request_anyrange = boost::any_range<pair<const number, bucket>, boost::forward_traversal_tag>;
 
 	/**
@@ -45,17 +47,17 @@ namespace PathORAM
 		void setAndRecord(number location, bytes raw);
 
 		/**
-		 * @brief Proxy for getInternal(number location) that emits OnStorageRequest
+		 * @brief Proxy for getInternal(number location, bytes &response) that emits OnStorageRequest
 		 */
 		void getAndRecord(number location, bytes &response);
 
 		/**
-		 * @brief Proxy for setInternal(vector<pair<number, bytes>> requests) that emits OnStorageRequest
+		 * @brief Proxy for setInternal(vector<pair<number, bytes>> &requests) that emits OnStorageRequest
 		 */
 		void setAndRecord(vector<pair<number, bytes>> &requests);
 
 		/**
-		 * @brief Proxy for getInternal(vector<number> locations) that emits OnStorageRequest
+		 * @brief Proxy for getInternal(vector<number> &locations, vector<bytes> &response) that emits OnStorageRequest
 		 */
 		void getAndRecord(vector<number> &locations, vector<bytes> &response);
 
@@ -73,7 +75,7 @@ namespace PathORAM
 		 * @brief retrieves the data from the location
 		 *
 		 * @param location location in question
-		 * @return bucket retrived data broken up into Z blocks {ID, decrypted payload}
+		 * @param response retrived data broken up into Z blocks {ID, decrypted payload}
 		 */
 		void get(number location, bucket &response);
 
@@ -103,7 +105,7 @@ namespace PathORAM
 		 * If it does not, batch will be executed sequentially.
 		 *
 		 * @param locations the locations from which to read
-		 * @return vector<block> retrived data broken up into IDs and decrypted payloads
+		 * @param response retrived data broken up into IDs and decrypted payloads
 		 */
 		void get(vector<number> &locations, vector<block> &response);
 
@@ -115,6 +117,9 @@ namespace PathORAM
 		 * If it does not, batch will be executed sequentially.
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
+		 * \note
+		 * request_range is usually constructed by boost::make_iterator_range(container.begin(), container.end()),
+		 * where container is any iterable entity that yields pair<const number, bucket> (notice const).
 		 */
 		void set(request_anyrange requests);
 
@@ -169,7 +174,7 @@ namespace PathORAM
 		 * @brief actual routine that retrieves raw bytes to storage
 		 *
 		 * @param location location from where to read bytes
-		 * @return bytes the retrieved bytes
+		 * @param response the retrieved bytes
 		 */
 		virtual void getInternal(number location, bytes &response) = 0;
 
@@ -184,7 +189,7 @@ namespace PathORAM
 		 * @brief batch version of getInternal
 		 *
 		 * @param locations sequence (ordered) of locations to read from
-		 * @return vector<bytes> blocks of bytes in the order defined by locations
+		 * @param response blocks of bytes in the order defined by locations
 		 */
 		virtual void getInternal(vector<number> &locations, vector<bytes> &response);
 	};

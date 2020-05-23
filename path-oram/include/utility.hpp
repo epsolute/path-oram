@@ -52,11 +52,14 @@ namespace PathORAM
 	 * Does encryption or decryption using OpenSSL AES-MODE-256 (or whatver size key is provided, defined by KEYSIZE).
 	 * The MODE is configured with global setting __blockCipherMode (currently CBC or CTR).
 	 *
-	 * @param key the AES key (must be KEYSIZE bytes)
-	 * @param iv initialization vector (better be randomly generated, must be of size of the AES block, 16 bytes)
-	 * @param input the plaintext or ciphertext material, without IV, must be the multiple of AES block size (16 bytes)
+	 * @param keyFirst the begin() iterator of AES key (must be KEYSIZE bytes)
+	 * @param keyLast the end() iterator of AES key (must be KEYSIZE bytes)
+	 * @param ivFirst the begin() iterator of initialization vector (better be randomly generated, must be of size of the AES block, 16 bytes)
+	 * @param ivLast the end() iterator of initialization vector (better be randomly generated, must be of size of the AES block, 16 bytes)
+	 * @param inputFirst the begin() iterator of the plaintext or ciphertext material, without IV, must be the multiple of AES block size (16 bytes)
+	 * @param inputLast the end() iterator of the plaintext or ciphertext material, without IV, must be the multiple of AES block size (16 bytes)
+	 * @param the vector to put the ciphertext or plaintex material, the result of the encryption operation
 	 * @param mode ENCRYPTION or DECRYPTION
-	 * @return bytes the ciphertex or plaintex material, the result of the encryption operation
 	 */
 	void encrypt(
 		bytes::const_iterator keyFirst,
@@ -107,7 +110,7 @@ namespace PathORAM
 	 * SHA-2 family is used, disgest size in bits is HASHSIZE macro (currently 256).
 	 *
 	 * @param input the message to disgest
-	 * @return bytes the digest of the message
+	 * @param output the digest of the message
 	 */
 	void hash(bytes &input, bytes &output);
 
