@@ -386,7 +386,7 @@ namespace PathORAM
 	{
 		vector<int> puts, gets;
 		puts.reserve(CAPACITY * Z);
-		gets.reserve(CAPACITY * Z - 5);
+		gets.reserve(CAPACITY * Z);
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
@@ -403,7 +403,7 @@ namespace PathORAM
 			oram->get(id, returned);
 			vector<block> stashDump;
 			stash->getAll(stashDump);
-			puts.push_back(stashDump.size());
+			gets.push_back(stashDump.size());
 		}
 
 		EXPECT_GE(LOG_CAPACITY * Z * 2, *max_element(gets.begin(), gets.end()));

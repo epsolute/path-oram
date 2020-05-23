@@ -74,7 +74,7 @@ namespace PathORAM
 			else
 			{
 				vector<pair<const number, bucket>> writes;
-				writes.resize(batch);
+				writes.reserve(batch);
 				for (auto i = 0; i < batch; i++)
 				{
 					writes.push_back({((location + i) * (1 << 10)) % CAPACITY, toWrite});
