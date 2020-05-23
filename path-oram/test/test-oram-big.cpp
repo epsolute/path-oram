@@ -128,7 +128,9 @@ namespace PathORAM
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->loadFromFile("position-map.bin");
 
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->storeToFile("stash.bin");
-				auto blockSize = stash->getAll().size() > 0 ? stash->getAll()[0].second.size() : 0;
+				vector<block> stashDump;
+				stash->getAll(stashDump);
+				auto blockSize = stashDump.size() > 0 ? stashDump[0].second.size() : 0;
 				stash.reset();
 				stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->loadFromFile("stash.bin", blockSize);
