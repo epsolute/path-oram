@@ -152,11 +152,15 @@ namespace PathORAM
 	{
 		populateStorage();
 
-		EXPECT_EQ(0, stash->getAll().size());
+		vector<block> stashDump;
+		stash->getAll(stashDump);
+		EXPECT_EQ(0, stashDump.size());
 
 		auto path = oram->readPath(10uLL);
 
-		EXPECT_EQ(LOG_CAPACITY * Z, stash->getAll().size());
+		stashDump.clear();
+		stash->getAll(stashDump);
+		EXPECT_EQ(LOG_CAPACITY * Z, stashDump.size());
 
 		vector<int> expected = {1, 3, 6, 13, 26};
 
@@ -368,13 +372,17 @@ namespace PathORAM
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
 			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
-			puts.push_back(stash->getAll().size());
+			vector<block> stashDump;
+			stash->getAll(stashDump);
+			puts.push_back(stashDump.size());
 		}
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
 			oram->get(id);
-			gets.push_back(stash->getAll().size());
+			vector<block> stashDump;
+			stash->getAll(stashDump);
+			puts.push_back(stashDump.size());
 		}
 
 		EXPECT_GE(LOG_CAPACITY * Z * 2, *max_element(gets.begin(), gets.end()));

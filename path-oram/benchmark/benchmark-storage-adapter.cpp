@@ -62,12 +62,14 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto batch = state.range(1);
 
+		bucket toWrite = {{5uLL, bytes()}};
+
 		number location = 0;
 		for (auto _ : state)
 		{
 			if (batch == 1)
 			{
-				adapter->set((location * (1 << 10)) % CAPACITY, {{5uLL, bytes()}});
+				adapter->set((location * (1 << 10)) % CAPACITY, toWrite);
 			}
 			else
 			{
@@ -75,7 +77,7 @@ namespace PathORAM
 				writes.resize(batch);
 				for (auto i = 0; i < batch; i++)
 				{
-					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, {{5uLL, bytes()}}};
+					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, toWrite};
 				}
 				adapter->set(writes);
 			}
@@ -90,9 +92,12 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto batch = state.range(1);
 
+		bucket toWrite = {{5uLL, bytes()}};
+		vector<block> read;
+
 		for (number i = 0; i < CAPACITY; i++)
 		{
-			adapter->set(i, {{5uLL, bytes()}});
+			adapter->set(i, toWrite);
 		}
 
 		number location = 0;
@@ -100,7 +105,7 @@ namespace PathORAM
 		{
 			if (batch == 1)
 			{
-				benchmark::DoNotOptimize(adapter->get((location * (1 << 10)) % CAPACITY));
+				adapter->get((location * (1 << 10)) % CAPACITY, read);
 			}
 			else
 			{
@@ -110,8 +115,9 @@ namespace PathORAM
 				{
 					reads[i] = ((location + i) * (1 << 10)) % CAPACITY;
 				}
-				benchmark::DoNotOptimize(adapter->get(reads));
+				adapter->get(reads, read);
 			}
+			read.clear();
 		}
 	}
 

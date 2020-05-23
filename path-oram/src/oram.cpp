@@ -202,7 +202,8 @@ namespace PathORAM
 
 	void ORAM::writePath(number leaf)
 	{
-		auto currentStash = stash->getAll();
+		vector<block> currentStash;
+		stash->getAll(currentStash);
 		vector<int> toDelete;				   // rember the records that will need to be deleted from stash
 		vector<pair<number, bucket>> requests; // storage SET requests (batching)
 

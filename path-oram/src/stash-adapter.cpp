@@ -24,22 +24,20 @@ namespace PathORAM
 		stash.reserve(capacity);
 	}
 
-	vector<block> InMemoryStashAdapter::getAll()
+	void InMemoryStashAdapter::getAll(vector<block> &response)
 	{
-		vector<block> result(stash.begin(), stash.end());
+		response.insert(response.begin(), stash.begin(), stash.end());
 
-		uint n = result.size();
+		uint n = response.size();
 		if (n >= 2)
 		{
 			// Fisher-Yates shuffle
 			for (uint i = 0; i < n - 1; i++)
 			{
 				uint j = i + getRandomUInt(n - i);
-				swap(result[i], result[j]);
+				swap(response[i], response[j]);
 			}
 		}
-
-		return result;
 	}
 
 	void InMemoryStashAdapter::add(number block, bytes data)
