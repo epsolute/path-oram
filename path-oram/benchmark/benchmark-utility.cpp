@@ -29,7 +29,8 @@ namespace PathORAM
 		{
 			number material[1] = {i};
 			auto input		   = bytes((uchar*)material, (uchar*)material + sizeof(number));
-			benchmark::DoNotOptimize(hash(input));
+			bytes digest;
+			hash(input, digest);
 		}
 	}
 

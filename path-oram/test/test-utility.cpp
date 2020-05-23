@@ -252,26 +252,32 @@ namespace PathORAM
 
 	TEST_F(UtilityTest, HashSameInput)
 	{
-		auto input	= fromText("Hello, world", 500);
-		auto first	= hash(input);
-		auto second = hash(input);
+		auto input = fromText("Hello, world", 500);
+		bytes first, second;
+		hash(input, first);
+		hash(input, second);
 
 		ASSERT_EQ(first, second);
 	}
 
 	TEST_F(UtilityTest, HashDifferentInput)
 	{
-		auto first	= hash(fromText("Hello, world", 500));
-		auto second = hash(fromText("Hi", 500));
+		auto inputOne = fromText("Hello, world", 500);
+		auto inputTwo = fromText("Hi", 500);
+		bytes first, second;
+		hash(inputOne, first);
+		hash(inputTwo, second);
 
 		ASSERT_NE(first, second);
 	}
 
 	TEST_F(UtilityTest, HashExpectedSize)
 	{
-		auto disgest = hash(fromText("Hello, world", 500));
+		auto input = fromText("Hello, world", 500);
+		bytes digest;
+		hash(input, digest);
 
-		ASSERT_EQ(HASHSIZE / 16, disgest.size());
+		ASSERT_EQ(HASHSIZE / 16, digest.size());
 	}
 
 	TEST_F(UtilityTest, HashToNumberUniform)

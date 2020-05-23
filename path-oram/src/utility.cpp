@@ -215,7 +215,7 @@ namespace PathORAM
 		return bytes(material, material + KEYSIZE);
 	}
 
-	bytes hash(bytes input)
+	void hash(bytes &input, bytes &output)
 	{
 		// https: //wiki.openssl.org/index.php/EVP_Message_Digests
 
@@ -230,17 +230,16 @@ namespace PathORAM
 		HANDLE_ERROR((*digest = (unsigned char *)OPENSSL_malloc(EVP_MD_size(HASH_ALGORITHM()))) != nullptr);
 		HANDLE_ERROR(EVP_DigestFinal_ex(context, *digest, nullptr));
 
-		auto result = bytes(*digest, *digest + (HASHSIZE / 16));
+		output.insert(output.end(), *digest, *digest + (HASHSIZE / 16));
 
 		EVP_MD_CTX_free(context);
 		free(digest);
-
-		return result;
 	}
 
-	number hashToNumber(bytes input, number max)
+	number hashToNumber(bytes &input, number max)
 	{
-		bytes digest = hash(input);
+		bytes digest;
+		hash(input, digest);
 		number material[1];
 		auto ucharMaterial = (uchar *)material;
 

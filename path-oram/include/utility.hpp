@@ -109,7 +109,7 @@ namespace PathORAM
 	 * @param input the message to disgest
 	 * @return bytes the digest of the message
 	 */
-	bytes hash(bytes input);
+	void hash(bytes &input, bytes &output);
 
 	/**
 	 * @brief compute a hash of the message in a form of a number from zero to max.
@@ -119,5 +119,5 @@ namespace PathORAM
 	 * @param max the exclusive max number of the output
 	 * @return number the hash of the message as a number [0, max)
 	 */
-	number hashToNumber(bytes input, number max);
+	number hashToNumber(bytes &input, number max);
 }
