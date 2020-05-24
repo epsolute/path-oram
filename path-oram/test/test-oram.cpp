@@ -18,38 +18,38 @@ namespace PathORAM
 			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z);
 
 			// by default, all calls are delegated to the real object
-			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> &locations, vector<bytes> &response) {
+			ON_CALL(*this, getInternal).WillByDefault([this](const vector<number> &locations, vector<bytes> &response) {
 				return ((AbsStorageAdapter *)_real.get())->getInternal(locations, response);
 			});
-			ON_CALL(*this, setInternal).WillByDefault([this](vector<block> &requests) {
+			ON_CALL(*this, setInternal).WillByDefault([this](const vector<block> &requests) {
 				return ((AbsStorageAdapter *)_real.get())->setInternal(requests);
 			});
 		}
 
 		// these four do not need to be mocked, they just have to exist to make class concrete
-		virtual void getInternal(number location, bytes &response) override
+		virtual void getInternal(const number location, bytes &response) const override
 		{
 			return _real->getInternal(location, response);
 		}
 
-		virtual void setInternal(number location, bytes &raw) override
+		virtual void setInternal(const number location, const bytes &raw) override
 		{
 			_real->setInternal(location, raw);
 		}
 
-		virtual const bool supportsBatchGet() override
+		virtual bool supportsBatchGet() const override
 		{
 			return false;
 		}
 
-		virtual const bool supportsBatchSet() override
+		virtual bool supportsBatchSet() const override
 		{
 			return false;
 		}
 
 		// these two need to be mocked since we want to track how and when they are called (hence ON_CALL above)
-		MOCK_METHOD(void, getInternal, (vector<number> & locations, vector<bytes> &response), (override));
-		MOCK_METHOD(void, setInternal, ((vector<block>)&requests), (override));
+		MOCK_METHOD(void, getInternal, (const vector<number> &locations, vector<bytes> &response), (const, override));
+		MOCK_METHOD(void, setInternal, ((const vector<block>)&requests), (override));
 
 		private:
 		unique_ptr<InMemoryStorageAdapter> _real;
@@ -277,14 +277,16 @@ namespace PathORAM
 			batch.push_back({id, bytes()});
 		}
 
-		auto noDupsPredicate = [](vector<number> &locations) -> bool {
-			sort(locations.begin(), locations.end());
-			auto it = unique(locations.begin(), locations.end());
-			return it == locations.end();
+		const auto noDupsPredicate = [](const vector<number> &locations) -> bool {
+			auto tmp = vector<number>(locations.begin(), locations.end());
+
+			sort(tmp.begin(), tmp.end());
+			auto it = unique(tmp.begin(), tmp.end());
+			return it == tmp.end();
 		};
 
 		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate), An<vector<bytes> &>())).Times(1);
-		EXPECT_CALL(*storage, setInternal(An<vector<block> &>())).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<const vector<block> &>())).Times(1);
 
 		vector<bytes> response;
 		oram->multiple(batch, response);
