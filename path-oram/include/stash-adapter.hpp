@@ -71,7 +71,7 @@ namespace PathORAM
 		 * @return true if an object with such ID exists in the stash
 		 * @return false otherwise
 		 */
-		virtual const bool exists(const number block) const = 0;
+		virtual bool exists(const number block) const = 0;
 
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_PutMany_Test;
@@ -96,7 +96,7 @@ namespace PathORAM
 		 */
 		void checkOverflow(const number block) const;
 
-		const bool exists(const number block) const final;
+		bool exists(const number block) const final;
 
 		friend class ORAMTest_ReadPath_Test;
 

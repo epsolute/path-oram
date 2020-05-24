@@ -76,7 +76,7 @@ namespace PathORAM
 		}
 	}
 
-	const bool InMemoryStashAdapter::exists(const number block) const
+	bool InMemoryStashAdapter::exists(const number block) const
 	{
 		return stash.count(block) > 0;
 	}

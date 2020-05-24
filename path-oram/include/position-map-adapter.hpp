@@ -21,7 +21,7 @@ namespace PathORAM
 		 * @param block block in question
 		 * @return number leaf mapped to this block
 		 */
-		virtual const number get(const number block) const = 0;
+		virtual number get(const number block) const = 0;
 
 		/**
 		 * @brief map a leaf to the block
@@ -61,7 +61,7 @@ namespace PathORAM
 		InMemoryPositionMapAdapter(const number capacity);
 
 		~InMemoryPositionMapAdapter() final;
-		const number get(const number block) const final;
+		number get(const number block) const final;
 		void set(const number block, const number leaf) final;
 
 		/**
@@ -101,7 +101,7 @@ namespace PathORAM
 		 */
 		ORAMPositionMapAdapter(const shared_ptr<ORAM> oram);
 		~ORAMPositionMapAdapter() final;
-		const number get(const number block) const final;
+		number get(const number block) const final;
 		void set(const number block, const number leaf) final;
 	};
 }

@@ -274,12 +274,12 @@ namespace PathORAM
 		}
 	}
 
-	const number ORAM::bucketForLevelLeaf(const number level, const number leaf) const
+	number ORAM::bucketForLevelLeaf(const number level, const number leaf) const
 	{
 		return (leaf + (1 << (height - 1))) >> (height - 1 - level);
 	}
 
-	const bool ORAM::canInclude(const number pathLeaf, const number blockPosition, const number level) const
+	bool ORAM::canInclude(const number pathLeaf, const number blockPosition, const number level) const
 	{
 		// on this level, do these paths share the same bucket
 		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);

@@ -22,7 +22,7 @@ namespace PathORAM
 	{
 	}
 
-	const number InMemoryPositionMapAdapter::get(const number block) const
+	number InMemoryPositionMapAdapter::get(const number block) const
 	{
 		checkCapacity(block);
 
@@ -83,7 +83,7 @@ namespace PathORAM
 	{
 	}
 
-	const number ORAMPositionMapAdapter::get(const number block) const
+	number ORAMPositionMapAdapter::get(const number block) const
 	{
 		bytes returned;
 		oram->get(block, returned);

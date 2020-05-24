@@ -80,7 +80,7 @@ namespace PathORAM
 		 * @return true if the paths share the same node on the given level
 		 * @return false otherwise
 		 */
-		const bool canInclude(const number pathLeaf, const number blockPosition, const number level) const;
+		bool canInclude(const number pathLeaf, const number blockPosition, const number level) const;
 
 		/**
 		 * @brief computes the location in the storage for a bucket (not block) in a given path on a given level
@@ -89,7 +89,7 @@ namespace PathORAM
 		 * @param leaf leaf that defines the path in question
 		 * @return number the location of the requested bucket (not block) in the storage
 		 */
-		const number bucketForLevelLeaf(const number level, const number leaf) const;
+		number bucketForLevelLeaf(const number level, const number leaf) const;
 
 		/**
 		 * @brief make GET requests to the storage through cache.
