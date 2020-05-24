@@ -22,7 +22,7 @@ namespace PathORAM
 {
 	using namespace std;
 
-	bytes getRandomBlock(number blockSize)
+	bytes getRandomBlock(const number blockSize)
 	{
 		uchar material[blockSize];
 #if defined(TESTING) || defined(DEBUG)
@@ -36,7 +36,7 @@ namespace PathORAM
 		return bytes(material, material + blockSize);
 	}
 
-	number getRandomULong(number max)
+	number getRandomULong(const number max)
 	{
 		number material[1];
 #if defined(TESTING) || defined(DEBUG)
@@ -49,7 +49,7 @@ namespace PathORAM
 		return material[0] % max;
 	}
 
-	uint getRandomUInt(uint max)
+	uint getRandomUInt(const uint max)
 	{
 #if defined(TESTING) || defined(DEBUG)
 		return rand() % max;
@@ -60,7 +60,7 @@ namespace PathORAM
 #endif
 	}
 
-	double getRandomDouble(double max)
+	double getRandomDouble(const double max)
 	{
 		number material[1];
 #if defined(TESTING) || defined(DEBUG)
@@ -77,16 +77,16 @@ namespace PathORAM
 	}
 
 	void encrypt(
-		bytes::const_iterator keyFirst,
-		bytes::const_iterator keyLast,
-		bytes::const_iterator ivFist,
-		bytes::const_iterator ivLast,
-		bytes::const_iterator inputFirst,
-		bytes::const_iterator inputLast,
+		const bytes::const_iterator keyFirst,
+		const bytes::const_iterator keyLast,
+		const bytes::const_iterator ivFist,
+		const bytes::const_iterator ivLast,
+		const bytes::const_iterator inputFirst,
+		const bytes::const_iterator inputLast,
 		bytes &output,
-		EncryptionMode mode)
+		const EncryptionMode mode)
 	{
-		auto size = distance(inputFirst, inputLast);
+		const auto size = distance(inputFirst, inputLast);
 
 		if (distance(keyFirst, keyLast) != KEYSIZE)
 		{
@@ -162,16 +162,16 @@ namespace PathORAM
 		output.insert(output.end(), outputMaterial, outputMaterial + size);
 	}
 
-	bytes fromText(string text, number BLOCK_SIZE)
+	bytes fromText(const string text, const number BLOCK_SIZE)
 	{
 		stringstream padded;
 		padded << setw(BLOCK_SIZE - 1) << left << text << endl;
-		text = padded.str();
+		auto paddedStr = padded.str();
 
-		return bytes((uchar *)text.c_str(), (uchar *)text.c_str() + text.length());
+		return bytes((uchar *)paddedStr.c_str(), (uchar *)paddedStr.c_str() + paddedStr.length());
 	}
 
-	string toText(bytes data, number BLOCK_SIZE)
+	string toText(const bytes data, const number BLOCK_SIZE)
 	{
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, sizeof buffer);
@@ -182,7 +182,7 @@ namespace PathORAM
 		return text;
 	}
 
-	void storeKey(bytes key, string filename)
+	void storeKey(const bytes key, const string filename)
 	{
 		fstream file;
 		file.open(filename, fstream::out | fstream::binary | fstream::trunc);
@@ -198,7 +198,7 @@ namespace PathORAM
 		file.close();
 	}
 
-	bytes loadKey(string filename)
+	bytes loadKey(const string filename)
 	{
 		fstream file;
 		file.open(filename, fstream::in | fstream::binary);
@@ -215,7 +215,7 @@ namespace PathORAM
 		return bytes(material, material + KEYSIZE);
 	}
 
-	void hash(bytes &input, bytes &output)
+	void hash(const bytes &input, bytes &output)
 	{
 		// https: //wiki.openssl.org/index.php/EVP_Message_Digests
 
@@ -236,7 +236,7 @@ namespace PathORAM
 		free(digest);
 	}
 
-	number hashToNumber(bytes &input, number max)
+	number hashToNumber(const bytes &input, number max)
 	{
 		bytes digest;
 		hash(input, digest);

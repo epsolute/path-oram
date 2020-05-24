@@ -18,7 +18,7 @@ namespace PathORAM
 	 * @param blockSize the number of bytes to generate
 	 * @return bytes the resulting bytes
 	 */
-	bytes getRandomBlock(number blockSize);
+	bytes getRandomBlock(const number blockSize);
 
 	/**
 	 * @brief returns a pseudorandom number
@@ -26,7 +26,7 @@ namespace PathORAM
 	 * @param max the non-inclusive max of the range (min is inclusive 0).
 	 * @return number the resulting number
 	 */
-	number getRandomULong(number max);
+	number getRandomULong(const number max);
 
 	/**
 	 * @brief returns a pseudorandom double
@@ -34,7 +34,7 @@ namespace PathORAM
 	 * @param max the non-inclusive max of the range (min is inclusive 0).
 	 * @return double the resulting double
 	 */
-	double getRandomDouble(double max);
+	double getRandomDouble(const double max);
 
 	/**
 	 * @brief returns a pseudorandom uint
@@ -44,7 +44,7 @@ namespace PathORAM
 	 * @param max the non-inclusive max of the range (min is inclusive 0).
 	 * @return uint the resulting int
 	 */
-	uint getRandomUInt(uint max);
+	uint getRandomUInt(const uint max);
 
 	/**
 	 * @brief Encryption routine
@@ -62,14 +62,14 @@ namespace PathORAM
 	 * @param mode ENCRYPTION or DECRYPTION
 	 */
 	void encrypt(
-		bytes::const_iterator keyFirst,
-		bytes::const_iterator keyLast,
-		bytes::const_iterator ivFist,
-		bytes::const_iterator ivLast,
-		bytes::const_iterator inputFist,
-		bytes::const_iterator inputLast,
+		const bytes::const_iterator keyFirst,
+		const bytes::const_iterator keyLast,
+		const bytes::const_iterator ivFist,
+		const bytes::const_iterator ivLast,
+		const bytes::const_iterator inputFist,
+		const bytes::const_iterator inputLast,
 		bytes &output,
-		EncryptionMode mode);
+		const EncryptionMode mode);
 
 	/**
 	 * @brief helper to convert string to bytes and pad (from right with zeros)
@@ -78,7 +78,7 @@ namespace PathORAM
 	 * @param BLOCK_SIZE the size of the resulting byte vector (will be right-padded with zeros)
 	 * @return bytes the padded bytes
 	 */
-	bytes fromText(string text, number BLOCK_SIZE);
+	bytes fromText(const string text, const number BLOCK_SIZE);
 
 	/**
 	 * @brief helper to convert the bytes to string (counterpart of fromText)
@@ -87,7 +87,7 @@ namespace PathORAM
 	 * @param BLOCK_SIZE same as in fromText
 	 * @return string the original string supplied to fromText
 	 */
-	string toText(bytes data, number BLOCK_SIZE);
+	string toText(const bytes data, const number BLOCK_SIZE);
 
 	/**
 	 * @brief write key to a binary file
@@ -95,7 +95,7 @@ namespace PathORAM
 	 * @param key the key to write
 	 * @param filename the name of the file to write to
 	 */
-	void storeKey(bytes key, string filename);
+	void storeKey(const bytes key, const string filename);
 
 	/**
 	 * @brief read key from a binary file
@@ -103,7 +103,7 @@ namespace PathORAM
 	 * @param filename the name of the file to read from
 	 * @return bytes the key read (KEYSIZE length)
 	 */
-	bytes loadKey(string filename);
+	bytes loadKey(const string filename);
 
 	/**
 	 * @brief compute a hash of the given input using OpenSSL algorithms.
@@ -112,7 +112,7 @@ namespace PathORAM
 	 * @param input the message to disgest
 	 * @param output the digest of the message
 	 */
-	void hash(bytes &input, bytes &output);
+	void hash(const bytes &input, bytes &output);
 
 	/**
 	 * @brief compute a hash of the message in a form of a number from zero to max.
@@ -122,5 +122,5 @@ namespace PathORAM
 	 * @param max the exclusive max number of the output
 	 * @return number the hash of the message as a number [0, max)
 	 */
-	number hashToNumber(bytes &input, number max);
+	number hashToNumber(const bytes &input, number max);
 }
