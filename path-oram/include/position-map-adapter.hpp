@@ -21,7 +21,7 @@ namespace PathORAM
 		 * @param block block in question
 		 * @return number leaf mapped to this block
 		 */
-		virtual number get(number block) = 0;
+		virtual const number get(const number block) const = 0;
 
 		/**
 		 * @brief map a leaf to the block
@@ -29,7 +29,7 @@ namespace PathORAM
 		 * @param block block in question
 		 * @param leaf leaf in question
 		 */
-		virtual void set(number block, number leaf) = 0;
+		virtual void set(const number block, const number leaf) = 0;
 
 		virtual ~AbsPositionMapAdapter() = 0;
 	};
@@ -42,15 +42,15 @@ namespace PathORAM
 	class InMemoryPositionMapAdapter : public AbsPositionMapAdapter
 	{
 		private:
-		number *map;
-		number capacity; // maximum capacity, array size
+		number* const map;
+		const number capacity; // maximum capacity, array size
 
 		/**
-		 * @brief helper that throws exception if ou-of-bounds access occurs
+		 * @brief helper that throws exception if out-of-bounds access occurs
 		 *
 		 * @param block accessed block
 		 */
-		void checkCapacity(number block);
+		void checkCapacity(const number block) const;
 
 		public:
 		/**
@@ -58,25 +58,25 @@ namespace PathORAM
 		 *
 		 * @param capacity maximum capacity (defines the allocated array size)
 		 */
-		InMemoryPositionMapAdapter(number capacity);
+		InMemoryPositionMapAdapter(const number capacity);
 
 		~InMemoryPositionMapAdapter() final;
-		number get(number block) final;
-		void set(number block, number leaf) final;
+		const number get(const number block) const final;
+		void set(const number block, const number leaf) final;
 
 		/**
 		 * @brief write state to a binary file
 		 *
 		 * @param filename the name of the file to write to
 		 */
-		void storeToFile(string filename);
+		void storeToFile(const string filename) const;
 
 		/**
 		 * @brief read state from a binary file
 		 *
 		 * @param filename the name of the file to read from
 		 */
-		void loadFromFile(string filename);
+		void loadFromFile(const string filename);
 	};
 
 	class ORAM;
@@ -89,7 +89,7 @@ namespace PathORAM
 	class ORAMPositionMapAdapter : public AbsPositionMapAdapter
 	{
 		private:
-		shared_ptr<ORAM> oram;
+		const shared_ptr<ORAM> oram;
 
 		friend class ORAMBigTest;
 
@@ -99,9 +99,9 @@ namespace PathORAM
 		 *
 		 * @param oram the intialized (with proper capacities) ORAM that will be used as a position map storage
 		 */
-		ORAMPositionMapAdapter(shared_ptr<ORAM> oram);
+		ORAMPositionMapAdapter(const shared_ptr<ORAM> oram);
 		~ORAMPositionMapAdapter() final;
-		number get(number block) final;
-		void set(number block, number leaf) final;
+		const number get(const number block) const final;
+		void set(const number block, const number leaf) final;
 	};
 }

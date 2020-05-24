@@ -17,26 +17,26 @@ namespace PathORAM
 	}
 
 	InMemoryPositionMapAdapter::InMemoryPositionMapAdapter(number capacity) :
+		map(new number[capacity]),
 		capacity(capacity)
 	{
-		this->map = new number[capacity];
 	}
 
-	number InMemoryPositionMapAdapter::get(number block)
+	const number InMemoryPositionMapAdapter::get(const number block) const
 	{
 		checkCapacity(block);
 
 		return map[block];
 	}
 
-	void InMemoryPositionMapAdapter::set(number block, number leaf)
+	void InMemoryPositionMapAdapter::set(const number block, const number leaf)
 	{
 		checkCapacity(block);
 
 		map[block] = leaf;
 	}
 
-	void InMemoryPositionMapAdapter::storeToFile(string filename)
+	void InMemoryPositionMapAdapter::storeToFile(const string filename) const
 	{
 		fstream file;
 
@@ -51,7 +51,7 @@ namespace PathORAM
 		file.close();
 	}
 
-	void InMemoryPositionMapAdapter::loadFromFile(string filename)
+	void InMemoryPositionMapAdapter::loadFromFile(const string filename)
 	{
 		fstream file;
 
@@ -66,7 +66,7 @@ namespace PathORAM
 		file.close();
 	}
 
-	void InMemoryPositionMapAdapter::checkCapacity(number block)
+	void InMemoryPositionMapAdapter::checkCapacity(const number block) const
 	{
 		if (block >= capacity)
 		{
@@ -78,12 +78,12 @@ namespace PathORAM
 	{
 	}
 
-	ORAMPositionMapAdapter::ORAMPositionMapAdapter(shared_ptr<ORAM> oram) :
+	ORAMPositionMapAdapter::ORAMPositionMapAdapter(const shared_ptr<ORAM> oram) :
 		oram(oram)
 	{
 	}
 
-	number ORAMPositionMapAdapter::get(number block)
+	const number ORAMPositionMapAdapter::get(const number block) const
 	{
 		bytes returned;
 		oram->get(block, returned);
@@ -93,7 +93,7 @@ namespace PathORAM
 		return ((number *)buffer)[0];
 	}
 
-	void ORAMPositionMapAdapter::set(number block, number leaf)
+	void ORAMPositionMapAdapter::set(const number block, const number leaf)
 	{
 		number buffer[1];
 		buffer[0] = leaf;
