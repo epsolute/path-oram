@@ -92,6 +92,14 @@ namespace PathORAM
 		number bucketForLevelLeaf(const number level, const number leaf) const;
 
 		/**
+		 * @brief compute a range of possible leaves for the bucket
+		 *
+		 * @param location the bucket location in the tree
+		 * @return pair<number, number> {from, to} inclusive leaves that would satisfy the invariant
+		 */
+		pair<number, number> leavesForLocation(const number location);
+
+		/**
 		 * @brief make GET requests to the storage through cache.
 		 * That is, upon the cache miss the item will be downloaded and stored in cache.
 		 *
@@ -114,6 +122,7 @@ namespace PathORAM
 		 */
 		void syncCache();
 
+		friend class ORAMTest_LeavesForLocation_Test;
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;

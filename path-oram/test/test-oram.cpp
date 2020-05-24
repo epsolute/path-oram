@@ -358,14 +358,14 @@ namespace PathORAM
 	TEST_F(ORAMTest, BulkLoad)
 	{
 		vector<block> batch;
-		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4 + 1; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
 		}
 
 		oram->load(batch);
 
-		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4 + 1; id++)
 		{
 			bytes returned;
 			oram->get(id, returned);
@@ -410,6 +410,27 @@ namespace PathORAM
 
 		EXPECT_GE(LOG_CAPACITY * Z * 2, *max_element(gets.begin(), gets.end()));
 		EXPECT_EQ(0, *min_element(puts.begin(), puts.end()));
+	}
+
+	TEST_F(ORAMTest, LeavesForLocation)
+	{
+		const auto HEIGHT = 5;
+
+		auto smallOram = make_unique<ORAM>(HEIGHT, BLOCK_SIZE, Z);
+		for (auto location = 1; location < (1 << HEIGHT); location++)
+		{
+			const auto [left, right] = smallOram->leavesForLocation(location);
+			const auto level		 = (number)floor(log2(location));
+
+			for (auto leaf = left; leaf <= right; leaf++)
+			{
+				EXPECT_EQ(location, smallOram->bucketForLevelLeaf(level, leaf));
+				for (auto anotherLeaf = left; anotherLeaf <= right; anotherLeaf++)
+				{
+					EXPECT_TRUE(smallOram->canInclude(leaf, anotherLeaf, level));
+				}
+			}
+		}
 	}
 }
 

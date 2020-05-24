@@ -67,7 +67,7 @@ namespace PathORAM
 
 	void ORAM::multiple(const vector<block> &requests, vector<bytes> &response)
 	{
-#if INPUT_CHECKS 
+#if INPUT_CHECKS
 		if (requests.size() > batchSize)
 		{
 			throw Exception(boost::format("Too many requests (%1%) for batch size %2%") % requests.size() % batchSize);
@@ -97,19 +97,17 @@ namespace PathORAM
 
 	void ORAM::load(const vector<block> &data)
 	{
-		// TODO rewrite
+		if (((data.size() + Z - 1) / Z) > (1 << height))
+		{
+			throw Exception("no space left in ORAM for bulk load");
+		}
 
 		unordered_map<number, bucket> localStorage;
-		auto emptyBucket = vector<block>();
-		for (auto i = 0uLL; i < Z; i++)
-		{
-			emptyBucket.push_back({ULONG_MAX, bytes()});
-		}
 
 		auto shuffled = vector<block>(data.begin(), data.end());
 
 		// shuffle (such bulk load may leak in part the original order)
-		uint n = data.size();
+		const uint n = data.size();
 		if (n >= 2)
 		{
 			// Fisher-Yates shuffle
@@ -120,37 +118,31 @@ namespace PathORAM
 			}
 		}
 
+		auto location = 1uLL;
+		bucket bucket;
 		for (auto &&record : shuffled)
 		{
-			auto safeGuard = 0;
-			while (true)
+			const auto [from, to] = leavesForLocation(location);
+			map->set(record.first, getRandomULong(to - from + 1) + from);
+
+			if (bucket.size() < Z)
 			{
-				auto leaf = getRandomULong(1 << (height - 1));
-
-				for (int level = height - 1; level >= 0; level--)
-				{
-					auto bucketId = bucketForLevelLeaf(level, leaf);
-					auto bucket	  = localStorage.count(bucketId) == 0 ? emptyBucket : localStorage[bucketId];
-
-					for (number i = 0; i < Z; i++)
-					{
-						// if empty
-						if (bucket[i].first == ULONG_MAX)
-						{
-							bucket[i]			   = record;
-							localStorage[bucketId] = bucket;
-							map->set(record.first, leaf);
-							goto found;
-						}
-					}
-				}
-				if (safeGuard++ == (1 << (height - 1)))
-				{
-					throw Exception("no space left in ORAM for bulk load");
-				}
+				bucket.push_back(record);
 			}
-		found:
-			continue;
+			if (bucket.size() == Z)
+			{
+				localStorage[location] = bucket;
+				location++;
+				bucket.clear();
+			}
+		}
+		if (bucket.size() > 0)
+		{
+			for (auto i = 0u; i < bucket.size() - Z; i++)
+			{
+				bucket.push_back({ULONG_MAX, bytes()});
+			}
+			localStorage[location] = bucket;
 		}
 
 		storage->set(boost::make_iterator_range(localStorage.begin(), localStorage.end()));
@@ -285,6 +277,13 @@ namespace PathORAM
 	{
 		// on this level, do these paths share the same bucket
 		return bucketForLevelLeaf(level, pathLeaf) == bucketForLevelLeaf(level, blockPosition);
+	}
+
+	pair<number, number> ORAM::leavesForLocation(const number location)
+	{
+		const auto level	= (number)floor(log2(location));
+		const auto toLeaves = height - level - 1;
+		return {location * (1 << toLeaves) - (1 << (height - 1)), (location + 1) * (1 << toLeaves) - 1 - (1 << (height - 1))};
 	}
 
 	void ORAM::getCache(const unordered_set<number> &locations, vector<block> &response, const bool dryRun)
