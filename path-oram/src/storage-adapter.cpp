@@ -95,7 +95,7 @@ namespace PathORAM
 		{
 			checkCapacity(location);
 
-#ifdef INPUT_CHECKS
+#if INPUT_CHECKS
 			if (blocks.size() != Z)
 			{
 				throw Exception(boost::format("each set request must contain exactly Z=%1% blocks (%2% given)") % Z % blocks.size());
@@ -183,7 +183,7 @@ namespace PathORAM
 
 	void AbsStorageAdapter::checkCapacity(const number location) const
 	{
-#ifdef INPUT_CHECKS
+#if INPUT_CHECKS
 		if (location >= capacity)
 		{
 			throw Exception(boost::format("id %1% out of bound (capacity %2%)") % location % capacity);
@@ -193,7 +193,7 @@ namespace PathORAM
 
 	void AbsStorageAdapter::checkBlockSize(const number dataLength) const
 	{
-#ifdef INPUT_CHECKS
+#if INPUT_CHECKS
 		if (dataLength > userBlockSize)
 		{
 			throw Exception(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % userBlockSize);
@@ -383,6 +383,7 @@ namespace PathORAM
 
 #pragma endregion FileSystemStorageAdapter
 
+#if USE_REDIS
 #pragma region RedisStorageAdapter
 
 	RedisStorageAdapter::~RedisStorageAdapter()
@@ -436,7 +437,9 @@ namespace PathORAM
 	}
 
 #pragma endregion RedisStorageAdapter
+#endif
 
+#if USE_AEROSPIKE
 #pragma region AerospikeStorageAdapter
 
 	AerospikeStorageAdapter::~AerospikeStorageAdapter()
@@ -573,4 +576,5 @@ namespace PathORAM
 	}
 
 #pragma endregion AerospikeStorageAdapter
+#endif
 }

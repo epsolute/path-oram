@@ -2,11 +2,17 @@
 
 #include "definitions.h"
 
-#include <aerospike/aerospike.h>
 #include <boost/range/any_range.hpp>
 #include <boost/signals2/signal.hpp>
 #include <fstream>
+
+#if USE_REDIS
 #include <sw/redis++/redis++.h>
+#endif
+
+#if USE_AEROSPIKE
+#include <aerospike/aerospike.h>
+#endif
 
 namespace PathORAM
 {
@@ -254,6 +260,7 @@ namespace PathORAM
 		bool supportsBatchSet() const final { return false; };
 	};
 
+#if USE_REDIS
 	/**
 	 * @brief Redis implementation of the storage adapter.
 	 *
@@ -292,7 +299,9 @@ namespace PathORAM
 		bool supportsBatchGet() const final { return true; };
 		bool supportsBatchSet() const final { return true; };
 	};
+#endif
 
+#if USE_AEROSPIKE
 	/**
 	 * @brief Aerospike implementation of the storage adapter.
 	 *
@@ -340,4 +349,5 @@ namespace PathORAM
 		bool supportsBatchGet() const final { return true; };
 		bool supportsBatchSet() const final { return false; };
 	};
+#endif
 }

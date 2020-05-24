@@ -13,10 +13,14 @@ namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
-		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem,
+#if USE_REDIS
 		StorageAdapterTypeRedis,
+#endif
+#if USE_AEROSPIKE
 		StorageAdapterTypeAerospike,
+#endif
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem
 	};
 
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
@@ -26,8 +30,14 @@ namespace PathORAM
 		inline static const number BLOCK_SIZE = 32;
 		inline static const number Z		  = 3;
 		inline static const string FILE_NAME  = "storage.bin";
-		inline static string REDIS_HOST		  = "tcp://127.0.0.1:6379";
-		inline static string AEROSPIKE_HOST	  = "127.0.0.1";
+
+#if USE_REDIS
+		inline static string REDIS_HOST = "tcp://127.0.0.1:6379";
+#endif
+
+#if USE_AEROSPIKE
+		inline static string AEROSPIKE_HOST = "127.0.0.1";
+#endif
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -43,12 +53,16 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, Z);
 					break;
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true, Z);
 					break;
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, true, Z);
 					break;
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
@@ -58,10 +72,12 @@ namespace PathORAM
 		{
 			remove(FILE_NAME.c_str());
 			adapter.reset();
+#if USE_REDIS
 			if (GetParam() == StorageAdapterTypeRedis)
 			{
 				make_unique<sw::redis::Redis>(REDIS_HOST)->flushall();
 			}
+#endif
 		}
 
 		bucket generateBucket(number from)
@@ -88,10 +104,14 @@ namespace PathORAM
 			{
 				case StorageAdapterTypeFileSystem:
 					return make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, override, Z);
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					return make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, key, REDIS_HOST, override, Z);
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					return make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, key, AEROSPIKE_HOST, override, Z);
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not persistent") % param);
 			}
@@ -132,12 +152,16 @@ namespace PathORAM
 			case StorageAdapterTypeFileSystem:
 				ASSERT_ANY_THROW(make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false, Z));
 				break;
+#if USE_REDIS
 			case StorageAdapterTypeRedis:
 				ASSERT_ANY_THROW(make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false, Z));
 				break;
+#endif
+#if USE_AEROSPIKE
 			case StorageAdapterTypeAerospike:
 				ASSERT_ANY_THROW(make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false, Z));
 				break;
+#endif
 			default:
 				SUCCEED();
 				break;
@@ -356,10 +380,14 @@ namespace PathORAM
 				return "InMemory";
 			case StorageAdapterTypeFileSystem:
 				return "FileSystem";
+#if USE_REDIS
 			case StorageAdapterTypeRedis:
 				return "Redis";
+#endif
+#if USE_AEROSPIKE
 			case StorageAdapterTypeAerospike:
 				return "Aerospike";
+#endif
 			default:
 				throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
 		}
@@ -368,6 +396,8 @@ namespace PathORAM
 	vector<TestingStorageAdapterType> cases()
 	{
 		vector<TestingStorageAdapterType> result = {StorageAdapterTypeFileSystem, StorageAdapterTypeInMemory};
+
+#if USE_REDIS
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
 			try
@@ -383,7 +413,9 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
+#if USE_AEROSPIKE
 		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
 		{
 			try
@@ -410,6 +442,7 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
 		return result;
 	};
@@ -417,7 +450,7 @@ namespace PathORAM
 	INSTANTIATE_TEST_SUITE_P(StorageAdapterSuite, StorageAdapterTest, testing::ValuesIn(cases()), printTestName);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	srand(TEST_SEED);
 

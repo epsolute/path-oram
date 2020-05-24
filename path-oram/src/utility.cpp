@@ -88,7 +88,7 @@ namespace PathORAM
 	{
 		const auto size = distance(inputFirst, inputLast);
 
-#ifdef INPUT_CHECKS
+#if INPUT_CHECKS
 		if (distance(keyFirst, keyLast) != KEYSIZE)
 		{
 			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % distance(keyFirst, keyLast) % KEYSIZE);

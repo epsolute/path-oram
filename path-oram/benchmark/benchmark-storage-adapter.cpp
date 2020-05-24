@@ -11,10 +11,14 @@ namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
-		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem,
+#if USE_REDIS
 		StorageAdapterTypeRedis,
-		StorageAdapterTypeAerospike
+#endif
+#if USE_AEROSPIKE
+		StorageAdapterTypeAerospike,
+#endif
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem
 	};
 
 	class StorageAdapterBenchmark : public ::benchmark::Fixture
@@ -44,12 +48,16 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, 1);
 					break;
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, false, 1);
 					break;
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, false, 1);
 					break;
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
@@ -131,6 +139,7 @@ namespace PathORAM
 
 		auto iterations = 1 << 15;
 
+#if USE_REDIS
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
 			try
@@ -152,7 +161,9 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
+#if USE_AEROSPIKE
 		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
 		{
 			try
@@ -184,6 +195,7 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
 		b->Iterations(iterations);
 	}

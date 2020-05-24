@@ -68,7 +68,7 @@ namespace PathORAM
 
 	void InMemoryPositionMapAdapter::checkCapacity(const number block) const
 	{
-#ifdef INPUT_CHECKS
+#if INPUT_CHECKS
 		if (block >= capacity)
 		{
 			throw Exception(boost::format("block %1% out of bound (capacity %2%)") % block % capacity);
