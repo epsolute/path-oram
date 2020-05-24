@@ -25,18 +25,18 @@ namespace PathORAM
 	class ORAM
 	{
 		private:
-		shared_ptr<AbsStorageAdapter> storage;
-		shared_ptr<AbsPositionMapAdapter> map;
-		shared_ptr<AbsStashAdapter> stash;
+		const shared_ptr<AbsStorageAdapter> storage;
+		const shared_ptr<AbsPositionMapAdapter> map;
+		const shared_ptr<AbsStashAdapter> stash;
 
-		number dataSize; // size of the "usable" portion of the block in bytes
-		number Z;		 // number of blocks per bucket
+		const number dataSize; // size of the "usable" portion of the block in bytes
+		const number Z;		   // number of blocks per bucket
 
-		number height;	// number of tree levels
-		number buckets; // total number of buckets
-		number blocks;	// total number of blocks
+		const number height;  // number of tree levels
+		const number buckets; // total number of buckets
+		const number blocks;  // total number of blocks
 
-		number batchSize; // a max number of requests to process at a time (default 1)
+		const number batchSize; // a max number of requests to process at a time (default 1)
 
 		// a layer between (expensive) storage and the protocol;
 		// holds items (buckets of blocks) in memory and unencrypted;
@@ -50,7 +50,7 @@ namespace PathORAM
 		 * @param data if write, the data to be put in block (discarded if read)
 		 * @param response if read, the content of requested block (empty if write)
 		 */
-		void access(bool read, number block, bytes &data, bytes &response);
+		void access(const bool read, const number block, const bytes &data, bytes &response);
 
 		/**
 		 * @brief puts a path into the stash
@@ -61,7 +61,7 @@ namespace PathORAM
 		 * @param putInStash if set, the path will be read from storage and put in stash.
 		 * Otherwise, will only populate the locations of blocks in the path.
 		 */
-		void readPath(number leaf, unordered_set<number> &path, bool putInStash);
+		void readPath(const number leaf, unordered_set<number> &path, const bool putInStash);
 
 		/**
 		 * @brief write a path using the blocks from stash
@@ -69,7 +69,7 @@ namespace PathORAM
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
 		 */
-		void writePath(number leaf);
+		void writePath(const number leaf);
 
 		/**
 		 * @brief checks if the paths "merge" on the level
@@ -80,7 +80,7 @@ namespace PathORAM
 		 * @return true if the paths share the same node on the given level
 		 * @return false otherwise
 		 */
-		bool canInclude(number pathLeaf, number blockPosition, number level);
+		const bool canInclude(const number pathLeaf, const number blockPosition, const number level) const;
 
 		/**
 		 * @brief computes the location in the storage for a bucket (not block) in a given path on a given level
@@ -89,7 +89,7 @@ namespace PathORAM
 		 * @param leaf leaf that defines the path in question
 		 * @return number the location of the requested bucket (not block) in the storage
 		 */
-		number bucketForLevelLeaf(number level, number leaf);
+		const number bucketForLevelLeaf(const number level, const number leaf) const;
 
 		/**
 		 * @brief make GET requests to the storage through cache.
@@ -99,7 +99,7 @@ namespace PathORAM
 		 * @param response the read blocks split into ORAM id and payload
 		 * @param dryRun if set, will not populate response (will only download and put in interanal cache)
 		 */
-		void getCache(unordered_set<number> &locations, vector<block> &response, bool dryRun);
+		void getCache(const unordered_set<number> &locations, vector<block> &response, const bool dryRun);
 
 		/**
 		 * @brief make SET requests to the storage through cache.
@@ -107,7 +107,7 @@ namespace PathORAM
 		 *
 		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, bucket>> &requests);
+		void setCache(const vector<pair<number, bucket>> &requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
@@ -138,7 +138,15 @@ namespace PathORAM
 		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
 		 * @param batchSize controls the max number of requests in multiple(...)
 		 */
-		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true, number batchSize = 1);
+		ORAM(
+			const number logCapacity,
+			const number blockSize,
+			const number Z,
+			const shared_ptr<AbsStorageAdapter> storage,
+			const shared_ptr<AbsPositionMapAdapter> map,
+			const shared_ptr<AbsStashAdapter> stash,
+			const bool initialize  = true,
+			const number batchSize = 1);
 
 		/**
 		 * @brief Construct a new ORAM object with adapters created automatically
@@ -155,7 +163,7 @@ namespace PathORAM
 		 * @param blockSize as in the extended constructor
 		 * @param Z as in the extended constructor
 		 */
-		ORAM(number logCapacity, number blockSize, number Z);
+		ORAM(const number logCapacity, const number blockSize, const number Z);
 
 		/**
 		 * @brief Retrives a block from ORAM
@@ -163,7 +171,7 @@ namespace PathORAM
 		 * @param block block ID to request
 		 * @param response the (decrypted) data from the block
 		 */
-		void get(number block, bytes &response);
+		void get(const number block, bytes &response);
 
 		/**
 		 * @brief Puts a block to ORAM
@@ -171,7 +179,7 @@ namespace PathORAM
 		 * @param block block ID to request
 		 * @param data the (plaintext) data to put in the block
 		 */
-		void put(number block, bytes &data);
+		void put(const number block, const bytes &data);
 
 		/**
 		 * @brief processes multiple requests at a time
@@ -190,7 +198,7 @@ namespace PathORAM
 		 * \note
 		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
 		 */
-		void multiple(vector<block> &requests, vector<bytes> &response);
+		void multiple(const vector<block> &requests, vector<bytes> &response);
 
 		/**
 		 * @brief bulk loads the data bypassing usual ORAM protocol
@@ -208,6 +216,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(vector<block> &data);
+		void load(const vector<block> &data);
 	};
 }
