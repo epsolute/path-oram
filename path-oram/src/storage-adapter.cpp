@@ -95,10 +95,12 @@ namespace PathORAM
 		{
 			checkCapacity(location);
 
+#ifdef INPUT_CHECKS
 			if (blocks.size() != Z)
 			{
 				throw Exception(boost::format("each set request must contain exactly Z=%1% blocks (%2% given)") % Z % blocks.size());
 			}
+#endif
 
 			bytes toEncrypt;
 			toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize * Z);
@@ -181,18 +183,22 @@ namespace PathORAM
 
 	void AbsStorageAdapter::checkCapacity(const number location) const
 	{
+#ifdef INPUT_CHECKS
 		if (location >= capacity)
 		{
 			throw Exception(boost::format("id %1% out of bound (capacity %2%)") % location % capacity);
 		}
+#endif
 	}
 
 	void AbsStorageAdapter::checkBlockSize(const number dataLength) const
 	{
+#ifdef INPUT_CHECKS
 		if (dataLength > userBlockSize)
 		{
 			throw Exception(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % userBlockSize);
 		}
+#endif
 	}
 
 	AbsStorageAdapter::AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z) :

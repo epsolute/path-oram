@@ -70,10 +70,12 @@ namespace PathORAM
 
 	void InMemoryStashAdapter::checkOverflow(const number block) const
 	{
+#ifdef INPUT_CHECKS
 		if (stash.size() == capacity && stash.count(block) == 0)
 		{
 			throw Exception(boost::format("trying to insert over capacity (capacity %1%)") % capacity);
 		}
+#endif
 	}
 
 	bool InMemoryStashAdapter::exists(const number block) const

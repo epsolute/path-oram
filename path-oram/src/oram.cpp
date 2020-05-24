@@ -67,10 +67,12 @@ namespace PathORAM
 
 	void ORAM::multiple(const vector<block> &requests, vector<bytes> &response)
 	{
+#ifdef INPUT_CHECKS
 		if (requests.size() > batchSize)
 		{
 			throw Exception(boost::format("Too many requests (%1%) for batch size %2%") % requests.size() % batchSize);
 		}
+#endif
 
 		// populate cache
 		unordered_set<number> locations;

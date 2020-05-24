@@ -88,6 +88,7 @@ namespace PathORAM
 	{
 		const auto size = distance(inputFirst, inputLast);
 
+#ifdef INPUT_CHECKS
 		if (distance(keyFirst, keyLast) != KEYSIZE)
 		{
 			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % distance(keyFirst, keyLast) % KEYSIZE);
@@ -102,6 +103,7 @@ namespace PathORAM
 		{
 			throw Exception(boost::format("IV of size %1% bytes provided, need %2% bytes") % distance(ivFist, ivLast) % AES_BLOCK_SIZE);
 		}
+#endif
 
 		AES_KEY aesKey;
 		uchar keyMaterial[KEYSIZE];

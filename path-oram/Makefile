@@ -8,11 +8,13 @@ ODIR=obj
 LDIR=lib
 BDIR=bin
 
+USE_INPUT_CHECKS=-DINPUT_CHECKS
+
 LDFLAGS=-L $(LDIR) -L /usr/local/opt/openssl/lib
 LDLIBS=-l boost_system -l ssl -l crypto -l redis++ -l hiredis -l aerospike -l dl -l z # libs for main code
 LDTESTLIBS=-l gtest -l pthread -l benchmark -l gmock # libs for tests and benchmarks
 INCLUDES=-I $(IDIR) -I /usr/local/opt/openssl/include
-CPPFLAGS= --std=c++17 -Wall -Wno-unknown-pragmas -fPIC
+CPPFLAGS= --std=c++17 -Wall -Wno-unknown-pragmas -fPIC $(USE_INPUT_CHECKS)
 CC=g++
 RM=rm -rf
 
@@ -73,7 +75,7 @@ $(INTEGRATIONBIN): $(OBJ) $$(subst $$(BDIR), $(TDIR), $$@).cpp
 shared-debug: CPPFLAGS += -g -DDEBUG
 shared-debug: shared
 
-shared: CPPFLAGS += -DSHARED
+shared: CPPFLAGS += -DSHARED -O3
 shared: $(OBJ)
 	$(CC) -shared $(LDLIBS) $(LDFLAGS) -o $(BDIR)/lib$(LIBNAME).so $(OBJ)
 
