@@ -22,7 +22,7 @@ namespace PathORAM
 {
 	using namespace std;
 
-	bytes getRandomBlock(number blockSize)
+	bytes getRandomBlock(const number blockSize)
 	{
 		uchar material[blockSize];
 #if defined(TESTING) || defined(DEBUG)
@@ -36,7 +36,7 @@ namespace PathORAM
 		return bytes(material, material + blockSize);
 	}
 
-	number getRandomULong(number max)
+	number getRandomULong(const number max)
 	{
 		number material[1];
 #if defined(TESTING) || defined(DEBUG)
@@ -49,7 +49,7 @@ namespace PathORAM
 		return material[0] % max;
 	}
 
-	uint getRandomUInt(uint max)
+	uint getRandomUInt(const uint max)
 	{
 #if defined(TESTING) || defined(DEBUG)
 		return rand() % max;
@@ -60,7 +60,7 @@ namespace PathORAM
 #endif
 	}
 
-	double getRandomDouble(double max)
+	double getRandomDouble(const double max)
 	{
 		number material[1];
 #if defined(TESTING) || defined(DEBUG)
@@ -76,13 +76,22 @@ namespace PathORAM
 		return distribution(gen);
 	}
 
-	bytes encrypt(bytes key, bytes iv, bytes input, EncryptionMode mode)
+	void encrypt(
+		const bytes::const_iterator keyFirst,
+		const bytes::const_iterator keyLast,
+		const bytes::const_iterator ivFist,
+		const bytes::const_iterator ivLast,
+		const bytes::const_iterator inputFirst,
+		const bytes::const_iterator inputLast,
+		bytes &output,
+		const EncryptionMode mode)
 	{
-		auto size = input.size();
+		const auto size = distance(inputFirst, inputLast);
 
-		if (key.size() != KEYSIZE)
+#if INPUT_CHECKS
+		if (distance(keyFirst, keyLast) != KEYSIZE)
 		{
-			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % key.size() % KEYSIZE);
+			throw Exception(boost::format("key of size %1% bytes provided, need %2% bytes") % distance(keyFirst, keyLast) % KEYSIZE);
 		}
 
 		if (size == 0 || size % AES_BLOCK_SIZE != 0)
@@ -90,14 +99,15 @@ namespace PathORAM
 			throw Exception(boost::format("input must be a multiple of %1% (provided %2% bytes)") % AES_BLOCK_SIZE % size);
 		}
 
-		if (iv.size() != AES_BLOCK_SIZE)
+		if (distance(ivFist, ivLast) != AES_BLOCK_SIZE)
 		{
-			throw Exception(boost::format("IV of size %1% bytes provided, need %2% bytes") % iv.size() % AES_BLOCK_SIZE);
+			throw Exception(boost::format("IV of size %1% bytes provided, need %2% bytes") % distance(ivFist, ivLast) % AES_BLOCK_SIZE);
 		}
+#endif
 
 		AES_KEY aesKey;
 		uchar keyMaterial[KEYSIZE];
-		copy(key.begin(), key.end(), keyMaterial);
+		copy(keyFirst, keyLast, keyMaterial);
 		// CTR always does encryption only
 		if (mode == ENCRYPT || __blockCipherMode == CTR)
 		{
@@ -109,10 +119,10 @@ namespace PathORAM
 		}
 
 		uchar ivMaterial[AES_BLOCK_SIZE];
-		copy(iv.begin(), iv.end(), ivMaterial);
+		copy(ivFist, ivLast, ivMaterial);
 
 		uchar inputMaterial[size];
-		copy(input.begin(), input.end(), inputMaterial);
+		copy(inputFirst, inputLast, inputMaterial);
 
 		uchar outputMaterial[size];
 		memset(outputMaterial, 0x00, size);
@@ -151,19 +161,19 @@ namespace PathORAM
 				throw Exception(boost::format("Block cipher mode not implemented: %1%") % __blockCipherMode);
 		}
 
-		return bytes(outputMaterial, outputMaterial + size);
+		output.insert(output.end(), outputMaterial, outputMaterial + size);
 	}
 
-	bytes fromText(string text, number BLOCK_SIZE)
+	bytes fromText(const string text, const number BLOCK_SIZE)
 	{
 		stringstream padded;
 		padded << setw(BLOCK_SIZE - 1) << left << text << endl;
-		text = padded.str();
+		auto paddedStr = padded.str();
 
-		return bytes((uchar *)text.c_str(), (uchar *)text.c_str() + text.length());
+		return bytes((uchar *)paddedStr.c_str(), (uchar *)paddedStr.c_str() + paddedStr.length());
 	}
 
-	string toText(bytes data, number BLOCK_SIZE)
+	string toText(const bytes data, const number BLOCK_SIZE)
 	{
 		char buffer[BLOCK_SIZE];
 		memset(buffer, 0, sizeof buffer);
@@ -174,7 +184,7 @@ namespace PathORAM
 		return text;
 	}
 
-	void storeKey(bytes key, string filename)
+	void storeKey(const bytes key, const string filename)
 	{
 		fstream file;
 		file.open(filename, fstream::out | fstream::binary | fstream::trunc);
@@ -190,7 +200,7 @@ namespace PathORAM
 		file.close();
 	}
 
-	bytes loadKey(string filename)
+	bytes loadKey(const string filename)
 	{
 		fstream file;
 		file.open(filename, fstream::in | fstream::binary);
@@ -207,7 +217,7 @@ namespace PathORAM
 		return bytes(material, material + KEYSIZE);
 	}
 
-	bytes hash(bytes input)
+	void hash(const bytes &input, bytes &output)
 	{
 		// https: //wiki.openssl.org/index.php/EVP_Message_Digests
 
@@ -222,17 +232,16 @@ namespace PathORAM
 		HANDLE_ERROR((*digest = (unsigned char *)OPENSSL_malloc(EVP_MD_size(HASH_ALGORITHM()))) != nullptr);
 		HANDLE_ERROR(EVP_DigestFinal_ex(context, *digest, nullptr));
 
-		auto result = bytes(*digest, *digest + (HASHSIZE / 16));
+		output.insert(output.end(), *digest, *digest + (HASHSIZE / 16));
 
 		EVP_MD_CTX_free(context);
 		free(digest);
-
-		return result;
 	}
 
-	number hashToNumber(bytes input, number max)
+	number hashToNumber(const bytes &input, number max)
 	{
-		bytes digest = hash(input);
+		bytes digest;
+		hash(input, digest);
 		number material[1];
 		auto ucharMaterial = (uchar *)material;
 

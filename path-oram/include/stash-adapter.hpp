@@ -19,9 +19,9 @@ namespace PathORAM
 		/**
 		 * @brief get the all blocks (ID and data) from the stash in a form of a pseudorandomly permuted vector.
 		 *
-		 * @return  vector<block> the pseudorandomly permuted vector of objects { ID, data }
+		 * @pararm response the pseudorandomly permuted vector of objects { ID, data }
 		 */
-		virtual vector<block> getAll() = 0;
+		virtual void getAll(vector<block> &response) const = 0;
 
 		/**
 		 * @brief put an object in the stash
@@ -31,7 +31,7 @@ namespace PathORAM
 		 * @param block ID of the block
 		 * @param data data part of the object
 		 */
-		virtual void add(number block, bytes data) = 0;
+		virtual void add(const number block, const bytes &data) = 0;
 
 		/**
 		 * @brief change an object in the stash (by ID)
@@ -42,15 +42,15 @@ namespace PathORAM
 		 * @param block ID of the block
 		 * @param data data part of the object
 		 */
-		virtual void update(number block, bytes data) = 0;
+		virtual void update(const number block, const bytes &data) = 0;
 
 		/**
 		 * @brief retrieve the object by ID
 		 *
 		 * @param block ID of the block
-		 * @return bytes data part of the object
+		 * @param response data part of the object
 		 */
-		virtual bytes get(number block) = 0;
+		virtual void get(const number block, bytes &response) const = 0;
 
 		/**
 		 * @brief removes the object by ID
@@ -59,7 +59,7 @@ namespace PathORAM
 		 *
 		 * @param block block ID of the block
 		 */
-		virtual void remove(number block) = 0;
+		virtual void remove(const number block) = 0;
 
 		virtual ~AbsStashAdapter() = 0;
 
@@ -71,7 +71,7 @@ namespace PathORAM
 		 * @return true if an object with such ID exists in the stash
 		 * @return false otherwise
 		 */
-		virtual bool exists(number block) = 0;
+		virtual bool exists(const number block) const = 0;
 
 		friend class ORAMTest_ReadPath_Test;
 		friend class ORAMTest_PutMany_Test;
@@ -87,16 +87,16 @@ namespace PathORAM
 	{
 		private:
 		unordered_map<number, bytes> stash;
-		number capacity;
+		const number capacity;
 
 		/**
 		 * @brief thorows exception if an insertion of this block will cause an overflow (stash size growing beyond capacity)
 		 *
 		 * @param block block ID in question
 		 */
-		void checkOverflow(number block);
+		void checkOverflow(const number block) const;
 
-		bool exists(number block) final;
+		bool exists(const number block) const final;
 
 		friend class ORAMTest_ReadPath_Test;
 
@@ -110,18 +110,18 @@ namespace PathORAM
 
 		~InMemoryStashAdapter() final;
 
-		vector<block> getAll() final;
-		void add(number block, bytes data) final;
-		void update(number block, bytes data) final;
-		bytes get(number block) final;
-		void remove(number block) final;
+		void getAll(vector<block> &response) const final;
+		void add(const number block, const bytes &data) final;
+		void update(const number block, const bytes &data) final;
+		void get(const number block, bytes &response) const final;
+		void remove(const number block) final;
 
 		/**
 		 * @brief write state to a binary file
 		 *
 		 * @param filename the name of the file to write to
 		 */
-		void storeToFile(string filename);
+		void storeToFile(const string filename) const;
 
 		/**
 		 * @brief read state from a binary file
@@ -129,6 +129,6 @@ namespace PathORAM
 		 * @param filename filename the name of the file to read from
 		 * @param blockSize the size of the block in the stash (same as when storeToFile was used)
 		 */
-		void loadFromFile(string filename, int blockSize);
+		void loadFromFile(const string filename, const int blockSize);
 	};
 }

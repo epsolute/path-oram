@@ -5,6 +5,18 @@
 #include <string>
 #include <vector>
 
+#ifndef INPUT_CHECKS
+#define INPUT_CHECKS true
+#endif
+
+#ifndef USE_REDIS
+#define USE_REDIS true
+#endif
+
+#ifndef USE_AEROSPIKE
+#define USE_AEROSPIKE true
+#endif
+
 // use 256-bit security
 #define KEYSIZE 32
 

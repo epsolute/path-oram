@@ -17,71 +17,75 @@ namespace PathORAM
 
 	InMemoryStashAdapter::~InMemoryStashAdapter() {}
 
-	InMemoryStashAdapter::InMemoryStashAdapter(number capacity) :
+	InMemoryStashAdapter::InMemoryStashAdapter(const number capacity) :
 		capacity(capacity)
 	{
 		this->stash = unordered_map<number, bytes>();
 		stash.reserve(capacity);
 	}
 
-	vector<block> InMemoryStashAdapter::getAll()
+	void InMemoryStashAdapter::getAll(vector<block> &response) const
 	{
-		vector<block> result(stash.begin(), stash.end());
+		response.insert(response.begin(), stash.begin(), stash.end());
 
-		uint n = result.size();
+		const uint n = response.size();
 		if (n >= 2)
 		{
 			// Fisher-Yates shuffle
 			for (uint i = 0; i < n - 1; i++)
 			{
 				uint j = i + getRandomUInt(n - i);
-				swap(result[i], result[j]);
+				swap(response[i], response[j]);
 			}
 		}
-
-		return result;
 	}
 
-	void InMemoryStashAdapter::add(number block, bytes data)
+	void InMemoryStashAdapter::add(const number block, const bytes &data)
 	{
 		checkOverflow(block);
 
 		stash.insert({block, data});
 	}
 
-	void InMemoryStashAdapter::update(number block, bytes data)
+	void InMemoryStashAdapter::update(const number block, const bytes &data)
 	{
 		checkOverflow(block);
 
 		stash[block] = data;
 	}
 
-	bytes InMemoryStashAdapter::get(number block)
+	void InMemoryStashAdapter::get(const number block, bytes &response) const
 	{
-		return stash[block];
+		const auto found = stash.find(block);
+		if (found != stash.end())
+		{
+			response.insert(response.begin(), (*found).second.begin(), (*found).second.end());
+		}
 	}
 
-	void InMemoryStashAdapter::remove(number block)
+	void InMemoryStashAdapter::remove(const number block)
 	{
 		stash.erase(block);
 	}
 
-	void InMemoryStashAdapter::checkOverflow(number block)
+	void InMemoryStashAdapter::checkOverflow(const number block) const
 	{
+#if INPUT_CHECKS
 		if (stash.size() == capacity && stash.count(block) == 0)
 		{
 			throw Exception(boost::format("trying to insert over capacity (capacity %1%)") % capacity);
 		}
+#endif
 	}
 
-	bool InMemoryStashAdapter::exists(number block)
+	bool InMemoryStashAdapter::exists(const number block) const
 	{
 		return stash.count(block) > 0;
 	}
 
-	void InMemoryStashAdapter::storeToFile(string filename)
+	void InMemoryStashAdapter::storeToFile(const string filename) const
 	{
-		auto flags = fstream::out | fstream::binary | fstream::trunc;
+		const auto flags = fstream::out | fstream::binary | fstream::trunc;
 		fstream file;
 
 		file.open(filename, flags);
@@ -97,7 +101,7 @@ namespace PathORAM
 			unsigned char buffer[stash.size() * recordSize];
 
 			auto i = 0;
-			for (auto record : stash)
+			for (auto &&record : stash)
 			{
 				number numberBuffer[1] = {record.first};
 				copy((unsigned char *)numberBuffer, (unsigned char *)numberBuffer + sizeof(number), buffer + recordSize * i);
@@ -111,9 +115,9 @@ namespace PathORAM
 		}
 	}
 
-	void InMemoryStashAdapter::loadFromFile(string filename, int blockSize)
+	void InMemoryStashAdapter::loadFromFile(const string filename, const int blockSize)
 	{
-		auto flags = fstream::in | fstream::binary | fstream::ate;
+		const auto flags = fstream::in | fstream::binary | fstream::ate;
 		fstream file;
 
 		file.open(filename, flags);
@@ -121,7 +125,7 @@ namespace PathORAM
 		{
 			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
 		}
-		auto size = (int)file.tellg();
+		const auto size = (int)file.tellg();
 		file.seekg(0, file.beg);
 
 		if (size > 0)

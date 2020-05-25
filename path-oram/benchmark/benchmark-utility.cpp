@@ -29,7 +29,8 @@ namespace PathORAM
 		{
 			number material[1] = {i};
 			auto input		   = bytes((uchar*)material, (uchar*)material + sizeof(number));
-			benchmark::DoNotOptimize(hash(input));
+			bytes digest;
+			hash(input, digest);
 		}
 	}
 
@@ -41,10 +42,20 @@ namespace PathORAM
 		auto palintext = getRandomBlock(1024);
 		auto key	   = getRandomBlock(KEYSIZE);
 		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
+		bytes output;
 
 		for (auto _ : state)
 		{
-			benchmark::DoNotOptimize(encrypt(key, iv, palintext, ENCRYPT));
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				palintext.begin(),
+				palintext.end(),
+				output,
+				ENCRYPT);
+			output.clear();
 		}
 	}
 
@@ -53,14 +64,34 @@ namespace PathORAM
 	{
 		__blockCipherMode = (BlockCipherMode)state.range(0);
 
-		auto palintext	= getRandomBlock(1024);
-		auto key		= getRandomBlock(KEYSIZE);
-		auto iv			= getRandomBlock(AES_BLOCK_SIZE);
-		auto ciphertext = encrypt(key, iv, palintext, ENCRYPT);
+		auto palintext = getRandomBlock(1024);
+		auto key	   = getRandomBlock(KEYSIZE);
+		auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
+		bytes ciphertext;
+		encrypt(
+			key.begin(),
+			key.end(),
+			iv.begin(),
+			iv.end(),
+			palintext.begin(),
+			palintext.end(),
+			ciphertext,
+			ENCRYPT);
+
+		bytes output;
 
 		for (auto _ : state)
 		{
-			benchmark::DoNotOptimize(encrypt(key, iv, ciphertext, DECRYPT));
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				ciphertext.begin(),
+				ciphertext.end(),
+				output,
+				DECRYPT);
+			output.clear();
 		}
 	}
 

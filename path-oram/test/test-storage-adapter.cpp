@@ -13,10 +13,14 @@ namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
-		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem,
+#if USE_REDIS
 		StorageAdapterTypeRedis,
+#endif
+#if USE_AEROSPIKE
 		StorageAdapterTypeAerospike,
+#endif
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem
 	};
 
 	class StorageAdapterTest : public testing::TestWithParam<TestingStorageAdapterType>
@@ -26,8 +30,14 @@ namespace PathORAM
 		inline static const number BLOCK_SIZE = 32;
 		inline static const number Z		  = 3;
 		inline static const string FILE_NAME  = "storage.bin";
-		inline static string REDIS_HOST		  = "tcp://127.0.0.1:6379";
-		inline static string AEROSPIKE_HOST	  = "127.0.0.1";
+
+#if USE_REDIS
+		inline static string REDIS_HOST = "tcp://127.0.0.1:6379";
+#endif
+
+#if USE_AEROSPIKE
+		inline static string AEROSPIKE_HOST = "127.0.0.1";
+#endif
 
 		protected:
 		unique_ptr<AbsStorageAdapter> adapter;
@@ -43,12 +53,16 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, Z);
 					break;
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true, Z);
 					break;
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, true, Z);
 					break;
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
@@ -58,10 +72,12 @@ namespace PathORAM
 		{
 			remove(FILE_NAME.c_str());
 			adapter.reset();
+#if USE_REDIS
 			if (GetParam() == StorageAdapterTypeRedis)
 			{
 				make_unique<sw::redis::Redis>(REDIS_HOST)->flushall();
 			}
+#endif
 		}
 
 		bucket generateBucket(number from)
@@ -88,10 +104,14 @@ namespace PathORAM
 			{
 				case StorageAdapterTypeFileSystem:
 					return make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, key, filename, override, Z);
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					return make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, key, REDIS_HOST, override, Z);
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					return make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, key, AEROSPIKE_HOST, override, Z);
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not persistent") % param);
 			}
@@ -106,12 +126,16 @@ namespace PathORAM
 			auto storage	= createAdapter(filename, true, key);
 
 			storage->set(CAPACITY - 1, bucket);
-			ASSERT_EQ(bucket, storage->get(CAPACITY - 1));
+			vector<block> got;
+			storage->get(CAPACITY - 1, got);
+			ASSERT_EQ(bucket, got);
 			storage.reset();
 
 			storage = createAdapter(filename, false, key);
 
-			ASSERT_EQ(bucket, storage->get(CAPACITY - 1));
+			got.clear();
+			storage->get(CAPACITY - 1, got);
+			ASSERT_EQ(bucket, got);
 
 			remove(filename.c_str());
 		}
@@ -128,12 +152,16 @@ namespace PathORAM
 			case StorageAdapterTypeFileSystem:
 				ASSERT_ANY_THROW(make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "tmp.bin", false, Z));
 				break;
+#if USE_REDIS
 			case StorageAdapterTypeRedis:
 				ASSERT_ANY_THROW(make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false, Z));
 				break;
+#endif
+#if USE_AEROSPIKE
 			case StorageAdapterTypeAerospike:
 				ASSERT_ANY_THROW(make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), "error", false, Z));
 				break;
+#endif
 			default:
 				SUCCEED();
 				break;
@@ -152,16 +180,18 @@ namespace PathORAM
 		auto bucket = generateBucket(5);
 
 		EXPECT_NO_THROW({
+			vector<block> got;
 			adapter->set(CAPACITY - 1, bucket);
-			adapter->get(CAPACITY - 2);
+			adapter->get(CAPACITY - 2, got);
 		});
 	}
 
 	TEST_P(StorageAdapterTest, ReadEmpty)
 	{
-		auto bucket = adapter->get(CAPACITY - 2);
+		vector<block> bucket;
+		adapter->get(CAPACITY - 2, bucket);
 		ASSERT_EQ(Z, bucket.size());
-		for (auto block : bucket)
+		for (auto &&block : bucket)
 		{
 			ASSERT_EQ(BLOCK_SIZE, block.second.size());
 		}
@@ -171,7 +201,10 @@ namespace PathORAM
 	{
 		auto bucket = generateBucket(5);
 
-		ASSERT_ANY_THROW(adapter->get(CAPACITY + 1));
+		ASSERT_ANY_THROW({
+			vector<block> got;
+			adapter->get(CAPACITY + 1, got);
+		});
 		ASSERT_ANY_THROW(adapter->set(CAPACITY + 1, bucket));
 	}
 
@@ -196,7 +229,8 @@ namespace PathORAM
 		auto bucket = generateBucket(5);
 
 		adapter->set(CAPACITY - 1, bucket);
-		auto returned = adapter->get(CAPACITY - 1);
+		vector<block> returned;
+		adapter->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ(bucket, returned);
 	}
@@ -209,7 +243,8 @@ namespace PathORAM
 		data.resize(Z * (BLOCK_SIZE + AES_BLOCK_SIZE) + AES_BLOCK_SIZE);
 
 		adapter->setInternal(CAPACITY - 1, data);
-		auto returned = adapter->getInternal(CAPACITY - 1);
+		bytes returned;
+		adapter->getInternal(CAPACITY - 1, returned);
 
 		ASSERT_EQ(data, returned);
 	}
@@ -224,7 +259,8 @@ namespace PathORAM
 
 		adapter->set(CAPACITY - 1, bucket);
 
-		auto returned = adapter->get(CAPACITY - 1);
+		vector<block> returned;
+		adapter->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ(bucket, returned);
 	}
@@ -236,10 +272,11 @@ namespace PathORAM
 			auto expected = bytes();
 			expected.resize(BLOCK_SIZE);
 
-			auto returned = adapter->get(i);
+			vector<block> returned;
+			adapter->get(i, returned);
 
 			ASSERT_EQ(Z, returned.size());
-			for (auto block : returned)
+			for (auto &&block : returned)
 			{
 				ASSERT_EQ(ULONG_MAX, block.first);
 				ASSERT_EQ(expected, block.second);
@@ -251,24 +288,25 @@ namespace PathORAM
 	{
 		const auto runs = 3;
 
-		vector<pair<number, vector<pair<number, bytes>>>> writes;
+		vector<pair<const number, vector<pair<number, bytes>>>> writes;
 		vector<number> reads;
 		for (auto i = 0; i < runs; i++)
 		{
 			writes.push_back({CAPACITY - 4 + i, generateBucket(i * Z)});
 			reads.push_back(CAPACITY - 4 + i);
 		}
-		adapter->set(writes);
+		adapter->set(boost::make_iterator_range(writes.begin(), writes.end()));
 
-		auto read = adapter->get(reads);
+		vector<block> read;
+		adapter->get(reads, read);
 
 		ASSERT_EQ(runs * Z, read.size());
-		for (auto block : read)
+		for (auto &&block : read)
 		{
 			auto found = false;
-			for (auto write : writes)
+			for (auto &&write : writes)
 			{
-				for (auto wBlock : write.second)
+				for (auto &&wBlock : write.second)
 				{
 					if (wBlock.first == block.first)
 					{
@@ -302,14 +340,16 @@ namespace PathORAM
 		EXPECT_EQ(rawSize, get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->get(CAPACITY - 1);
+		vector<block> got;
+		adapter->get(CAPACITY - 1, got);
 
 		EXPECT_TRUE(get<0>(event));
 		EXPECT_EQ(1, get<1>(event));
 		EXPECT_EQ(rawSize, get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->set({{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}});
+		vector<pair<const number, vector<block>>> requests = {{CAPACITY - 1, bucket}, {CAPACITY - 2, bucket}};
+		adapter->set(boost::make_iterator_range(requests.begin(), requests.end()));
 
 		EXPECT_FALSE(get<0>(event));
 		EXPECT_EQ(adapter->supportsBatchSet() ? 2 : 1, get<1>(event));
@@ -318,7 +358,9 @@ namespace PathORAM
 			get<2>(event));
 		EXPECT_LT(0, get<3>(event));
 
-		adapter->get({CAPACITY - 1, CAPACITY - 2});
+		got.clear();
+		vector<number> locations = {CAPACITY - 1, CAPACITY - 2};
+		adapter->get(locations, got);
 
 		EXPECT_TRUE(get<0>(event));
 		EXPECT_EQ(adapter->supportsBatchGet() ? 2 : 1, get<1>(event));
@@ -338,10 +380,14 @@ namespace PathORAM
 				return "InMemory";
 			case StorageAdapterTypeFileSystem:
 				return "FileSystem";
+#if USE_REDIS
 			case StorageAdapterTypeRedis:
 				return "Redis";
+#endif
+#if USE_AEROSPIKE
 			case StorageAdapterTypeAerospike:
 				return "Aerospike";
+#endif
 			default:
 				throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % input.param);
 		}
@@ -350,6 +396,8 @@ namespace PathORAM
 	vector<TestingStorageAdapterType> cases()
 	{
 		vector<TestingStorageAdapterType> result = {StorageAdapterTypeFileSystem, StorageAdapterTypeInMemory};
+
+#if USE_REDIS
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
 			try
@@ -365,7 +413,9 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
+#if USE_AEROSPIKE
 		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
 		{
 			try
@@ -392,6 +442,7 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
 		return result;
 	};
@@ -399,7 +450,7 @@ namespace PathORAM
 	INSTANTIATE_TEST_SUITE_P(StorageAdapterSuite, StorageAdapterTest, testing::ValuesIn(cases()), printTestName);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	srand(TEST_SEED);
 

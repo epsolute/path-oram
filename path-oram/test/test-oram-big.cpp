@@ -13,17 +13,26 @@ namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
-		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem,
+#if USE_REDIS
 		StorageAdapterTypeRedis,
-		StorageAdapterTypeAerospike
+#endif
+#if USE_AEROSPIKE
+		StorageAdapterTypeAerospike,
+#endif
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem
 	};
 
 	class ORAMBigTest : public testing::TestWithParam<tuple<number, number, number, TestingStorageAdapterType, bool, bool, number>>
 	{
 		public:
-		inline static string REDIS_HOST		= "tcp://127.0.0.1:6379";
+#if USE_REDIS
+		inline static string REDIS_HOST = "tcp://127.0.0.1:6379";
+#endif
+
+#if USE_AEROSPIKE
 		inline static string AEROSPIKE_HOST = "127.0.0.1";
+#endif
 
 		protected:
 		unique_ptr<ORAM> oram;
@@ -62,12 +71,16 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					this->storage = shared_ptr<AbsStorageAdapter>(new FileSystemStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, FILENAME, true, Z));
 					break;
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					this->storage = shared_ptr<AbsStorageAdapter>(new RedisStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, REDIS_HOST, true, Z));
 					break;
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					this->storage = shared_ptr<AbsStorageAdapter>(new AerospikeStorageAdapter(CAPACITY + Z, BLOCK_SIZE, KEY, AEROSPIKE_HOST, true, Z));
 					break;
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % storageType);
 			}
@@ -94,15 +107,19 @@ namespace PathORAM
 		~ORAMBigTest()
 		{
 			remove(FILENAME.c_str());
+#if USE_AEROSPIKE
 			if (get<3>(GetParam()) == StorageAdapterTypeAerospike)
 			{
 				static_pointer_cast<AerospikeStorageAdapter>(storage)->deleteAll();
 			}
+#endif
 			storage.reset();
+#if USE_REDIS
 			if (get<3>(GetParam()) == StorageAdapterTypeRedis)
 			{
 				make_unique<sw::redis::Redis>(REDIS_HOST)->flushall();
 			}
+#endif
 		}
 
 		/**
@@ -128,7 +145,9 @@ namespace PathORAM
 				dynamic_pointer_cast<InMemoryPositionMapAdapter>(map)->loadFromFile("position-map.bin");
 
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->storeToFile("stash.bin");
-				auto blockSize = stash->getAll().size() > 0 ? stash->getAll()[0].second.size() : 0;
+				vector<block> stashDump;
+				stash->getAll(stashDump);
+				auto blockSize = stashDump.size() > 0 ? stashDump[0].second.size() : 0;
 				stash.reset();
 				stash = make_shared<InMemoryStashAdapter>(2 * LOG_CAPACITY * Z);
 				dynamic_pointer_cast<InMemoryStashAdapter>(stash)->loadFromFile("stash.bin", blockSize);
@@ -160,6 +179,7 @@ namespace PathORAM
 			{7, 4, 64, StorageAdapterTypeInMemory, false, true, 10},
 		};
 
+#if USE_REDIS
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
 			try
@@ -175,7 +195,9 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
+#if USE_AEROSPIKE
 		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
 		{
 			try
@@ -202,6 +224,7 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
 		return result;
 	};
@@ -223,11 +246,12 @@ namespace PathORAM
 		// put / load all
 		if (get<5>(GetParam()))
 		{
-			oram->load(vector<block>(local.begin(), local.end()));
+			auto toLoad = vector<block>(local.begin(), local.end());
+			oram->load(toLoad);
 		}
 		else
 		{
-			for (auto record : local)
+			for (auto&& record : local)
 			{
 				oram->put(record.first, record.second);
 			}
@@ -238,7 +262,8 @@ namespace PathORAM
 		// get all
 		for (number id = 0; id < ELEMENTS; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(local[id], returned);
 		}
 
@@ -273,7 +298,8 @@ namespace PathORAM
 						if (batch[0].second.size() == 0)
 						{
 							// read
-							auto returned = oram->get(batch[0].first);
+							bytes returned;
+							oram->get(batch[0].first, returned);
 							EXPECT_EQ(local[batch[0].first], returned);
 						}
 						else
@@ -286,20 +312,21 @@ namespace PathORAM
 					else
 					{
 						// batch enabled
-						auto returned = oram->multiple(batch);
-						ASSERT_EQ(batch.size(), returned.size());
+						vector<bytes> response;
+						oram->multiple(batch, response);
+						ASSERT_EQ(batch.size(), response.size());
 
 						for (number j = 0; j < batch.size(); j++)
 						{
 							if (batch[j].second.size() == 0)
 							{
 								// read
-								EXPECT_EQ(local[batch[j].first], returned[j]);
+								EXPECT_EQ(local[batch[j].first], response[j]);
 							}
 							else
 							{
 								// write
-								EXPECT_EQ(batch[j].second, returned[j]);
+								EXPECT_EQ(batch[j].second, response[j]);
 								local[batch[j].first] = batch[j].second;
 							}
 						}

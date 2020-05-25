@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace PathORAM
 {
@@ -24,18 +25,18 @@ namespace PathORAM
 	class ORAM
 	{
 		private:
-		shared_ptr<AbsStorageAdapter> storage;
-		shared_ptr<AbsPositionMapAdapter> map;
-		shared_ptr<AbsStashAdapter> stash;
+		const shared_ptr<AbsStorageAdapter> storage;
+		const shared_ptr<AbsPositionMapAdapter> map;
+		const shared_ptr<AbsStashAdapter> stash;
 
-		number dataSize; // size of the "usable" portion of the block in bytes
-		number Z;		 // number of blocks per bucket
+		const number dataSize; // size of the "usable" portion of the block in bytes
+		const number Z;		   // number of blocks per bucket
 
-		number height;	// number of tree levels
-		number buckets; // total number of buckets
-		number blocks;	// total number of blocks
+		const number height;  // number of tree levels
+		const number buckets; // total number of buckets
+		const number blocks;  // total number of blocks
 
-		number batchSize; // a max number of requests to process at a time (default 1)
+		const number batchSize; // a max number of requests to process at a time (default 1)
 
 		// a layer between (expensive) storage and the protocol;
 		// holds items (buckets of blocks) in memory and unencrypted;
@@ -47,20 +48,20 @@ namespace PathORAM
 		 * @param read true of read access, false if write access
 		 * @param block the block ID requested
 		 * @param data if write, the data to be put in block (discarded if read)
-		 * @return bytes if read, the content of requested block (empty if write)
+		 * @param response if read, the content of requested block (empty if write)
 		 */
-		bytes access(bool read, number block, bytes data);
+		void access(const bool read, const number block, const bytes &data, bytes &response);
 
 		/**
 		 * @brief puts a path into the stash
 		 *
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
+		 * @param response path locations of the blocks in the path (will be populated)
 		 * @param putInStash if set, the path will be read from storage and put in stash.
-		 * Otherwise, will only return the locations of blocks in the path.
-		 * @return vector<number> the locations of the blocks in the path
+		 * Otherwise, will only populate the locations of blocks in the path.
 		 */
-		vector<number> readPath(number leaf, bool putInStash = true);
+		void readPath(const number leaf, unordered_set<number> &path, const bool putInStash);
 
 		/**
 		 * @brief write a path using the blocks from stash
@@ -68,7 +69,7 @@ namespace PathORAM
 		 * @param leaf the leaf that uniquely defines the path from root.
 		 * Leaves are numbered from 0 to N.
 		 */
-		void writePath(number leaf);
+		void writePath(const number leaf);
 
 		/**
 		 * @brief checks if the paths "merge" on the level
@@ -79,7 +80,7 @@ namespace PathORAM
 		 * @return true if the paths share the same node on the given level
 		 * @return false otherwise
 		 */
-		bool canInclude(number pathLeaf, number blockPosition, number level);
+		bool canInclude(const number pathLeaf, const number blockPosition, const number level) const;
 
 		/**
 		 * @brief computes the location in the storage for a bucket (not block) in a given path on a given level
@@ -88,16 +89,25 @@ namespace PathORAM
 		 * @param leaf leaf that defines the path in question
 		 * @return number the location of the requested bucket (not block) in the storage
 		 */
-		number bucketForLevelLeaf(number level, number leaf);
+		number bucketForLevelLeaf(const number level, const number leaf) const;
+
+		/**
+		 * @brief compute a range of possible leaves for the bucket
+		 *
+		 * @param location the bucket location in the tree
+		 * @return pair<number, number> {from, to} inclusive leaves that would satisfy the invariant
+		 */
+		pair<number, number> leavesForLocation(const number location);
 
 		/**
 		 * @brief make GET requests to the storage through cache.
 		 * That is, upon the cache miss the item will be downloaded and stored in cache.
 		 *
 		 * @param locations the addresses of the blocks to read
-		 * @return vector<block> the read blocks split into ORAM id and payload
+		 * @param response the read blocks split into ORAM id and payload
+		 * @param dryRun if set, will not populate response (will only download and put in interanal cache)
 		 */
-		vector<block> getCache(vector<number> locations);
+		void getCache(const unordered_set<number> &locations, vector<block> &response, const bool dryRun);
 
 		/**
 		 * @brief make SET requests to the storage through cache.
@@ -105,14 +115,14 @@ namespace PathORAM
 		 *
 		 * @param requests the set requests in a form of {address, {bucket of {ORAM ID, payload}}}
 		 */
-		void setCache(vector<pair<number, bucket>> requests);
+		void setCache(const vector<pair<number, bucket>> &requests);
 
 		/**
 		 * @brief upload all cache content to the storage and empty the cache
-		 *
 		 */
 		void syncCache();
 
+		friend class ORAMTest_LeavesForLocation_Test;
 		friend class ORAMTest_BucketFromLevelLeaf_Test;
 		friend class ORAMTest_CanInclude_Test;
 		friend class ORAMTest_ReadPath_Test;
@@ -137,7 +147,15 @@ namespace PathORAM
 		 * @param initialize whether to initialize map and storage (should be false if map and storage are read from files)
 		 * @param batchSize controls the max number of requests in multiple(...)
 		 */
-		ORAM(number logCapacity, number blockSize, number Z, shared_ptr<AbsStorageAdapter> storage, shared_ptr<AbsPositionMapAdapter> map, shared_ptr<AbsStashAdapter> stash, bool initialize = true, number batchSize = 1);
+		ORAM(
+			const number logCapacity,
+			const number blockSize,
+			const number Z,
+			const shared_ptr<AbsStorageAdapter> storage,
+			const shared_ptr<AbsPositionMapAdapter> map,
+			const shared_ptr<AbsStashAdapter> stash,
+			const bool initialize  = true,
+			const number batchSize = 1);
 
 		/**
 		 * @brief Construct a new ORAM object with adapters created automatically
@@ -154,15 +172,15 @@ namespace PathORAM
 		 * @param blockSize as in the extended constructor
 		 * @param Z as in the extended constructor
 		 */
-		ORAM(number logCapacity, number blockSize, number Z);
+		ORAM(const number logCapacity, const number blockSize, const number Z);
 
 		/**
 		 * @brief Retrives a block from ORAM
 		 *
 		 * @param block block ID to request
-		 * @return bytes the (decrypted) data from the block
+		 * @param response the (decrypted) data from the block
 		 */
-		bytes get(number block);
+		void get(const number block, bytes &response);
 
 		/**
 		 * @brief Puts a block to ORAM
@@ -170,7 +188,7 @@ namespace PathORAM
 		 * @param block block ID to request
 		 * @param data the (plaintext) data to put in the block
 		 */
-		void put(number block, bytes data);
+		void put(const number block, const bytes &data);
 
 		/**
 		 * @brief processes multiple requests at a time
@@ -181,7 +199,7 @@ namespace PathORAM
 		 *
 		 * @param requests the sequence of requests in a form of {ID, payload}
 		 * If payload is empty (zero size), the requests is treated as GET, otherwise PUT.
-		 * @return vector<bytes> the answer to the requests.
+		 * @param response the answer to the requests.
 		 * Matches the order of requests.
 		 * For a GET request the answer is a payload for ID.
 		 * For a PUT request the supplied payload is returned.
@@ -189,16 +207,16 @@ namespace PathORAM
 		 * \note
 		 * The number fo request must not exceed the batchSize parameter used to construct the ORAM.
 		 */
-		vector<bytes> multiple(vector<block> requests);
+		void multiple(const vector<block> &requests, vector<bytes> &response);
 
 		/**
 		 * @brief bulk loads the data bypassing usual ORAM protocol
 		 *
 		 * Loads the data straight to the storage preserving ORAM invariant.
 		 * Shuffles the data before inserting (to hide the original order).
-		 * For each record, chooses random leaf and greedily fills the path from the leaf to the root.
-		 * Tries random leaves until the record can be inserted in the path.
-		 * Throws exception is ORAM is full (cannot insert in any path).
+		 * Puts data blocks into locations in-order (skipping some location to disperse).
+		 * Then constructs position map randomly to satisfy the invariant.
+		 * Throws exception if ORAM capacity is too small.
 		 *
 		 * \note
 		 * Should only be used for off-line storage generation.
@@ -207,6 +225,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(vector<block> data);
+		void load(vector<block> &data);
 	};
 }

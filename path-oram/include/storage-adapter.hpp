@@ -2,14 +2,24 @@
 
 #include "definitions.h"
 
-#include <aerospike/aerospike.h>
+#include <boost/range/any_range.hpp>
 #include <boost/signals2/signal.hpp>
 #include <fstream>
+
+#if USE_REDIS
 #include <sw/redis++/redis++.h>
+#endif
+
+#if USE_AEROSPIKE
+#include <aerospike/aerospike.h>
+#endif
 
 namespace PathORAM
 {
 	using namespace std;
+
+	// range abstraction that is iterable (will be used for vector of pairs and unordered map)
+	using request_anyrange = boost::any_range<pair<const number, bucket>, boost::forward_traversal_tag>;
 
 	/**
 	 * @brief An abstraction over storage adapter
@@ -20,7 +30,7 @@ namespace PathORAM
 	 */
 	class AbsStorageAdapter
 	{
-		using OnStorageRequest = boost::signals2::signal<void(bool read, number batch, number size, number overhead)>;
+		using OnStorageRequest = boost::signals2::signal<void(const bool read, const number batch, const number size, const number overhead)>;
 
 		private:
 		/**
@@ -28,37 +38,37 @@ namespace PathORAM
 		 *
 		 * @param location location in question
 		 */
-		void checkCapacity(number location);
+		void checkCapacity(const number location) const;
 
 		/**
 		 * @brief check if a given data size is not above the block size
 		 *
 		 * @param dataSize size of the data to be inserted
 		 */
-		void checkBlockSize(number dataSize);
+		void checkBlockSize(const number dataSize) const;
 
 		/**
 		 * @brief Proxy for setInternal(number location, bytes raw) that emits OnStorageRequest
 		 */
-		void setAndRecord(number location, bytes raw);
+		void setAndRecord(const number location, const bytes &raw);
 
 		/**
-		 * @brief Proxy for getInternal(number location) that emits OnStorageRequest
+		 * @brief Proxy for getInternal(number location, bytes &response) that emits OnStorageRequest
 		 */
-		bytes getAndRecord(number location);
+		void getAndRecord(const number location, bytes &response) const;
 
 		/**
-		 * @brief Proxy for setInternal(vector<pair<number, bytes>> requests) that emits OnStorageRequest
+		 * @brief Proxy for setInternal(vector<pair<number, bytes>> &requests) that emits OnStorageRequest
 		 */
-		void setAndRecord(vector<pair<number, bytes>> requests);
+		void setAndRecord(const vector<pair<number, bytes>> &requests);
 
 		/**
-		 * @brief Proxy for getInternal(vector<number> locations) that emits OnStorageRequest
+		 * @brief Proxy for getInternal(vector<number> &locations, vector<bytes> &response) that emits OnStorageRequest
 		 */
-		vector<bytes> getAndRecord(vector<number> locations);
+		void getAndRecord(const vector<number> &locations, vector<bytes> &response) const;
 
-		bytes key; // AES key for encryption operations
-		number Z;  // number of blocks in a bucket
+		const bytes key; // AES key for encryption operations
+		const number Z;	 // number of blocks in a bucket
 
 		// Event handler
 		OnStorageRequest onStorageRequest;
@@ -71,9 +81,9 @@ namespace PathORAM
 		 * @brief retrieves the data from the location
 		 *
 		 * @param location location in question
-		 * @return bucket retrived data broken up into Z blocks {ID, decrypted payload}
+		 * @param response retrived data broken up into Z blocks {ID, decrypted payload}
 		 */
-		bucket get(number location);
+		void get(const number location, bucket &response) const;
 
 		/**
 		 * @brief writes the data to the location
@@ -83,7 +93,7 @@ namespace PathORAM
 		 * @param location location in question
 		 * @param data composition of Z blocks {ID, plaintext payload}
 		 */
-		void set(number location, bucket data);
+		void set(const number location, const bucket &data);
 
 		/**
 		 * @brief Subscribes to OnStorageRequest notifications.
@@ -101,9 +111,9 @@ namespace PathORAM
 		 * If it does not, batch will be executed sequentially.
 		 *
 		 * @param locations the locations from which to read
-		 * @return vector<block> retrived data broken up into IDs and decrypted payloads
+		 * @param response retrived data broken up into IDs and decrypted payloads
 		 */
-		vector<block> get(vector<number> locations);
+		void get(const vector<number> &locations, vector<block> &response) const;
 
 		/**
 		 * @brief writes the data in batch
@@ -113,8 +123,11 @@ namespace PathORAM
 		 * If it does not, batch will be executed sequentially.
 		 *
 		 * @param requests locations and data requests (IDs and payloads) to write
+		 * \note
+		 * request_range is usually constructed by boost::make_iterator_range(container.begin(), container.end()),
+		 * where container is any iterable entity that yields pair<const number, bucket> (notice const).
 		 */
-		void set(vector<pair<number, bucket>> requests);
+		void set(const request_anyrange requests);
 
 		/**
 		 * @brief sets all available locations (given by CAPACITY) to zeroed bytes.
@@ -125,12 +138,12 @@ namespace PathORAM
 		/**
 		 * @brief whether this adapter supports batch read operations.
 		 */
-		virtual const bool supportsBatchGet() = 0;
+		virtual bool supportsBatchGet() const = 0;
 
 		/**
 		 * @brief whether this adapter supports batch write operations.
 		 */
-		virtual const bool supportsBatchSet() = 0;
+		virtual bool supportsBatchSet() const = 0;
 
 		/**
 		 * @brief Construct a new Abs Storage Adapter object
@@ -145,13 +158,13 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		AbsStorageAdapter(number capacity, number userBlockSize, bytes key, number Z);
+		AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
-		number capacity;	  // number of buckets
-		number blockSize;	  // whole bucket size (Z times (user portion + ID) + IV)
-		number userBlockSize; // number of bytes in payload portion of block
+		const number capacity;		// number of buckets
+		const number blockSize;		// whole bucket size (Z times (user portion + ID) + IV)
+		const number userBlockSize; // number of bytes in payload portion of block
 
 		/**
 		 * @brief actual routine that writes raw bytes to storage
@@ -161,30 +174,30 @@ namespace PathORAM
 		 * @param location where to write bytes
 		 * @param raw the bytes to write
 		 */
-		virtual void setInternal(number location, bytes raw) = 0;
+		virtual void setInternal(const number location, const bytes &raw) = 0;
 
 		/**
 		 * @brief actual routine that retrieves raw bytes to storage
 		 *
 		 * @param location location from where to read bytes
-		 * @return bytes the retrieved bytes
+		 * @param response the retrieved bytes
 		 */
-		virtual bytes getInternal(number location) = 0;
+		virtual void getInternal(const number location, bytes &response) const = 0;
 
 		/**
 		 * @brief batch version of setInternal
 		 *
 		 * @param requests sequency of blocks to write (location, raw bytes)
 		 */
-		virtual void setInternal(vector<pair<number, bytes>> requests);
+		virtual void setInternal(const vector<pair<number, bytes>> &requests);
 
 		/**
 		 * @brief batch version of getInternal
 		 *
 		 * @param locations sequence (ordered) of locations to read from
-		 * @return vector<bytes> blocks of bytes in the order defined by locations
+		 * @param response blocks of bytes in the order defined by locations
 		 */
-		virtual vector<bytes> getInternal(vector<number> locations);
+		virtual void getInternal(const vector<number> &locations, vector<bytes> &response) const;
 	};
 
 	/**
@@ -195,18 +208,18 @@ namespace PathORAM
 	class InMemoryStorageAdapter : public AbsStorageAdapter
 	{
 		private:
-		uchar **blocks;
+		uchar **const blocks;
 
 		public:
-		InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key, number Z);
+		InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z);
 		~InMemoryStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(const number location, const bytes &raw) final;
+		void getInternal(const number location, bytes &reponse) const final;
 
-		const bool supportsBatchGet() final { return false; };
-		const bool supportsBatchSet() final { return false; };
+		bool supportsBatchGet() const final { return false; };
+		bool supportsBatchSet() const final { return false; };
 
 		friend class MockStorage;
 	};
@@ -219,7 +232,7 @@ namespace PathORAM
 	class FileSystemStorageAdapter : public AbsStorageAdapter
 	{
 		private:
-		fstream file;
+		unique_ptr<fstream> file;
 
 		public:
 		/**
@@ -236,17 +249,18 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override, number Z);
+		FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z);
 		~FileSystemStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(const number location, const bytes &raw) final;
+		void getInternal(const number location, bytes &reponse) const final;
 
-		const bool supportsBatchGet() final { return false; };
-		const bool supportsBatchSet() final { return false; };
+		bool supportsBatchGet() const final { return false; };
+		bool supportsBatchSet() const final { return false; };
 	};
 
+#if USE_REDIS
 	/**
 	 * @brief Redis implementation of the storage adapter.
 	 *
@@ -255,7 +269,7 @@ namespace PathORAM
 	class RedisStorageAdapter : public AbsStorageAdapter
 	{
 		private:
-		unique_ptr<sw::redis::Redis> redis;
+		const unique_ptr<sw::redis::Redis> redis;
 
 		public:
 		/**
@@ -272,20 +286,22 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z);
+		RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z);
 		~RedisStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(const number location, const bytes &raw) final;
+		void getInternal(const number location, bytes &reponse) const final;
 
-		void setInternal(vector<pair<number, bytes>> requests) final;
-		vector<bytes> getInternal(vector<number> locations) final;
+		void setInternal(const vector<pair<number, bytes>> &requests) final;
+		void getInternal(const vector<number> &locations, vector<bytes> &response) const final;
 
-		const bool supportsBatchGet() final { return true; };
-		const bool supportsBatchSet() final { return true; };
+		bool supportsBatchGet() const final { return true; };
+		bool supportsBatchSet() const final { return true; };
 	};
+#endif
 
+#if USE_AEROSPIKE
 	/**
 	 * @brief Aerospike implementation of the storage adapter.
 	 *
@@ -294,8 +310,8 @@ namespace PathORAM
 	class AerospikeStorageAdapter : public AbsStorageAdapter
 	{
 		private:
-		aerospike as;
-		string asset;
+		unique_ptr<aerospike> as;
+		const string asset;
 
 		/**
 		 * @brief remove all records from the own set
@@ -321,16 +337,17 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z, string set = "default");
+		AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string set = "default");
 		~AerospikeStorageAdapter() final;
 
 		protected:
-		void setInternal(number location, bytes raw) final;
-		bytes getInternal(number location) final;
+		void setInternal(const number location, const bytes &raw) final;
+		void getInternal(const number location, bytes &reponse) const final;
 
-		vector<bytes> getInternal(vector<number> locations) final;
+		void getInternal(const vector<number> &locations, vector<bytes> &response) const final;
 
-		const bool supportsBatchGet() final { return true; };
-		const bool supportsBatchSet() final { return false; };
+		bool supportsBatchGet() const final { return true; };
+		bool supportsBatchSet() const final { return false; };
 	};
+#endif
 }

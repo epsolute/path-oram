@@ -18,38 +18,38 @@ namespace PathORAM
 			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z);
 
 			// by default, all calls are delegated to the real object
-			ON_CALL(*this, getInternal).WillByDefault([this](vector<number> locations) {
-				return ((AbsStorageAdapter*)_real.get())->getInternal(locations);
+			ON_CALL(*this, getInternal).WillByDefault([this](const vector<number> &locations, vector<bytes> &response) {
+				return ((AbsStorageAdapter *)_real.get())->getInternal(locations, response);
 			});
-			ON_CALL(*this, setInternal).WillByDefault([this](vector<block> requests) {
-				return ((AbsStorageAdapter*)_real.get())->setInternal(requests);
+			ON_CALL(*this, setInternal).WillByDefault([this](const vector<block> &requests) {
+				return ((AbsStorageAdapter *)_real.get())->setInternal(requests);
 			});
 		}
 
 		// these four do not need to be mocked, they just have to exist to make class concrete
-		virtual bytes getInternal(number location) override
+		virtual void getInternal(const number location, bytes &response) const override
 		{
-			return _real->getInternal(location);
+			return _real->getInternal(location, response);
 		}
 
-		virtual void setInternal(number location, bytes raw) override
+		virtual void setInternal(const number location, const bytes &raw) override
 		{
 			_real->setInternal(location, raw);
 		}
 
-		virtual const bool supportsBatchGet() override
+		virtual bool supportsBatchGet() const override
 		{
 			return false;
 		}
 
-		virtual const bool supportsBatchSet() override
+		virtual bool supportsBatchSet() const override
 		{
 			return false;
 		}
 
-		// these two need to be mocked since we want tot rack how and when they are called (hence ON_CALL above)
-		MOCK_METHOD(vector<bytes>, getInternal, (vector<number> locations), (override));
-		MOCK_METHOD(void, setInternal, ((vector<block>)requests), (override));
+		// these two need to be mocked since we want to track how and when they are called (hence ON_CALL above)
+		MOCK_METHOD(void, getInternal, (const vector<number> &locations, vector<bytes> &response), (const, override));
+		MOCK_METHOD(void, setInternal, ((const vector<block>)&requests), (override));
 
 		private:
 		unique_ptr<InMemoryStorageAdapter> _real;
@@ -122,7 +122,7 @@ namespace PathORAM
 				{14, {1, 3, 7, 15, 30}},
 			};
 
-		for (auto test : tests)
+		for (auto &&test : tests)
 		{
 			for (number level = 0; level < LOG_CAPACITY; level++)
 			{
@@ -142,7 +142,7 @@ namespace PathORAM
 				{0, 11, 2, false},
 			};
 
-		for (auto test : tests)
+		for (auto &&test : tests)
 		{
 			EXPECT_EQ(get<3>(test), oram->canInclude(get<0>(test), get<1>(test), get<2>(test)));
 		}
@@ -152,15 +152,20 @@ namespace PathORAM
 	{
 		populateStorage();
 
-		EXPECT_EQ(0, stash->getAll().size());
+		vector<block> stashDump;
+		stash->getAll(stashDump);
+		EXPECT_EQ(0, stashDump.size());
 
-		auto path = oram->readPath(10uLL);
+		unordered_set<number> path;
+		oram->readPath(10uLL, path, true);
 
-		EXPECT_EQ(LOG_CAPACITY * Z, stash->getAll().size());
+		stashDump.clear();
+		stash->getAll(stashDump);
+		EXPECT_EQ(LOG_CAPACITY * Z, stashDump.size());
 
 		vector<int> expected = {1, 3, 6, 13, 26};
 
-		for (auto block : expected)
+		for (auto &&block : expected)
 		{
 			for (number i = 0; i < Z; i++)
 			{
@@ -172,18 +177,23 @@ namespace PathORAM
 
 	TEST_F(ORAMTest, GetNoException)
 	{
-		oram->get(CAPACITY - 1);
+		bytes got;
+		oram->get(CAPACITY - 1, got);
 	}
 
 	TEST_F(ORAMTest, PutNoException)
 	{
-		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
+		auto toPut = fromText("hello", BLOCK_SIZE);
+		oram->put(CAPACITY - 1, toPut);
 	}
 
 	TEST_F(ORAMTest, GetPutSame)
 	{
-		oram->put(CAPACITY - 1, fromText("hello", BLOCK_SIZE));
-		auto returned = oram->get(CAPACITY - 1);
+		auto toPut = fromText("hello", BLOCK_SIZE);
+		oram->put(CAPACITY - 1, toPut);
+
+		bytes returned;
+		oram->get(CAPACITY - 1, returned);
 
 		ASSERT_EQ("hello", toText(returned, BLOCK_SIZE));
 	}
@@ -192,7 +202,8 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
@@ -200,8 +211,9 @@ namespace PathORAM
 			auto found = false;
 			for (number location = 0; location < CAPACITY; location++)
 			{
-				auto bucket = storage->get(location);
-				for (auto block : bucket)
+				bucket bucket;
+				storage->get(location, bucket);
+				for (auto &&block : bucket)
 				{
 					if (block.first == id)
 					{
@@ -226,12 +238,14 @@ namespace PathORAM
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -240,7 +254,10 @@ namespace PathORAM
 	{
 		vector<block> batch;
 		batch.resize(BATCH_SIZE + 1);
-		ASSERT_ANY_THROW(oram->multiple(batch));
+		ASSERT_ANY_THROW({
+			vector<bytes> response;
+			oram->multiple(batch, response);
+		});
 	}
 
 	TEST_F(ORAMTest, MultipleCheckCache)
@@ -260,23 +277,27 @@ namespace PathORAM
 			batch.push_back({id, bytes()});
 		}
 
-		auto noDupsPredicate = [](vector<number> locations) -> bool {
-			sort(locations.begin(), locations.end());
-			auto it = unique(locations.begin(), locations.end());
-			return it == locations.end();
+		const auto noDupsPredicate = [](const vector<number> &locations) -> bool {
+			auto tmp = vector<number>(locations.begin(), locations.end());
+
+			sort(tmp.begin(), tmp.end());
+			auto it = unique(tmp.begin(), tmp.end());
+			return it == tmp.end();
 		};
 
-		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate))).Times(1);
-		EXPECT_CALL(*storage, setInternal(An<vector<block>>())).Times(1);
+		EXPECT_CALL(*storage, getInternal(Truly(noDupsPredicate), An<vector<bytes> &>())).Times(1);
+		EXPECT_CALL(*storage, setInternal(An<const vector<block> &>())).Times(1);
 
-		oram->multiple(batch);
+		vector<bytes> response;
+		oram->multiple(batch, response);
 	}
 
 	TEST_F(ORAMTest, MultipleGet)
 	{
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
 		}
 
 		vector<block> batch;
@@ -287,12 +308,13 @@ namespace PathORAM
 			{
 				if (batch.size() > 0)
 				{
-					auto returned = oram->multiple(batch);
-					ASSERT_EQ(batch.size(), returned.size());
+					vector<bytes> response;
+					oram->multiple(batch, response);
+					ASSERT_EQ(batch.size(), response.size());
 
 					for (number i = 0; i < batch.size(); i++)
 					{
-						EXPECT_EQ(to_string(batch[i].first), toText(returned[i], BLOCK_SIZE));
+						EXPECT_EQ(to_string(batch[i].first), toText(response[i], BLOCK_SIZE));
 					}
 
 					batch.clear();
@@ -311,11 +333,13 @@ namespace PathORAM
 			{
 				if (batch.size() > 0)
 				{
-					auto returned = oram->multiple(batch);
-					ASSERT_EQ(batch.size(), returned.size());
+					vector<bytes> response;
+					oram->multiple(batch, response);
+
+					ASSERT_EQ(batch.size(), response.size());
 					for (number i = 0; i < batch.size(); i++)
 					{
-						EXPECT_EQ(batch[i].second, returned[i]);
+						EXPECT_EQ(batch[i].second, response[i]);
 					}
 				}
 
@@ -325,7 +349,8 @@ namespace PathORAM
 
 		for (number id = 0; id < CAPACITY * Z - 5; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -333,16 +358,17 @@ namespace PathORAM
 	TEST_F(ORAMTest, BulkLoad)
 	{
 		vector<block> batch;
-		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4 + 1; id++)
 		{
 			batch.push_back({id, fromText(to_string(id), BLOCK_SIZE)});
 		}
 
 		oram->load(batch);
 
-		for (number id = 0; id < 3 * CAPACITY * Z / 4; id++)
+		for (number id = 0; id < 3 * CAPACITY * Z / 4 + 1; id++)
 		{
-			auto returned = oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 			EXPECT_EQ(to_string(id), toText(returned, BLOCK_SIZE));
 		}
 	}
@@ -362,26 +388,53 @@ namespace PathORAM
 	{
 		vector<int> puts, gets;
 		puts.reserve(CAPACITY * Z);
-		gets.reserve(CAPACITY * Z - 5);
+		gets.reserve(CAPACITY * Z);
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
-			oram->put(id, fromText(to_string(id), BLOCK_SIZE));
-			puts.push_back(stash->getAll().size());
+			auto toPut = fromText(to_string(id), BLOCK_SIZE);
+			oram->put(id, toPut);
+			vector<block> stashDump;
+			stash->getAll(stashDump);
+			puts.push_back(stashDump.size());
 		}
 
 		for (number id = 0; id < CAPACITY * Z; id++)
 		{
-			oram->get(id);
-			gets.push_back(stash->getAll().size());
+			bytes returned;
+			oram->get(id, returned);
+			vector<block> stashDump;
+			stash->getAll(stashDump);
+			gets.push_back(stashDump.size());
 		}
 
 		EXPECT_GE(LOG_CAPACITY * Z * 2, *max_element(gets.begin(), gets.end()));
 		EXPECT_EQ(0, *min_element(puts.begin(), puts.end()));
 	}
+
+	TEST_F(ORAMTest, LeavesForLocation)
+	{
+		const auto HEIGHT = 5;
+
+		auto smallOram = make_unique<ORAM>(HEIGHT, BLOCK_SIZE, Z);
+		for (auto location = 1; location < (1 << HEIGHT); location++)
+		{
+			const auto [left, right] = smallOram->leavesForLocation(location);
+			const auto level		 = (number)floor(log2(location));
+
+			for (auto leaf = left; leaf <= right; leaf++)
+			{
+				EXPECT_EQ(location, smallOram->bucketForLevelLeaf(level, leaf));
+				for (auto anotherLeaf = left; anotherLeaf <= right; anotherLeaf++)
+				{
+					EXPECT_TRUE(smallOram->canInclude(leaf, anotherLeaf, level));
+				}
+			}
+		}
+	}
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	srand(TEST_SEED);
 

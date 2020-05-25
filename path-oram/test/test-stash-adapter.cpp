@@ -26,7 +26,8 @@ namespace PathORAM
 	{
 		EXPECT_NO_THROW({
 			adapter->add(5uLL, bytes());
-			adapter->getAll();
+			vector<block> got;
+			adapter->getAll(got);
 			adapter->remove(5uLL);
 		});
 	}
@@ -44,7 +45,8 @@ namespace PathORAM
 
 		stash = make_unique<InMemoryStashAdapter>(CAPACITY);
 		stash->loadFromFile(filename, blockSize);
-		auto read = stash->get(5);
+		bytes read;
+		stash->get(5, read);
 		EXPECT_EQ(expected, read);
 
 		remove(filename);
@@ -65,11 +67,14 @@ namespace PathORAM
 			adapter->add(i, bytes());
 		}
 
-		auto fist	= adapter->getAll();
-		auto second = adapter->getAll();
+		vector<block> first;
+		adapter->getAll(first);
 
-		EXPECT_EQ(fist.size(), second.size());
-		EXPECT_NE(fist, second);
+		vector<block> second;
+		adapter->getAll(second);
+
+		EXPECT_EQ(first.size(), second.size());
+		EXPECT_NE(first, second);
 	}
 
 	TEST_F(StashAdapterTest, OverflowAdd)
@@ -102,7 +107,8 @@ namespace PathORAM
 		auto data  = bytes{0x25};
 
 		adapter->add(block, data);
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
 		ASSERT_EQ(data, returned);
 	}
@@ -115,9 +121,12 @@ namespace PathORAM
 		adapter->add(block, old);
 		adapter->update(block, _new);
 
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
-		ASSERT_EQ(1, adapter->getAll().size());
+		vector<pair<number, bytes>> got;
+		adapter->getAll(got);
+		ASSERT_EQ(1, got.size());
 		ASSERT_EQ(_new, returned);
 	}
 
@@ -129,9 +138,12 @@ namespace PathORAM
 		adapter->add(block, old);
 		adapter->add(block, _new);
 
-		auto returned = adapter->get(block);
+		bytes returned;
+		adapter->get(block, returned);
 
-		ASSERT_EQ(1, adapter->getAll().size());
+		vector<pair<number, bytes>> got;
+		adapter->getAll(got);
+		ASSERT_EQ(1, got.size());
 		ASSERT_EQ(old, returned);
 	}
 }

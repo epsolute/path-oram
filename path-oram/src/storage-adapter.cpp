@@ -11,7 +11,7 @@
 #include <utility.hpp>
 #include <vector>
 
-#define RECORD_AND_EXECUTE(condition, plain, execute, record)                                                   \
+#define RECORD_AND_EXECUTE(condition, plain, record)                                                            \
 	if (condition)                                                                                              \
 	{                                                                                                           \
 		plain;                                                                                                  \
@@ -19,7 +19,7 @@
 	else                                                                                                        \
 	{                                                                                                           \
 		auto start = chrono::steady_clock::now();                                                               \
-		execute;                                                                                                \
+		plain;                                                                                                  \
 		auto elapsed = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now() - start).count(); \
 		record;                                                                                                 \
 	}
@@ -35,72 +35,77 @@ namespace PathORAM
 	{
 	}
 
-	vector<block> AbsStorageAdapter::get(vector<number> locations)
+	void AbsStorageAdapter::get(const vector<number> &locations, vector<block> &response) const
 	{
-		for (auto location : locations)
+		for (auto &&location : locations)
 		{
 			checkCapacity(location);
 		}
 
 		// optimize for single operation
 		vector<bytes> raws;
+		raws.reserve(locations.size());
+
 		if (locations.size() == 1)
 		{
-			raws.push_back(getAndRecord(locations[0]));
+			raws.resize(1);
+			getAndRecord(locations[0], raws[0]);
 		}
 		else
 		{
-			raws = getAndRecord(locations);
+			getAndRecord(locations, raws);
 		}
 
-		vector<block> results;
-		results.reserve(raws.size() * Z);
-
-		for (auto raw : raws)
+		response.reserve(locations.size() * Z);
+		for (auto &&raw : raws)
 		{
 			// decompose to ID and cipher
-			bytes iv(raw.begin(), raw.begin() + AES_BLOCK_SIZE);
-			bytes ciphertext(raw.begin() + AES_BLOCK_SIZE, raw.end());
 
-			// decryption
-			auto decrypted = encrypt(key, iv, ciphertext, DECRYPT);
-			auto length	   = decrypted.size() / Z;
+			bytes decrypted;
+			encrypt(
+				key.begin(),
+				key.end(),
+				raw.begin(),
+				raw.begin() + AES_BLOCK_SIZE,
+				raw.begin() + AES_BLOCK_SIZE,
+				raw.end(),
+				decrypted,
+				DECRYPT);
+
+			const auto length = decrypted.size() / Z;
 
 			for (auto i = 0uLL; i < Z; i++)
 			{
-				// decompose to ID and data
-				bytes idBytes(decrypted.begin() + i * length, decrypted.begin() + i * length + AES_BLOCK_SIZE);
-				bytes data(decrypted.begin() + i * length + AES_BLOCK_SIZE, decrypted.begin() + (i + 1) * length);
+				// decompose to ID and data (extract ID from bytes)
+				uchar buffer[AES_BLOCK_SIZE];
+				copy(decrypted.begin() + i * length, decrypted.begin() + i * length + AES_BLOCK_SIZE, buffer);
 
-				// extract ID from bytes
-				uchar buffer[idBytes.size()];
-				copy(idBytes.begin(), idBytes.end(), buffer);
-				auto id = ((number *)buffer)[0];
-
-				results.push_back({id, data});
+				response.push_back(
+					{((number *)buffer)[0],
+					 bytes(decrypted.begin() + i * length + AES_BLOCK_SIZE, decrypted.begin() + (i + 1) * length)});
 			}
 		}
-
-		return results;
 	}
 
-	void AbsStorageAdapter::set(vector<pair<number, bucket>> requests)
+	void AbsStorageAdapter::set(const request_anyrange requests)
 	{
 		vector<block> writes;
 
-		for (auto [location, blocks] : requests)
+		for (auto &&[location, blocks] : requests)
 		{
 			checkCapacity(location);
 
+#if INPUT_CHECKS
 			if (blocks.size() != Z)
 			{
 				throw Exception(boost::format("each set request must contain exactly Z=%1% blocks (%2% given)") % Z % blocks.size());
 			}
+#endif
 
 			bytes toEncrypt;
 			toEncrypt.reserve(AES_BLOCK_SIZE + userBlockSize * Z);
 
-			for (auto block : blocks)
+			for (auto &&block : blocks)
 			{
 				checkBlockSize(block.second.size());
 
@@ -111,7 +116,7 @@ namespace PathORAM
 				}
 
 				// represent ID as a vector of bytes of length AES_BLOCK_SIZE
-				number buffer[1] = {block.first};
+				const number buffer[1] = {block.first};
 				bytes id((uchar *)buffer, (uchar *)buffer + sizeof(number));
 				id.resize(AES_BLOCK_SIZE, 0x00);
 
@@ -120,17 +125,19 @@ namespace PathORAM
 				toEncrypt.insert(toEncrypt.end(), block.second.begin(), block.second.end());
 			}
 
-			// encryption
-			auto iv		   = getRandomBlock(AES_BLOCK_SIZE);
-			auto encrypted = encrypt(key, iv, toEncrypt, ENCRYPT);
+			auto iv = getRandomBlock(AES_BLOCK_SIZE);
+			bytes encrypted;
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				toEncrypt.begin(),
+				toEncrypt.end(),
+				iv, // append result to IV
+				ENCRYPT);
 
-			// append IV
-			bytes raw;
-			raw.reserve(iv.size() + encrypted.size());
-			raw.insert(raw.end(), iv.begin(), iv.end());
-			raw.insert(raw.end(), encrypted.begin(), encrypted.end());
-
-			writes.push_back({location, raw});
+			writes.push_back({location, iv});
 		}
 
 		// optimize for single operation
@@ -144,64 +151,63 @@ namespace PathORAM
 		}
 	}
 
-	bucket AbsStorageAdapter::get(number location)
+	void AbsStorageAdapter::get(const number location, bucket &response) const
 	{
-		return get(vector<number>{location});
+		const auto locations = vector<number>{location};
+		get(locations, response);
 	}
 
-	void AbsStorageAdapter::set(number location, bucket data)
+	void AbsStorageAdapter::set(const number location, const bucket &data)
 	{
-		set(vector<pair<number, vector<block>>>{{location, data}});
+		const auto requests = vector<pair<const number, vector<block>>>{{location, data}};
+
+		set(boost::make_iterator_range(requests.begin(), requests.end()));
 	}
 
-	vector<bytes> AbsStorageAdapter::getInternal(vector<number> locations)
+	void AbsStorageAdapter::getInternal(const vector<number> &locations, vector<bytes> &response) const
 	{
-		vector<bytes> result;
-		result.resize(locations.size());
+		response.resize(locations.size());
 		for (unsigned int i = 0; i < locations.size(); i++)
 		{
-			result[i] = getAndRecord(locations[i]);
+			getAndRecord(locations[i], response[i]);
 		}
-
-		return result;
 	}
 
-	void AbsStorageAdapter::setInternal(vector<block> requests)
+	void AbsStorageAdapter::setInternal(const vector<block> &requests)
 	{
-		for (auto request : requests)
+		for (auto &&request : requests)
 		{
 			setAndRecord(request.first, request.second);
 		}
 	}
 
-	void AbsStorageAdapter::checkCapacity(number location)
+	void AbsStorageAdapter::checkCapacity(const number location) const
 	{
+#if INPUT_CHECKS
 		if (location >= capacity)
 		{
 			throw Exception(boost::format("id %1% out of bound (capacity %2%)") % location % capacity);
 		}
+#endif
 	}
 
-	void AbsStorageAdapter::checkBlockSize(number dataLength)
+	void AbsStorageAdapter::checkBlockSize(const number dataLength) const
 	{
+#if INPUT_CHECKS
 		if (dataLength > userBlockSize)
 		{
 			throw Exception(boost::format("data of size %1% is too long for a block of %2% bytes") % dataLength % userBlockSize);
 		}
+#endif
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(number capacity, number userBlockSize, bytes key, number Z) :
-		key(key),
+	AbsStorageAdapter::AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z) :
+		key(key.size() == KEYSIZE ? key : getRandomBlock(KEYSIZE)),
 		Z(Z),
 		capacity(capacity),
 		blockSize((userBlockSize + AES_BLOCK_SIZE) * Z + AES_BLOCK_SIZE), // IV + Z * (ID + PAYLOAD)
 		userBlockSize(userBlockSize)
 	{
-		if (key.size() != KEYSIZE)
-		{
-			this->key = getRandomBlock(KEYSIZE);
-		}
-
 		if (userBlockSize < 2 * AES_BLOCK_SIZE)
 		{
 			throw Exception(boost::format("block size %1% is too small, need at least %2%") % userBlockSize % (2 * AES_BLOCK_SIZE));
@@ -237,32 +243,26 @@ namespace PathORAM
 		return onStorageRequest.connect(handler);
 	}
 
-	void AbsStorageAdapter::setAndRecord(number location, bytes raw)
+	void AbsStorageAdapter::setAndRecord(const number location, const bytes &raw)
 	{
 		RECORD_AND_EXECUTE(
 			onStorageRequest.empty(),
-			setInternal(location, raw),
 			setInternal(location, raw),
 			onStorageRequest(false, 1, raw.size(), elapsed));
 	}
 
-	bytes AbsStorageAdapter::getAndRecord(number location)
+	void AbsStorageAdapter::getAndRecord(const number location, bytes &response) const
 	{
 		RECORD_AND_EXECUTE(
 			onStorageRequest.empty(),
-			return getInternal(location),
-			auto raw = getInternal(location),
-			{
-				onStorageRequest(true, 1, raw.size(), elapsed);
-				return raw;
-			});
+			getInternal(location, response),
+			onStorageRequest(true, 1, response.size(), elapsed));
 	}
 
-	void AbsStorageAdapter::setAndRecord(vector<pair<number, bytes>> requests)
+	void AbsStorageAdapter::setAndRecord(const vector<pair<number, bytes>> &requests)
 	{
 		RECORD_AND_EXECUTE(
 			onStorageRequest.empty() || !supportsBatchSet(),
-			setInternal(requests),
 			setInternal(requests),
 			{
 				auto size = 0;
@@ -274,20 +274,18 @@ namespace PathORAM
 			});
 	}
 
-	vector<bytes> AbsStorageAdapter::getAndRecord(vector<number> locations)
+	void AbsStorageAdapter::getAndRecord(const vector<number> &locations, vector<bytes> &response) const
 	{
 		RECORD_AND_EXECUTE(
 			onStorageRequest.empty() || !supportsBatchGet(),
-			return getInternal(locations),
-			auto raws = getInternal(locations),
+			getInternal(locations, response),
 			{
 				auto size = 0;
-				for (auto &&raw : raws)
+				for (auto &&raw : response)
 				{
 					size += raw.size();
 				}
-				onStorageRequest(true, raws.size(), size, elapsed);
-				return raws;
+				onStorageRequest(true, response.size(), size, elapsed);
 			});
 	}
 
@@ -304,10 +302,10 @@ namespace PathORAM
 		delete[] blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(number capacity, number userBlockSize, bytes key, number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z)
+	InMemoryStorageAdapter::InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+		blocks(new uchar *[capacity])
 	{
-		this->blocks = new uchar *[capacity];
 		for (auto i = 0uLL; i < capacity; i++)
 		{
 			blocks[i] = new uchar[blockSize];
@@ -316,12 +314,12 @@ namespace PathORAM
 		fillWithZeroes();
 	}
 
-	bytes InMemoryStorageAdapter::getInternal(number location)
+	void InMemoryStorageAdapter::getInternal(const number location, bytes &response) const
 	{
-		return bytes(blocks[location], blocks[location] + blockSize);
+		response.insert(response.begin(), blocks[location], blocks[location] + blockSize);
 	}
 
-	void InMemoryStorageAdapter::setInternal(number location, bytes raw)
+	void InMemoryStorageAdapter::setInternal(const number location, const bytes &raw)
 	{
 		copy(raw.begin(), raw.end(), blocks[location]);
 	}
@@ -332,11 +330,12 @@ namespace PathORAM
 
 	FileSystemStorageAdapter::~FileSystemStorageAdapter()
 	{
-		file.close();
+		file->close();
 	}
 
-	FileSystemStorageAdapter::FileSystemStorageAdapter(number capacity, number userBlockSize, bytes key, string filename, bool override, number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z)
+	FileSystemStorageAdapter::FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+		file(make_unique<fstream>())
 	{
 		auto flags = fstream::in | fstream::out | fstream::binary;
 		if (override)
@@ -344,56 +343,57 @@ namespace PathORAM
 			flags |= fstream::trunc;
 		}
 
-		file.open(filename, flags);
-		if (!file)
+		file->open(filename, flags);
+		if (!file->is_open())
 		{
 			throw Exception(boost::format("cannot open %1%: %2%") % filename % strerror(errno));
 		}
 
 		if (override)
 		{
-			file.seekg(0, file.beg);
+			file->seekg(0, file->beg);
 			uchar placeholder[blockSize];
 
 			for (number i = 0; i < capacity; i++)
 			{
-				file.write((const char *)placeholder, blockSize);
+				file->write((const char *)placeholder, blockSize);
 			}
 
 			fillWithZeroes();
 		}
 	}
 
-	bytes FileSystemStorageAdapter::getInternal(number location)
+	void FileSystemStorageAdapter::getInternal(const number location, bytes &response) const
 	{
 		uchar placeholder[blockSize];
-		file.seekg(location * blockSize, file.beg);
-		file.read((char *)placeholder, blockSize);
+		file->seekg(location * blockSize, file->beg);
+		file->read((char *)placeholder, blockSize);
 
-		return bytes(placeholder, placeholder + blockSize);
+		response.insert(response.begin(), placeholder, placeholder + blockSize);
 	}
 
-	void FileSystemStorageAdapter::setInternal(number location, bytes raw)
+	void FileSystemStorageAdapter::setInternal(const number location, const bytes &raw)
 	{
 		uchar placeholder[blockSize];
 		copy(raw.begin(), raw.end(), placeholder);
 
-		file.seekp(location * blockSize, file.beg);
-		file.write((const char *)placeholder, blockSize);
+		file->seekp(location * blockSize, file->beg);
+		file->write((const char *)placeholder, blockSize);
 	}
 
 #pragma endregion FileSystemStorageAdapter
 
+#if USE_REDIS
 #pragma region RedisStorageAdapter
 
 	RedisStorageAdapter::~RedisStorageAdapter()
 	{
 	}
 
-	RedisStorageAdapter::RedisStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z)
+	RedisStorageAdapter::RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+		redis(make_unique<sw::redis::Redis>(host))
 	{
-		redis = make_unique<sw::redis::Redis>(host);
 		redis->ping();
 
 		if (override)
@@ -404,18 +404,18 @@ namespace PathORAM
 		}
 	}
 
-	bytes RedisStorageAdapter::getInternal(number location)
+	void RedisStorageAdapter::getInternal(const number location, bytes &response) const
 	{
-		auto rawStr = redis->get(to_string(location));
-		return bytes(rawStr.value().begin(), rawStr.value().end());
+		const auto rawStr = redis->get(to_string(location));
+		response.insert(response.begin(), rawStr.value().begin(), rawStr.value().end());
 	}
 
-	void RedisStorageAdapter::setInternal(number location, bytes raw)
+	void RedisStorageAdapter::setInternal(const number location, const bytes &raw)
 	{
 		redis->set(to_string(location), string(raw.begin(), raw.end()));
 	}
 
-	void RedisStorageAdapter::setInternal(vector<pair<number, bytes>> requests)
+	void RedisStorageAdapter::setInternal(const vector<pair<number, bytes>> &requests)
 	{
 		vector<pair<string, string>> input;
 		input.resize(requests.size());
@@ -423,7 +423,7 @@ namespace PathORAM
 		redis->mset(input.begin(), input.end());
 	}
 
-	vector<bytes> RedisStorageAdapter::getInternal(vector<number> locations)
+	void RedisStorageAdapter::getInternal(const vector<number> &locations, vector<bytes> &response) const
 	{
 		vector<string> input;
 		input.resize(locations.size());
@@ -432,37 +432,38 @@ namespace PathORAM
 		vector<optional<string>> returned;
 		redis->mget(input.begin(), input.end(), back_inserter(returned));
 
-		vector<bytes> results;
-		results.resize(returned.size());
-		transform(returned.begin(), returned.end(), results.begin(), [](optional<string> val) { return bytes(val.value().begin(), val.value().end()); });
-
-		return results;
+		response.resize(returned.size());
+		transform(returned.begin(), returned.end(), response.begin(), [](optional<string> val) { return bytes(val.value().begin(), val.value().end()); });
 	}
 
 #pragma endregion RedisStorageAdapter
+#endif
 
+#if USE_AEROSPIKE
 #pragma region AerospikeStorageAdapter
 
 	AerospikeStorageAdapter::~AerospikeStorageAdapter()
 	{
 		as_error err;
 
-		aerospike_close(&as, &err);
-		aerospike_destroy(&as);
+		aerospike_close(as.get(), &err);
+		aerospike_destroy(as.get());
 	}
 
-	AerospikeStorageAdapter::AerospikeStorageAdapter(number capacity, number userBlockSize, bytes key, string host, bool override, number Z, string asset) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z), asset(asset)
+	AerospikeStorageAdapter::AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string asset) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+		as(make_unique<aerospike>()),
+		asset(asset)
 	{
 		as_config config;
 		as_config_init(&config);
 		as_config_add_host(&config, host.c_str(), 3000);
 
-		aerospike_init(&as, &config);
+		aerospike_init(as.get(), &config);
 
 		as_error err;
 
-		aerospike_connect(&as, &err);
+		aerospike_connect(as.get(), &err);
 
 		if (err.code != AEROSPIKE_OK)
 		{
@@ -477,7 +478,7 @@ namespace PathORAM
 		}
 	}
 
-	bytes AerospikeStorageAdapter::getInternal(number location)
+	void AerospikeStorageAdapter::getInternal(const number location, bytes &response) const
 	{
 		as_key asKey;
 		as_key_init(&asKey, "test", asset.c_str(), to_string(location).c_str());
@@ -485,21 +486,19 @@ namespace PathORAM
 		as_error err;
 		as_record *p_rec = NULL;
 
-		aerospike_key_get(&as, &err, NULL, &asKey, &p_rec);
+		aerospike_key_get(as.get(), &err, NULL, &asKey, &p_rec);
 
 		as_bytes *rawBytes = as_record_get_bytes(p_rec, "value");
 
 		uint8_t *rawChars = as_bytes_get(rawBytes);
 
-		auto result = bytes(rawChars, rawChars + blockSize);
+		response.insert(response.begin(), rawChars, rawChars + blockSize);
 
 		as_record_destroy(p_rec);
 		p_rec = NULL;
-
-		return result;
 	}
 
-	void AerospikeStorageAdapter::setInternal(number location, bytes raw)
+	void AerospikeStorageAdapter::setInternal(const number location, const bytes &raw)
 	{
 		as_key asKey;
 		as_key_init(&asKey, "test", asset.c_str(), to_string(location).c_str());
@@ -515,10 +514,10 @@ namespace PathORAM
 
 		as_error err;
 
-		aerospike_key_put(&as, &err, NULL, &asKey, &rec);
+		aerospike_key_put(as.get(), &err, NULL, &asKey, &rec);
 	}
 
-	vector<bytes> AerospikeStorageAdapter::getInternal(vector<number> locations)
+	void AerospikeStorageAdapter::getInternal(const vector<number> &locations, vector<bytes> &response) const
 	{
 		as_batch batch;
 		as_batch_inita(&batch, locations.size());
@@ -558,7 +557,7 @@ namespace PathORAM
 		udata.result.resize(locations.size());
 
 		as_error err;
-		aerospike_batch_get(&as, &err, NULL, &batch, callback, &udata);
+		aerospike_batch_get(as.get(), &err, NULL, &batch, callback, &udata);
 
 		as_batch_destroy(&batch);
 
@@ -567,14 +566,15 @@ namespace PathORAM
 			delete[] strs[i];
 		}
 
-		return udata.result;
+		copy(udata.result.begin(), udata.result.end(), back_inserter(response));
 	}
 
 	void AerospikeStorageAdapter::deleteAll()
 	{
 		as_error err;
-		aerospike_truncate(&as, &err, NULL, "test", asset.c_str(), 0);
+		aerospike_truncate(as.get(), &err, NULL, "test", asset.c_str(), 0);
 	}
 
 #pragma endregion AerospikeStorageAdapter
+#endif
 }

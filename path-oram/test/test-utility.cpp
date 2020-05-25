@@ -64,9 +64,51 @@ namespace PathORAM
 	{
 		for (auto mode : {ENCRYPT, DECRYPT})
 		{
-			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE - 1), getRandomBlock(AES_BLOCK_SIZE), getRandomBlock(3 * AES_BLOCK_SIZE), mode));
-			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE), getRandomBlock(AES_BLOCK_SIZE - 1), getRandomBlock(3 * AES_BLOCK_SIZE), mode));
-			ASSERT_ANY_THROW(encrypt(getRandomBlock(KEYSIZE), getRandomBlock(AES_BLOCK_SIZE), getRandomBlock(3 * AES_BLOCK_SIZE - 1), mode));
+			ASSERT_ANY_THROW({
+				auto key   = getRandomBlock(KEYSIZE - 1);
+				auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
+				auto input = getRandomBlock(3 * AES_BLOCK_SIZE);
+				bytes output;
+				encrypt(
+					key.begin(),
+					key.end(),
+					iv.begin(),
+					iv.end(),
+					input.begin(),
+					input.end(),
+					output,
+					mode);
+			});
+			ASSERT_ANY_THROW({
+				auto key   = getRandomBlock(KEYSIZE);
+				auto iv	   = getRandomBlock(AES_BLOCK_SIZE - 1);
+				auto input = getRandomBlock(3 * AES_BLOCK_SIZE);
+				bytes output;
+				encrypt(
+					key.begin(),
+					key.end(),
+					iv.begin(),
+					iv.end(),
+					input.begin(),
+					input.end(),
+					output,
+					mode);
+			});
+			ASSERT_ANY_THROW({
+				auto key   = getRandomBlock(KEYSIZE);
+				auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
+				auto input = getRandomBlock(3 * AES_BLOCK_SIZE - 1);
+				bytes output;
+				encrypt(
+					key.begin(),
+					key.end(),
+					iv.begin(),
+					iv.end(),
+					input.begin(),
+					input.end(),
+					output,
+					mode);
+			});
 		}
 	}
 
@@ -77,9 +119,27 @@ namespace PathORAM
 
 		auto input = fromText("Hello, world!", 64);
 
-		auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+		bytes ciphertext;
+		encrypt(
+			key.begin(),
+			key.end(),
+			iv.begin(),
+			iv.end(),
+			input.begin(),
+			input.end(),
+			ciphertext,
+			ENCRYPT);
 
-		auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+		bytes plaintext;
+		encrypt(
+			key.begin(),
+			key.end(),
+			iv.begin(),
+			iv.end(),
+			ciphertext.begin(),
+			ciphertext.end(),
+			plaintext,
+			DECRYPT);
 
 		ASSERT_EQ(input, plaintext);
 	}
@@ -92,9 +152,27 @@ namespace PathORAM
 			auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
 			auto input = getRandomBlock(AES_BLOCK_SIZE * 3);
 
-			auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+			bytes ciphertext;
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				input.begin(),
+				input.end(),
+				ciphertext,
+				ENCRYPT);
 
-			auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+			bytes plaintext;
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				ciphertext.begin(),
+				ciphertext.end(),
+				plaintext,
+				DECRYPT);
 
 			ASSERT_EQ(input, plaintext);
 		}
@@ -110,9 +188,27 @@ namespace PathORAM
 			auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
 			auto input = getRandomBlock(AES_BLOCK_SIZE * 3);
 
-			auto ciphertext = encrypt(key, iv, input, ENCRYPT);
+			bytes ciphertext;
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				input.begin(),
+				input.end(),
+				ciphertext,
+				ENCRYPT);
 
-			auto plaintext = encrypt(key, iv, ciphertext, DECRYPT);
+			bytes plaintext;
+			encrypt(
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				ciphertext.begin(),
+				ciphertext.end(),
+				plaintext,
+				DECRYPT);
 
 			ASSERT_EQ(input, plaintext);
 		}
@@ -122,12 +218,21 @@ namespace PathORAM
 	{
 		__blockCipherMode = (BlockCipherMode)INT_MAX;
 
-		ASSERT_ANY_THROW(
+		ASSERT_ANY_THROW({
+			auto key   = getRandomBlock(KEYSIZE);
+			auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
+			auto input = getRandomBlock(3 * AES_BLOCK_SIZE);
+			bytes output;
 			encrypt(
-				getRandomBlock(KEYSIZE),
-				getRandomBlock(AES_BLOCK_SIZE),
-				getRandomBlock(AES_BLOCK_SIZE * 3),
-				ENCRYPT));
+				key.begin(),
+				key.end(),
+				iv.begin(),
+				iv.end(),
+				input.begin(),
+				input.end(),
+				output,
+				ENCRYPT);
+		});
 	}
 
 	TEST_F(UtilityTest, LoadStoreKey)
@@ -147,26 +252,32 @@ namespace PathORAM
 
 	TEST_F(UtilityTest, HashSameInput)
 	{
-		auto input	= fromText("Hello, world", 500);
-		auto first	= hash(input);
-		auto second = hash(input);
+		auto input = fromText("Hello, world", 500);
+		bytes first, second;
+		hash(input, first);
+		hash(input, second);
 
 		ASSERT_EQ(first, second);
 	}
 
 	TEST_F(UtilityTest, HashDifferentInput)
 	{
-		auto first	= hash(fromText("Hello, world", 500));
-		auto second = hash(fromText("Hi", 500));
+		auto inputOne = fromText("Hello, world", 500);
+		auto inputTwo = fromText("Hi", 500);
+		bytes first, second;
+		hash(inputOne, first);
+		hash(inputTwo, second);
 
 		ASSERT_NE(first, second);
 	}
 
 	TEST_F(UtilityTest, HashExpectedSize)
 	{
-		auto disgest = hash(fromText("Hello, world", 500));
+		auto input = fromText("Hello, world", 500);
+		bytes digest;
+		hash(input, digest);
 
-		ASSERT_EQ(HASHSIZE / 16, disgest.size());
+		ASSERT_EQ(HASHSIZE / 16, digest.size());
 	}
 
 	TEST_F(UtilityTest, HashToNumberUniform)

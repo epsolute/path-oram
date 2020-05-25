@@ -34,7 +34,8 @@ int main()
 	// get all
 	for (number id = 0; id < ELEMENTS; id++)
 	{
-		oram->get(id);
+		bytes returned;
+		oram->get(id, returned);
 	}
 
 	// random operations
@@ -45,7 +46,8 @@ int main()
 		if (read)
 		{
 			// get
-			oram->get(id);
+			bytes returned;
+			oram->get(id, returned);
 		}
 		else
 		{

@@ -11,10 +11,14 @@ namespace PathORAM
 {
 	enum TestingStorageAdapterType
 	{
-		StorageAdapterTypeInMemory,
-		StorageAdapterTypeFileSystem,
+#if USE_REDIS
 		StorageAdapterTypeRedis,
-		StorageAdapterTypeAerospike
+#endif
+#if USE_AEROSPIKE
+		StorageAdapterTypeAerospike,
+#endif
+		StorageAdapterTypeInMemory,
+		StorageAdapterTypeFileSystem
 	};
 
 	class StorageAdapterBenchmark : public ::benchmark::Fixture
@@ -44,12 +48,16 @@ namespace PathORAM
 				case StorageAdapterTypeFileSystem:
 					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, 1);
 					break;
+#if USE_REDIS
 				case StorageAdapterTypeRedis:
 					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, false, 1);
 					break;
+#endif
+#if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
 					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, false, 1);
 					break;
+#endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
 			}
@@ -62,22 +70,24 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto batch = state.range(1);
 
+		bucket toWrite = {{5uLL, bytes()}};
+
 		number location = 0;
 		for (auto _ : state)
 		{
 			if (batch == 1)
 			{
-				adapter->set((location * (1 << 10)) % CAPACITY, {{5uLL, bytes()}});
+				adapter->set((location * (1 << 10)) % CAPACITY, toWrite);
 			}
 			else
 			{
-				vector<pair<number, bucket>> writes;
-				writes.resize(batch);
+				vector<pair<const number, bucket>> writes;
+				writes.reserve(batch);
 				for (auto i = 0; i < batch; i++)
 				{
-					writes[i] = {((location + i) * (1 << 10)) % CAPACITY, {{5uLL, bytes()}}};
+					writes.push_back({((location + i) * (1 << 10)) % CAPACITY, toWrite});
 				}
-				adapter->set(writes);
+				adapter->set(boost::make_iterator_range(writes.begin(), writes.end()));
 			}
 
 			location++;
@@ -90,9 +100,12 @@ namespace PathORAM
 		Configure((TestingStorageAdapterType)state.range(0));
 		auto batch = state.range(1);
 
+		bucket toWrite = {{5uLL, bytes()}};
+		vector<block> read;
+
 		for (number i = 0; i < CAPACITY; i++)
 		{
-			adapter->set(i, {{5uLL, bytes()}});
+			adapter->set(i, toWrite);
 		}
 
 		number location = 0;
@@ -100,7 +113,7 @@ namespace PathORAM
 		{
 			if (batch == 1)
 			{
-				benchmark::DoNotOptimize(adapter->get((location * (1 << 10)) % CAPACITY));
+				adapter->get((location * (1 << 10)) % CAPACITY, read);
 			}
 			else
 			{
@@ -110,8 +123,9 @@ namespace PathORAM
 				{
 					reads[i] = ((location + i) * (1 << 10)) % CAPACITY;
 				}
-				benchmark::DoNotOptimize(adapter->get(reads));
+				adapter->get(reads, read);
 			}
+			read.clear();
 		}
 	}
 
@@ -125,6 +139,7 @@ namespace PathORAM
 
 		auto iterations = 1 << 15;
 
+#if USE_REDIS
 		for (auto host : vector<string>{"127.0.0.1", "redis"})
 		{
 			try
@@ -146,7 +161,9 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
+#if USE_AEROSPIKE
 		for (auto host : vector<string>{"127.0.0.1", "aerospike"})
 		{
 			try
@@ -178,6 +195,7 @@ namespace PathORAM
 			{
 			}
 		}
+#endif
 
 		b->Iterations(iterations);
 	}
