@@ -214,9 +214,9 @@ namespace PathORAM
 		 *
 		 * Loads the data straight to the storage preserving ORAM invariant.
 		 * Shuffles the data before inserting (to hide the original order).
-		 * For each record, chooses random leaf and greedily fills the path from the leaf to the root.
-		 * Tries random leaves until the record can be inserted in the path.
-		 * Throws exception is ORAM is full (cannot insert in any path).
+		 * Puts data blocks into locations in-order (skipping some location to disperse).
+		 * Then constructs position map randomly to satisfy the invariant.
+		 * Throws exception if ORAM capacity is too small.
 		 *
 		 * \note
 		 * Should only be used for off-line storage generation.
@@ -225,6 +225,6 @@ namespace PathORAM
 		 *
 		 * @param data the data to bulk load
 		 */
-		void load(const vector<block> &data);
+		void load(vector<block> &data);
 	};
 }

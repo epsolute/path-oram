@@ -95,16 +95,19 @@ namespace PathORAM
 		syncCache();
 	}
 
-	void ORAM::load(const vector<block> &data)
+	void ORAM::load(vector<block> &data)
 	{
-		if (((data.size() + Z - 1) / Z) > (1 << height))
+		const auto maxLocation = 1 << height;
+		const auto bucketCount = (data.size() + Z - 1) / Z; // for rounding errors
+		const auto step		   = maxLocation / (long double)bucketCount;
+
+		if (bucketCount > maxLocation)
 		{
-			throw Exception("no space left in ORAM for bulk load");
+			throw Exception("bulk load: too much data for ORAM");
 		}
 
-		unordered_map<number, bucket> localStorage;
-
-		auto shuffled = vector<block>(data.begin(), data.end());
+		vector<pair<const number, bucket>> writeRequests;
+		writeRequests.reserve(bucketCount);
 
 		// shuffle (such bulk load may leak in part the original order)
 		const uint n = data.size();
@@ -114,14 +117,16 @@ namespace PathORAM
 			for (uint i = 0; i < n - 1; i++)
 			{
 				uint j = i + getRandomUInt(n - i);
-				swap(shuffled[i], shuffled[j]);
+				swap(data[i], data[j]);
 			}
 		}
 
-		auto location = 1uLL;
+		auto iteration = 0uLL;
 		bucket bucket;
-		for (auto &&record : shuffled)
+		for (auto &&record : data)
 		{
+			// to disperse locations evenly from 1 to maxLocation
+			const auto location	  = (number)floor(1 + iteration * step);
 			const auto [from, to] = leavesForLocation(location);
 			map->set(record.first, getRandomULong(to - from + 1) + from);
 
@@ -131,21 +136,22 @@ namespace PathORAM
 			}
 			if (bucket.size() == Z)
 			{
-				localStorage[location] = bucket;
-				location++;
+				writeRequests.push_back({location, bucket});
+				iteration++;
 				bucket.clear();
 			}
 		}
+		const auto location = (number)floor(1 + iteration * step);
 		if (bucket.size() > 0)
 		{
 			for (auto i = 0u; i < bucket.size() - Z; i++)
 			{
 				bucket.push_back({ULONG_MAX, bytes()});
 			}
-			localStorage[location] = bucket;
+			writeRequests.push_back({location, bucket});
 		}
 
-		storage->set(boost::make_iterator_range(localStorage.begin(), localStorage.end()));
+		storage->set(boost::make_iterator_range(writeRequests.begin(), writeRequests.end()));
 	}
 
 	void ORAM::access(const bool read, const number block, const bytes &data, bytes &response)
