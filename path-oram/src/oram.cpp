@@ -97,9 +97,9 @@ namespace PathORAM
 
 	void ORAM::load(vector<block> &data)
 	{
-		const auto maxLocation = 1 << height;
-		const auto bucketCount = (data.size() + Z - 1) / Z; // for rounding errors
-		const auto step		   = maxLocation / (long double)bucketCount;
+		const number maxLocation = 1 << height;
+		const auto bucketCount	 = (data.size() + Z - 1) / Z; // for rounding errors
+		const auto step			 = maxLocation / (long double)bucketCount;
 
 		if (bucketCount > maxLocation)
 		{
