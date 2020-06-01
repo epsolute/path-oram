@@ -106,6 +106,7 @@ namespace PathORAM
 	BENCHMARK_REGISTER_F(UtilityBenchmark, Encrypt)
 		->Args({CBC})
 		->Args({CTR})
+		->Args({NONE})
 		->Iterations(1 << 15)
 		->Unit(benchmark::kMicrosecond);
 

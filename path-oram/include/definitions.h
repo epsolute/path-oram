@@ -49,7 +49,8 @@ namespace PathORAM
 	enum BlockCipherMode
 	{
 		CBC,
-		CTR
+		CTR,
+		NONE
 	};
 
 	/**

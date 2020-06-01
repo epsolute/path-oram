@@ -214,6 +214,40 @@ namespace PathORAM
 		}
 	}
 
+	TEST_F(UtilityTest, EncryptDecryptNoEncryption)
+	{
+		__blockCipherMode = NONE;
+
+		auto key   = getRandomBlock(KEYSIZE);
+		auto iv	   = getRandomBlock(AES_BLOCK_SIZE);
+		auto input = getRandomBlock(3 * AES_BLOCK_SIZE);
+		bytes output;
+		encrypt(
+			key.begin(),
+			key.end(),
+			iv.begin(),
+			iv.end(),
+			input.begin(),
+			input.end(),
+			output,
+			ENCRYPT);
+
+		ASSERT_EQ(input, output);
+
+		output.clear();
+		encrypt(
+			key.begin(),
+			key.end(),
+			iv.begin(),
+			iv.end(),
+			input.begin(),
+			input.end(),
+			output,
+			DECRYPT);
+
+		ASSERT_EQ(input, output);
+	}
+
 	TEST_F(UtilityTest, UnimplementedMode)
 	{
 		__blockCipherMode = (BlockCipherMode)INT_MAX;

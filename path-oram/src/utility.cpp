@@ -105,6 +105,12 @@ namespace PathORAM
 		}
 #endif
 
+		if (__blockCipherMode == NONE)
+		{
+			output.insert(output.end(), inputFirst, inputLast);
+			return;
+		}
+
 		AES_KEY aesKey;
 		uchar keyMaterial[KEYSIZE];
 		copy(keyFirst, keyLast, keyMaterial);
