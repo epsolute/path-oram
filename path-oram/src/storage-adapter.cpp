@@ -226,6 +226,9 @@ namespace PathORAM
 
 	void AbsStorageAdapter::fillWithZeroes()
 	{
+		vector<pair<const number, bucket>> requests;
+		requests.reserve(capacity);
+
 		for (auto i = 0uLL; i < capacity; i++)
 		{
 			bucket bucket;
@@ -234,8 +237,10 @@ namespace PathORAM
 				bucket.push_back({ULONG_MAX, bytes()});
 			}
 
-			set(i, bucket);
+			requests.push_back({i, bucket});
 		}
+
+		set(boost::make_iterator_range(requests.begin(), requests.end()));
 	}
 
 	boost::signals2::connection AbsStorageAdapter::subscribe(const OnStorageRequest::slot_type &handler)
