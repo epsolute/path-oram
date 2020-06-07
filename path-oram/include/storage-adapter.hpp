@@ -67,8 +67,9 @@ namespace PathORAM
 		 */
 		void getAndRecord(const vector<number> &locations, vector<bytes> &response) const;
 
-		const bytes key; // AES key for encryption operations
-		const number Z;	 // number of blocks in a bucket
+		const bytes key;		 // AES key for encryption operations
+		const number Z;			 // number of blocks in a bucket
+		const number batchLimit; // maximum number of requests in a batch
 
 		// Event handler
 		OnStorageRequest onStorageRequest;
@@ -158,7 +159,7 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z);
+		AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z, const number batchLimit);
 		virtual ~AbsStorageAdapter() = 0;
 
 		protected:
@@ -211,7 +212,7 @@ namespace PathORAM
 		uchar **const blocks;
 
 		public:
-		InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z);
+		InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z, const number batchLimit = 0);
 		~InMemoryStorageAdapter() final;
 
 		protected:
@@ -249,7 +250,7 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z);
+		FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z, const number batchLimit = 0);
 		~FileSystemStorageAdapter() final;
 
 		protected:
@@ -286,7 +287,7 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z);
+		RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const number batchLimit = 300000);
 		~RedisStorageAdapter() final;
 
 		protected:
@@ -337,7 +338,7 @@ namespace PathORAM
 		 * @param Z the number of blocks in a bucket.
 		 * GET and SET will operate using Z.
 		 */
-		AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string set = "default");
+		AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string set = "default", const number batchLimit = 0);
 		~AerospikeStorageAdapter() final;
 
 		protected:

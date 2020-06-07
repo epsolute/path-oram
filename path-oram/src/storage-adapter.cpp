@@ -53,7 +53,23 @@ namespace PathORAM
 		}
 		else
 		{
-			getAndRecord(locations, raws);
+			if (batchLimit == 0 || locations.size() <= batchLimit)
+			{
+				getAndRecord(locations, raws);
+			}
+			else
+			{
+				vector<number> batch;
+				number pointer = 0;
+				while (pointer < locations.size())
+				{
+					batch.reserve(min(batchLimit, locations.size() - pointer));
+					copy(locations.begin() + pointer, distance(locations.begin() + pointer, locations.end()) > batchLimit ? locations.begin() + pointer + batchLimit : locations.end(), batch.begin());
+					getAndRecord(batch, raws);
+					batch.clear();
+					pointer += batchLimit;
+				}
+			}
 		}
 
 		response.reserve(locations.size() * Z);
@@ -147,7 +163,23 @@ namespace PathORAM
 		}
 		else
 		{
-			setAndRecord(writes);
+			if (batchLimit == 0 || writes.size() <= batchLimit)
+			{
+				setAndRecord(writes);
+			}
+			else
+			{
+				vector<pair<number, bytes>> batch;
+				number pointer = 0;
+				while (pointer < writes.size())
+				{
+					batch.reserve(min(batchLimit, writes.size() - pointer));
+					copy(writes.begin() + pointer, distance(writes.begin() + pointer, writes.end()) > batchLimit ? writes.begin() + pointer + batchLimit : writes.end(), batch.begin());
+					setAndRecord(batch);
+					batch.clear();
+					pointer += batchLimit;
+				}
+			}
 		}
 	}
 
@@ -201,9 +233,10 @@ namespace PathORAM
 #endif
 	}
 
-	AbsStorageAdapter::AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z) :
+	AbsStorageAdapter::AbsStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z, const number batchLimit) :
 		key(key.size() == KEYSIZE ? key : getRandomBlock(KEYSIZE)),
 		Z(Z),
+		batchLimit(batchLimit),
 		capacity(capacity),
 		blockSize((userBlockSize + AES_BLOCK_SIZE) * Z + AES_BLOCK_SIZE), // IV + Z * (ID + PAYLOAD)
 		userBlockSize(userBlockSize)
@@ -307,8 +340,8 @@ namespace PathORAM
 		delete[] blocks;
 	}
 
-	InMemoryStorageAdapter::InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+	InMemoryStorageAdapter::InMemoryStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const number Z, const number batchLimit) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z, batchLimit),
 		blocks(new uchar *[capacity])
 	{
 		for (auto i = 0uLL; i < capacity; i++)
@@ -338,8 +371,8 @@ namespace PathORAM
 		file->close();
 	}
 
-	FileSystemStorageAdapter::FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+	FileSystemStorageAdapter::FileSystemStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string filename, const bool override, const number Z, const number batchLimit) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z, batchLimit),
 		file(make_unique<fstream>())
 	{
 		auto flags = fstream::in | fstream::out | fstream::binary;
@@ -395,8 +428,8 @@ namespace PathORAM
 	{
 	}
 
-	RedisStorageAdapter::RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+	RedisStorageAdapter::RedisStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const number batchLimit) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z, batchLimit),
 		redis(make_unique<sw::redis::Redis>(host))
 	{
 		redis->ping();
@@ -455,8 +488,8 @@ namespace PathORAM
 		aerospike_destroy(as.get());
 	}
 
-	AerospikeStorageAdapter::AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string asset) :
-		AbsStorageAdapter(capacity, userBlockSize, key, Z),
+	AerospikeStorageAdapter::AerospikeStorageAdapter(const number capacity, const number userBlockSize, const bytes key, const string host, const bool override, const number Z, const string asset, const number batchLimit) :
+		AbsStorageAdapter(capacity, userBlockSize, key, Z, batchLimit),
 		as(make_unique<aerospike>()),
 		asset(asset)
 	{
