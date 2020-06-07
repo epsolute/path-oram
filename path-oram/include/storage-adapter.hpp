@@ -196,7 +196,7 @@ namespace PathORAM
 		 * @brief batch version of getInternal
 		 *
 		 * @param locations sequence (ordered) of locations to read from
-		 * @param response blocks of bytes in the order defined by locations
+		 * @param response this vector will be appended (back-inserted) with blocks of bytes in the order defined by locations
 		 */
 		virtual void getInternal(const vector<number> &locations, vector<bytes> &response) const;
 	};

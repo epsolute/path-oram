@@ -64,7 +64,12 @@ namespace PathORAM
 				while (pointer < locations.size())
 				{
 					batch.reserve(min(batchLimit, locations.size() - pointer));
-					copy(locations.begin() + pointer, distance(locations.begin() + pointer, locations.end()) > batchLimit ? locations.begin() + pointer + batchLimit : locations.end(), batch.begin());
+					copy(
+						locations.begin() + pointer,
+						distance(locations.begin() + pointer, locations.end()) > batchLimit ?
+							locations.begin() + pointer + batchLimit :
+							locations.end(),
+						back_inserter(batch));
 					getAndRecord(batch, raws);
 					batch.clear();
 					pointer += batchLimit;
@@ -174,7 +179,12 @@ namespace PathORAM
 				while (pointer < writes.size())
 				{
 					batch.reserve(min(batchLimit, writes.size() - pointer));
-					copy(writes.begin() + pointer, distance(writes.begin() + pointer, writes.end()) > batchLimit ? writes.begin() + pointer + batchLimit : writes.end(), batch.begin());
+					copy(
+						writes.begin() + pointer,
+						distance(writes.begin() + pointer, writes.end()) > batchLimit ?
+							writes.begin() + pointer + batchLimit :
+							writes.end(),
+						back_inserter(batch));
 					setAndRecord(batch);
 					batch.clear();
 					pointer += batchLimit;
@@ -198,10 +208,10 @@ namespace PathORAM
 
 	void AbsStorageAdapter::getInternal(const vector<number> &locations, vector<bytes> &response) const
 	{
-		response.resize(locations.size());
+		response.resize(response.size() + locations.size());
 		for (unsigned int i = 0; i < locations.size(); i++)
 		{
-			getAndRecord(locations[i], response[i]);
+			getAndRecord(locations[i], response[response.size() - locations.size() + i]);
 		}
 	}
 
@@ -319,11 +329,11 @@ namespace PathORAM
 			getInternal(locations, response),
 			{
 				auto size = 0;
-				for (auto &&raw : response)
+				for (auto raw = response.end() - locations.size(); raw != response.end(); raw++)
 				{
-					size += raw.size();
+					size += (*raw).size();
 				}
-				onStorageRequest(true, response.size(), size, elapsed);
+				onStorageRequest(true, locations.size(), size, elapsed);
 			});
 	}
 
@@ -470,8 +480,8 @@ namespace PathORAM
 		vector<optional<string>> returned;
 		redis->mget(input.begin(), input.end(), back_inserter(returned));
 
-		response.resize(returned.size());
-		transform(returned.begin(), returned.end(), response.begin(), [](optional<string> val) { return bytes(val.value().begin(), val.value().end()); });
+		response.reserve(response.size() + returned.size());
+		transform(returned.begin(), returned.end(), back_inserter(response), [](optional<string> val) { return bytes(val.value().begin(), val.value().end()); });
 	}
 
 #pragma endregion RedisStorageAdapter

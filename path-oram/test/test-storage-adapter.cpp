@@ -393,20 +393,44 @@ namespace PathORAM
 		}
 		adapter->set(boost::make_iterator_range(setRequests.begin(), setRequests.end()));
 
-		EXPECT_EQ(3, events.size());
-		EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
-		EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
-		EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		if (adapter->supportsBatchSet())
+		{
+			EXPECT_EQ(3, events.size());
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
+			EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		}
+		else
+		{
+			EXPECT_EQ(BATCH_LIMIT * 5 / 2, events.size());
+			for (auto i = 0uLL; i < BATCH_LIMIT * 5 / 2; i++)
+			{
+				EXPECT_EQ(1, get<1>(events[i]));
+			}
+		}
 		events.clear();
 
 		vector<pair<number, bytes>> getResponse;
 		getResponse.reserve(BATCH_LIMIT * 5 / 2);
 		adapter->get(getRequests, getResponse);
 
-		EXPECT_EQ(3, events.size());
-		EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
-		EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
-		EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		EXPECT_EQ(getRequests.size() * Z, getResponse.size());
+
+		if (adapter->supportsBatchGet())
+		{
+			EXPECT_EQ(3, events.size());
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
+			EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		}
+		else
+		{
+			EXPECT_EQ(BATCH_LIMIT * 5 / 2, events.size());
+			for (auto i = 0uLL; i < BATCH_LIMIT * 5 / 2; i++)
+			{
+				EXPECT_EQ(1, get<1>(events[i]));
+			}
+		}
 	}
 
 	string printTestName(testing::TestParamInfo<TestingStorageAdapterType> input)
