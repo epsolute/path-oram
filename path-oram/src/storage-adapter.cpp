@@ -66,7 +66,7 @@ namespace PathORAM
 					batch.reserve(min(batchLimit, locations.size() - pointer));
 					copy(
 						locations.begin() + pointer,
-						distance(locations.begin() + pointer, locations.end()) > batchLimit ?
+						(number)distance(locations.begin() + pointer, locations.end()) > batchLimit ?
 							locations.begin() + pointer + batchLimit :
 							locations.end(),
 						back_inserter(batch));
@@ -181,7 +181,7 @@ namespace PathORAM
 					batch.reserve(min(batchLimit, writes.size() - pointer));
 					copy(
 						writes.begin() + pointer,
-						distance(writes.begin() + pointer, writes.end()) > batchLimit ?
+						(number)distance(writes.begin() + pointer, writes.end()) > batchLimit ?
 							writes.begin() + pointer + batchLimit :
 							writes.end(),
 						back_inserter(batch));
