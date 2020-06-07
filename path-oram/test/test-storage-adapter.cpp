@@ -44,24 +44,25 @@ namespace PathORAM
 
 		StorageAdapterTest()
 		{
+			adapter = createAdapter(0);
+		}
+
+		unique_ptr<AbsStorageAdapter> createAdapter(number batchLimit)
+		{
 			auto type = GetParam();
 			switch (type)
 			{
 				case StorageAdapterTypeInMemory:
-					adapter = make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), Z);
-					break;
+					return make_unique<InMemoryStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), Z, batchLimit);
 				case StorageAdapterTypeFileSystem:
-					adapter = make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, Z);
-					break;
+					return make_unique<FileSystemStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), FILE_NAME, true, Z, batchLimit);
 #if USE_REDIS
 				case StorageAdapterTypeRedis:
-					adapter = make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true, Z);
-					break;
+					return make_unique<RedisStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), REDIS_HOST, true, Z, batchLimit);
 #endif
 #if USE_AEROSPIKE
 				case StorageAdapterTypeAerospike:
-					adapter = make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, true, Z);
-					break;
+					return make_unique<AerospikeStorageAdapter>(CAPACITY, BLOCK_SIZE, bytes(), AEROSPIKE_HOST, true, Z, "default", batchLimit);
 #endif
 				default:
 					throw Exception(boost::format("TestingStorageAdapterType %1% is not implemented") % type);
@@ -370,6 +371,66 @@ namespace PathORAM
 		EXPECT_LT(0, get<3>(event));
 
 		connection.disconnect();
+	}
+
+	TEST_P(StorageAdapterTest, BatchLimit)
+	{
+		const auto BATCH_LIMIT = 3uLL;
+
+		vector<tuple<bool, number, number, number>> events;
+
+		auto adapter	= createAdapter(BATCH_LIMIT);
+		auto connection = adapter->subscribe([&events](bool read, number batch, number size, number overhead) -> void {
+			events.push_back({read, batch, size, overhead});
+		});
+
+		vector<pair<const number, bucket>> setRequests;
+		vector<number> getRequests;
+		for (auto i = 0uLL; i < BATCH_LIMIT * 5 / 2; i++)
+		{
+			setRequests.push_back({i, generateBucket(i)});
+			getRequests.push_back(i);
+		}
+		adapter->set(boost::make_iterator_range(setRequests.begin(), setRequests.end()));
+
+		if (adapter->supportsBatchSet())
+		{
+			EXPECT_EQ(3, events.size());
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
+			EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		}
+		else
+		{
+			EXPECT_EQ(BATCH_LIMIT * 5 / 2, events.size());
+			for (auto i = 0uLL; i < BATCH_LIMIT * 5 / 2; i++)
+			{
+				EXPECT_EQ(1, get<1>(events[i]));
+			}
+		}
+		events.clear();
+
+		vector<pair<number, bytes>> getResponse;
+		getResponse.reserve(BATCH_LIMIT * 5 / 2);
+		adapter->get(getRequests, getResponse);
+
+		EXPECT_EQ(getRequests.size() * Z, getResponse.size());
+
+		if (adapter->supportsBatchGet())
+		{
+			EXPECT_EQ(3, events.size());
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[0]));
+			EXPECT_EQ(BATCH_LIMIT, get<1>(events[1]));
+			EXPECT_EQ(BATCH_LIMIT / 2, get<1>(events[2]));
+		}
+		else
+		{
+			EXPECT_EQ(BATCH_LIMIT * 5 / 2, events.size());
+			for (auto i = 0uLL; i < BATCH_LIMIT * 5 / 2; i++)
+			{
+				EXPECT_EQ(1, get<1>(events[i]));
+			}
+		}
 	}
 
 	string printTestName(testing::TestParamInfo<TestingStorageAdapterType> input)

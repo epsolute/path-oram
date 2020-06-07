@@ -12,10 +12,10 @@ namespace PathORAM
 	class MockStorage : public AbsStorageAdapter
 	{
 		public:
-		MockStorage(number capacity, number userBlockSize, bytes key, number Z) :
-			AbsStorageAdapter(capacity, userBlockSize, key, Z)
+		MockStorage(number capacity, number userBlockSize, bytes key, number Z, number batchLimit) :
+			AbsStorageAdapter(capacity, userBlockSize, key, Z, batchLimit)
 		{
-			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z);
+			_real = make_unique<InMemoryStorageAdapter>(capacity, userBlockSize, key, Z, batchLimit);
 
 			// by default, all calls are delegated to the real object
 			ON_CALL(*this, getInternal).WillByDefault([this](const vector<number> &locations, vector<bytes> &response) {
@@ -266,7 +266,7 @@ namespace PathORAM
 		using ::testing::NiceMock;
 		using ::testing::Truly;
 
-		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes(), Z);
+		auto storage = make_shared<NiceMock<MockStorage>>(CAPACITY + Z, BLOCK_SIZE, bytes(), Z, 0);
 
 		// make sure main storage is not called
 		auto oram = make_unique<ORAM>(LOG_CAPACITY, BLOCK_SIZE, Z, storage, make_unique<InMemoryPositionMapAdapter>(CAPACITY * Z + Z), stash, true, BATCH_SIZE);
