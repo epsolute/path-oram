@@ -466,16 +466,16 @@ namespace PathORAM
 	void RedisStorageAdapter::setInternal(const vector<pair<number, bytes>> &requests)
 	{
 		vector<pair<string, string>> input;
-		input.resize(requests.size());
-		transform(requests.begin(), requests.end(), input.begin(), [](block val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
+		input.reserve(requests.size());
+		transform(requests.begin(), requests.end(), back_inserter(input), [](block val) { return make_pair<string, string>(to_string(val.first), string(val.second.begin(), val.second.end())); });
 		redis->mset(input.begin(), input.end());
 	}
 
 	void RedisStorageAdapter::getInternal(const vector<number> &locations, vector<bytes> &response) const
 	{
 		vector<string> input;
-		input.resize(locations.size());
-		transform(locations.begin(), locations.end(), input.begin(), [](number val) { return to_string(val); });
+		input.reserve(locations.size());
+		transform(locations.begin(), locations.end(), back_inserter(input), [](number val) { return to_string(val); });
 
 		vector<optional<string>> returned;
 		redis->mget(input.begin(), input.end(), back_inserter(returned));
