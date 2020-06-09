@@ -1,10 +1,13 @@
 #include "storage-adapter.hpp"
 
+#if USE_AEROSPIKE
 #include <aerospike/aerospike_batch.h>
 #include <aerospike/aerospike_key.h>
 #include <aerospike/as_batch.h>
 #include <aerospike/as_key.h>
 #include <aerospike/as_record.h>
+#endif
+
 #include <boost/format.hpp>
 #include <cstring>
 #include <openssl/aes.h>
