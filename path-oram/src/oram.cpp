@@ -45,7 +45,7 @@ namespace PathORAM
 		ORAM(logCapacity,
 			 blockSize,
 			 Z,
-			 make_shared<InMemoryStorageAdapter>((1 << logCapacity), blockSize * Z, bytes(), Z),
+			 make_shared<InMemoryStorageAdapter>((1 << logCapacity), blockSize, bytes(), Z),
 			 make_shared<InMemoryPositionMapAdapter>(((1 << logCapacity) * Z) + Z),
 			 make_shared<InMemoryStashAdapter>(3 * logCapacity * Z))
 	{
