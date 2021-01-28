@@ -90,6 +90,7 @@ shared-library:
   script:
     - cd ./$PROJECT_DIR/
     - make shared ldconfig run-shared-lib
+    - make shared ldconfig run-stash-size
   dependencies: []
   tags:
     - docker

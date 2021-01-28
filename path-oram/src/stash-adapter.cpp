@@ -83,6 +83,11 @@ namespace PathORAM
 		return stash.count(block) > 0;
 	}
 
+	number InMemoryStashAdapter::currentSize()
+	{
+		return stash.size();
+	}
+
 	void InMemoryStashAdapter::storeToFile(const string filename) const
 	{
 		const auto flags = fstream::out | fstream::binary | fstream::trunc;

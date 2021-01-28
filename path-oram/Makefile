@@ -105,6 +105,10 @@ run-shared-lib: shared
 	$(CC) -o $(BDIR)/test-shared-lib $(TDIR)/test-shared-lib.cpp -I $(IDIR) -L $(BDIR) -l $(LIBNAME) $(CPPFLAGS)
 	$(BDIR)/test-shared-lib
 
+run-stash-size: shared
+	$(CC) -o $(BDIR)/test-stash-size $(TDIR)/test-stash-size.cpp -I $(IDIR) -L $(BDIR) -l $(LIBNAME) $(CPPFLAGS)
+	$(BDIR)/test-stash-size
+
 run-tests-junit: CPPFLAGS += -DTESTING
 run-tests-junit: $(TESTBIN)
 	$(subst ?, ,$(addsuffix &&, $(JUNITS))) echo Tests passed!

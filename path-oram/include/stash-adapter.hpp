@@ -117,6 +117,13 @@ namespace PathORAM
 		void remove(const number block) final;
 
 		/**
+		 * @brief Returns the current size of the stash (in blocks)
+		 *
+		 * @return number the current size of the stash (in blocks)
+		 */
+		number currentSize();
+
+		/**
 		 * @brief write state to a binary file
 		 *
 		 * @param filename the name of the file to write to
