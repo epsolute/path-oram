@@ -8,6 +8,8 @@
 #include <aerospike/as_record.h>
 #endif
 
+#include <algorithm>
+#include <chrono>
 #include <boost/format.hpp>
 #include <cstring>
 #include <openssl/aes.h>
@@ -70,8 +72,8 @@ namespace PathORAM
 					copy(
 						locations.begin() + pointer,
 						(number)distance(locations.begin() + pointer, locations.end()) > batchLimit ?
-							locations.begin() + pointer + batchLimit :
-							locations.end(),
+							  locations.begin() + pointer + batchLimit :
+							  locations.end(),
 						back_inserter(batch));
 					getAndRecord(batch, raws);
 					batch.clear();
@@ -185,8 +187,8 @@ namespace PathORAM
 					copy(
 						writes.begin() + pointer,
 						(number)distance(writes.begin() + pointer, writes.end()) > batchLimit ?
-							writes.begin() + pointer + batchLimit :
-							writes.end(),
+							  writes.begin() + pointer + batchLimit :
+							  writes.end(),
 						back_inserter(batch));
 					setAndRecord(batch);
 					batch.clear();
